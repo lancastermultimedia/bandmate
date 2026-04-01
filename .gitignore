@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Browser-saved page artifacts
+*_files/
+
+# Dependencies
+node_modules/
