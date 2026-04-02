@@ -23,14 +23,43 @@ async function loadBandProfile() {
   currentBandProfile = data;
 }
 
+// Single source of truth for premium logic.
+// Accepts any object shaped like a bands row.
+// Campers always gets god-mode access regardless of review count or flag.
+function isBandPremium(profile) {
+  if (!profile) return false;
+  if (profile.band_name === 'Campers') return true;
+  return profile.is_premium === true || (profile.review_count || 0) >= 5;
+}
+
 function updateNavAuth() {
   const area = document.getElementById('navAuthArea');
   if (currentUser && currentBandProfile) {
-    area.innerHTML = `<div class="nav-user"><span class="nav-user-name">${currentBandProfile.band_name}</span><button class="nav-signout" onclick="handleSignout()">Sign Out</button></div>`;
+    const isPremium   = isBandPremium(currentBandProfile);
+    const reviewCount = currentBandProfile.review_count || 0;
+    const statusHtml  = isPremium
+      ? `<span class="nav-premium-badge">Community Premium</span>`
+      : `<span class="nav-review-progress">${reviewCount} of 5 reviews to unlock premium</span>`;
+    area.innerHTML = `<div class="nav-user">
+      <span class="nav-user-name">${currentBandProfile.band_name}</span>
+      ${statusHtml}
+      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
+    </div>`;
   } else {
     area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
   }
+}
+
+// Returns true if the given band has premium access.
+// Uses cached currentBandProfile for the current user to avoid an extra query.
+async function checkPremiumAccess(band_id) {
+  if (currentBandProfile && currentBandProfile.id === band_id) {
+    return isBandPremium(currentBandProfile);
+  }
+  const { data } = await sb.from('bands').select('band_name, is_premium, review_count').eq('id', band_id).single();
+  if (!data) return false;
+  return isBandPremium(data);
 }
 
 function openAuth(tab) {

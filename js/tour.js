@@ -1,0 +1,915 @@
+// Tour Planner — js/tour.js
+// Google Maps async callback: initTourMap
+
+let tourMap;
+let tourPlacesService;
+let tourWaypoints = [];   // [{ latLng, city, venueResults, selectedVenueIndex }]
+let tourMarkers   = [];
+let tourPolyline  = null;
+let tourHintEl    = null;
+let lastShowDates = null; // estimated show dates computed during Step 1
+
+// ── Map init (Google Maps callback) ──────────────────────────────────────────
+
+function initTourMap() {
+  tourMap = new google.maps.Map(document.getElementById('tourMap'), {
+    zoom: 5,
+    center: { lat: 37.8, lng: -96.9 },
+    styles: getTourMapStyle(),
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    gestureHandling: 'cooperative',
+  });
+
+  tourPlacesService = new google.maps.places.PlacesService(tourMap);
+  tourHintEl = document.getElementById('mapHint');
+
+  tourMap.addListener('click', e => {
+    addWaypoint(e.latLng);
+    if (tourHintEl) tourHintEl.classList.add('hidden');
+  });
+
+  // City search autocomplete
+  const cityInput = document.getElementById('tourCityInput');
+  const cityAC    = new google.maps.places.Autocomplete(cityInput, {
+    types: ['(cities)'],
+    fields: ['geometry', 'name'],
+  });
+  cityAC.addListener('place_changed', () => {
+    const place = cityAC.getPlace();
+    if (!place.geometry) { addStopFromSearch(); return; }
+    addWaypoint(place.geometry.location);
+    cityInput.value = '';
+  });
+  cityInput.addEventListener('keydown', e => { if (e.key === 'Enter') addStopFromSearch(); });
+
+  document.getElementById('tourStartDate').addEventListener('change', saveTourState);
+  document.getElementById('tourLength').addEventListener('change', saveTourState);
+
+  initAuth();
+  sb.auth.onAuthStateChange(() => setTimeout(updateTourGenre, 200));
+  setTimeout(updateTourGenre, 1500);
+
+  restoreTourState();
+
+  if (!document.getElementById('tourStartDate').value) {
+    document.getElementById('tourStartDate').value = new Date().toISOString().split('T')[0];
+  }
+
+  // Click-outside closes venue info modal
+  document.getElementById('venueInfoModal').addEventListener('click', function(e) {
+    if (e.target === this) closeVenueInfoModal();
+  });
+
+  setTourStatus('idle', 'Type a city or click the map to add a stop');
+  document.body.style.visibility = 'visible';
+}
+
+// ── localStorage persistence ──────────────────────────────────────────────────
+
+function saveTourState() {
+  try {
+    const state = {
+      waypoints: tourWaypoints.map(wp => ({
+        lat:               toLatLng(wp.latLng).lat(),
+        lng:               toLatLng(wp.latLng).lng(),
+        city:              wp.city,
+        selectedVenueIndex: wp.selectedVenueIndex ?? null,
+        venues: (wp.venueResults || []).map(v => ({
+          name:               v.name,
+          vicinity:           v.vicinity || '',
+          rating:             v.rating   || null,
+          user_ratings_total: v.user_ratings_total || null,
+          place_id:           v.place_id  || null,
+          lat:                v.lat       || null,
+          lng:                v.lng       || null,
+        })),
+      })),
+      startDate:              document.getElementById('tourStartDate').value,
+      tourLength:             document.getElementById('tourLength').value,
+      showDates:              lastShowDates ? lastShowDates.map(d => d.toISOString()) : null,
+      venueSelectionVisible:  document.getElementById('venueSelectionArea').style.display !== 'none',
+      itinHtml:               document.getElementById('itinContainer').innerHTML,
+      itinCount:              document.getElementById('itinCount').textContent,
+      itinVisible:            document.getElementById('itinArea').style.display !== 'none',
+    };
+    localStorage.setItem('bandmate_tour', JSON.stringify(state));
+  } catch (e) {
+    console.warn('Could not save tour state:', e);
+  }
+}
+
+function restoreTourState() {
+  try {
+    const raw = localStorage.getItem('bandmate_tour');
+    if (!raw) return;
+    const state = JSON.parse(raw);
+
+    if (state.startDate)  document.getElementById('tourStartDate').value = state.startDate;
+    if (state.tourLength) document.getElementById('tourLength').value    = state.tourLength;
+
+    if (state.waypoints?.length) {
+      state.waypoints.forEach(wp => {
+        const latLng = new google.maps.LatLng(wp.lat, wp.lng);
+        const index  = tourWaypoints.length;
+        tourWaypoints.push({
+          latLng,
+          city:               wp.city,
+          selectedVenueIndex: wp.selectedVenueIndex ?? null,
+          venueResults: (wp.venues || []).map(v => ({
+            name:               v.name,
+            vicinity:           v.vicinity,
+            rating:             v.rating,
+            user_ratings_total: v.user_ratings_total || null,
+            place_id:           v.place_id  || null,
+            lat:                v.lat,
+            lng:                v.lng,
+          })),
+        });
+        tourMarkers.push(new google.maps.Marker({
+          position: latLng,
+          map:      tourMap,
+          title:    wp.city || `Stop ${index + 1}`,
+          icon:     makeMarkerIcon(index),
+        }));
+      });
+
+      updatePolyline();
+      renderWaypointList();
+      fitBoundsToWaypoints();
+      if (tourWaypoints.length >= 2) document.getElementById('findVenuesBtn').disabled = false;
+      if (tourHintEl) tourHintEl.classList.add('hidden');
+      setTourStatus('amber', `${tourWaypoints.length} stops restored — add more or rebuild`);
+    }
+
+    if (state.venueSelectionVisible && state.showDates) {
+      lastShowDates = state.showDates.map(d => new Date(d));
+      renderVenueSelection(lastShowDates);
+    }
+
+    if (state.itinVisible && state.itinHtml) {
+      document.getElementById('itinContainer').innerHTML       = state.itinHtml;
+      document.getElementById('itinCount').textContent         = state.itinCount || '';
+      document.getElementById('itinArea').style.display        = 'block';
+      document.getElementById('downloadItinBtn').style.display = 'block';
+    }
+  } catch (e) {
+    console.warn('Could not restore tour state:', e);
+  }
+}
+
+// ── Genre pill ────────────────────────────────────────────────────────────────
+
+function updateTourGenre() {
+  const area = document.getElementById('tourGenreArea');
+  if (!area) return;
+  if (currentBandProfile?.genre) {
+    document.getElementById('tourGenreText').textContent = currentBandProfile.genre;
+    area.style.display = 'block';
+  } else {
+    area.style.display = 'none';
+  }
+}
+
+// ── Waypoints ─────────────────────────────────────────────────────────────────
+
+// Normalises any LatLng-like value to a proper google.maps.LatLng
+function toLatLng(val) {
+  if (typeof val.lat === 'function') return val;
+  return new google.maps.LatLng(val.lat, val.lng);
+}
+
+function addWaypoint(latLng) {
+  const index = tourWaypoints.length;
+  tourWaypoints.push({
+    latLng:             toLatLng(latLng),
+    city:               null,
+    venueResults:       [],
+    selectedVenueIndex: null,
+  });
+
+  tourMarkers.push(new google.maps.Marker({
+    position: toLatLng(latLng),
+    map:      tourMap,
+    title:    `Stop ${index + 1}`,
+    icon:     makeMarkerIcon(index),
+  }));
+
+  updatePolyline();
+  reverseGeocodeWaypoint(index, latLng);
+  renderWaypointList();
+  fitBoundsToWaypoints();
+  resetSteps();
+  saveTourState();
+  setTourStatus('amber', `${tourWaypoints.length} stop${tourWaypoints.length !== 1 ? 's' : ''} — add more or find venues`);
+
+  if (tourWaypoints.length >= 2) document.getElementById('findVenuesBtn').disabled = false;
+}
+
+function reverseGeocodeWaypoint(index, latLng) {
+  new google.maps.Geocoder().geocode({ location: toLatLng(latLng) }, (results, status) => {
+    if (status !== 'OK' || !results[0]) {
+      tourWaypoints[index].city = `Stop ${index + 1}`;
+    } else {
+      const comps = results[0].address_components;
+      const city  = comps.find(c => c.types.includes('locality') || c.types.includes('sublocality'));
+      const state = comps.find(c => c.types.includes('administrative_area_level_1'));
+      tourWaypoints[index].city = city && state
+        ? `${city.long_name}, ${state.short_name}`
+        : results[0].formatted_address.split(',').slice(0, 2).join(',').trim();
+    }
+    renderWaypointList();
+    saveTourState();
+  });
+}
+
+function makeMarkerIcon(index) {
+  const colors = ['#c94b2a','#5a7a6a','#d4a843','#4a4540','#8a8278'];
+  const color  = colors[index % colors.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${color}"/>
+    <circle cx="18" cy="18" r="10" fill="white" opacity="0.9"/>
+    <text x="18" y="22" text-anchor="middle" font-size="11" font-family="Space Mono,monospace" font-weight="700" fill="${color}">${index + 1}</text>
+  </svg>`;
+  return {
+    url:        'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(36, 44),
+    anchor:     new google.maps.Point(18, 44),
+  };
+}
+
+function updatePolyline() {
+  if (tourPolyline) tourPolyline.setMap(null);
+  if (tourWaypoints.length < 2) { tourPolyline = null; return; }
+  tourPolyline = new google.maps.Polyline({
+    path:          tourWaypoints.map(w => w.latLng),
+    geodesic:      true,
+    strokeColor:   '#c94b2a',
+    strokeOpacity: 0.65,
+    strokeWeight:  2.5,
+    icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeWeight: 2 }, offset: '50%' }],
+  });
+  tourPolyline.setMap(tourMap);
+}
+
+function removeWaypoint(index) {
+  tourWaypoints.splice(index, 1);
+  tourMarkers[index].setMap(null);
+  tourMarkers.splice(index, 1);
+  tourMarkers.forEach((m, i) => m.setIcon(makeMarkerIcon(i)));
+  updatePolyline();
+  renderWaypointList();
+  resetSteps();
+  saveTourState();
+  if (tourWaypoints.length < 2) document.getElementById('findVenuesBtn').disabled = true;
+  if (tourWaypoints.length === 0) {
+    setTourStatus('idle', 'Type a city or click the map to add a stop');
+    if (tourHintEl) tourHintEl.classList.remove('hidden');
+  } else {
+    setTourStatus('amber', `${tourWaypoints.length} stop${tourWaypoints.length !== 1 ? 's' : ''} — add more or find venues`);
+  }
+}
+
+function clearRoute() {
+  tourWaypoints = [];
+  tourMarkers.forEach(m => m.setMap(null));
+  tourMarkers = [];
+  if (tourPolyline) { tourPolyline.setMap(null); tourPolyline = null; }
+  document.getElementById('waypointList').innerHTML    = '';
+  document.getElementById('findVenuesBtn').disabled    = true;
+  document.getElementById('findVenuesBtn').textContent = 'Find Venues Along Route';
+  resetSteps();
+  lastShowDates = null;
+  localStorage.removeItem('bandmate_tour');
+  setTourStatus('idle', 'Type a city or click the map to add a stop');
+  if (tourHintEl) tourHintEl.classList.remove('hidden');
+}
+
+// Hides and empties both Step 1 and Step 2 panels
+function resetSteps() {
+  document.getElementById('venueSelectionArea').style.display = 'none';
+  document.getElementById('itinArea').style.display           = 'none';
+  document.getElementById('downloadItinBtn').style.display    = 'none';
+  document.getElementById('venueSelectionList').innerHTML     = '';
+  document.getElementById('itinContainer').innerHTML          = '';
+  document.getElementById('itinCount').textContent            = '';
+}
+
+function addStopFromSearch() {
+  const input = document.getElementById('tourCityInput');
+  const query = input.value.trim();
+  if (!query) return;
+  new google.maps.Geocoder().geocode({ address: query }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      addWaypoint(results[0].geometry.location);
+      input.value = '';
+      if (tourHintEl) tourHintEl.classList.add('hidden');
+    } else {
+      showToast('City not found — try a different search', 'error');
+    }
+  });
+}
+
+function fitBoundsToWaypoints() {
+  if (!tourWaypoints.length) return;
+  if (tourWaypoints.length === 1) {
+    tourMap.panTo(tourWaypoints[0].latLng);
+    tourMap.setZoom(10);
+    return;
+  }
+  const bounds = new google.maps.LatLngBounds();
+  tourWaypoints.forEach(wp => bounds.extend(wp.latLng));
+  tourMap.fitBounds(bounds, { top: 80, bottom: 80, left: 60, right: 60 });
+}
+
+function renderWaypointList() {
+  const colors = ['#c94b2a','#5a7a6a','#d4a843','#4a4540','#8a8278'];
+  document.getElementById('waypointList').innerHTML = tourWaypoints.map((wp, i) => `
+    <div class="wp-item">
+      <div class="wp-num" style="color:${colors[i % colors.length]}">${i + 1}</div>
+      <div class="wp-city">${wp.city || 'Locating...'}</div>
+      <button class="wp-remove" onclick="removeWaypoint(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ── Step 1: Find venues + venue selection ─────────────────────────────────────
+
+async function findVenues() {
+  if (tourWaypoints.length < 2) return;
+
+  const btn = document.getElementById('findVenuesBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Searching...';
+  resetSteps();
+
+  // Estimate drive times (city centres) to compute provisional show dates
+  setTourStatus('amber', 'Estimating drive times...');
+  const estimatedDriveTimes = await getDriveTimes();
+
+  // Search venues at every stop in parallel
+  setTourStatus('amber', 'Finding venues at each stop...');
+  await Promise.all(tourWaypoints.map((_, i) => searchVenuesAtWaypoint(i)));
+
+  lastShowDates = computeShowDates(estimatedDriveTimes);
+  renderVenueSelection(lastShowDates);
+
+  setTourStatus('amber', `Choose a venue for each of the ${tourWaypoints.length} stops`);
+  btn.textContent = 'Re-Search Venues';
+  btn.disabled    = false;
+
+  saveTourState();
+
+  // Auto-advance if all selections already restored from localStorage
+  checkAllSelected();
+}
+
+function getGenreKeywords() {
+  const genre = (currentBandProfile?.genre || '').toLowerCase();
+  if (genre.includes('folk') || genre.includes('acoustic')) return 'folk acoustic music bar venue';
+  if (genre.includes('punk') || genre.includes('metal'))    return 'punk rock metal bar venue';
+  if (genre.includes('jazz') || genre.includes('blues'))    return 'jazz blues bar lounge';
+  if (genre.includes('hip'))                                return 'hip hop bar club venue';
+  if (genre.includes('country'))                            return 'country bar honky tonk venue';
+  if (genre.includes('electronic'))                         return 'electronic club lounge bar';
+  return 'live music bar venue music hall';
+}
+
+function searchVenuesAtWaypoint(index) {
+  return new Promise(resolve => {
+    const wp = tourWaypoints[index];
+    tourPlacesService.nearbySearch(
+      { location: wp.latLng, radius: 8047, type: 'bar', keyword: getGenreKeywords() },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results?.length) {
+          tourWaypoints[index].venueResults = results
+            .filter(p => {
+              const t = p.types || [];
+              return t.includes('bar') || t.includes('night_club') || t.includes('music_store');
+            })
+            .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+            .slice(0, 3)
+            .map(p => ({
+              name:               p.name,
+              vicinity:           p.vicinity || '',
+              rating:             p.rating   || null,
+              user_ratings_total: p.user_ratings_total || null,
+              place_id:           p.place_id  || null,
+              lat:                p.geometry?.location?.lat() || null,
+              lng:                p.geometry?.location?.lng() || null,
+            }));
+        } else {
+          tourWaypoints[index].venueResults = [];
+        }
+        // Clear stale selection when venues refresh
+        tourWaypoints[index].selectedVenueIndex = null;
+        resolve();
+      }
+    );
+  });
+}
+
+// Compute estimated show dates from city-centre drive times
+function computeShowDates(driveTimes) {
+  const startVal = document.getElementById('tourStartDate').value;
+  const date     = startVal ? new Date(startVal + 'T12:00:00') : new Date();
+  const dates    = [new Date(date)];
+  date.setDate(date.getDate() + 1);
+
+  for (let i = 0; i < driveTimes.length; i++) {
+    const driveHours = ((driveTimes[i]?.duration?.value || 0) / 3600);
+    if (driveHours > 4)      date.setDate(date.getDate() + 2); // drive + rest
+    else if (driveHours >= 2) date.setDate(date.getDate() + 1); // drive only
+    // < 2 hrs: same-day travel, no extra days
+    dates.push(new Date(date));
+    date.setDate(date.getDate() + 1);
+  }
+  return dates;
+}
+
+function renderVenueSelection(showDates) {
+  const list = document.getElementById('venueSelectionList');
+
+  list.innerHTML = tourWaypoints.map((wp, wi) => {
+    const city    = wp.city || `Stop ${wi + 1}`;
+    const dateStr = showDates?.[wi] ? fmtDate(showDates[wi]) : `Night ${wi + 1}`;
+    const venues  = wp.venueResults || [];
+    const hasSel  = wp.selectedVenueIndex !== null && wp.selectedVenueIndex !== undefined;
+
+    const venuesHtml = venues.length === 0
+      ? `<div class="vsc-no-venues">No venues found near this location — drive times will use the city centre</div>`
+      : venues.map((v, vi) => {
+          const isSel = wp.selectedVenueIndex === vi;
+          const stars = v.rating ? '★'.repeat(Math.round(v.rating)) + '☆'.repeat(5 - Math.round(v.rating)) : '';
+          return `<div class="vsc-venue${isSel ? ' selected' : ''}" id="vscv-${wi}-${vi}" onclick="selectVenue(${wi},${vi})">
+            <div class="vsc-venue-inner">
+              <div class="vsc-venue-name">${v.name}</div>
+              <div class="vsc-venue-address">${v.vicinity}</div>
+              ${v.rating ? `<div class="vsc-venue-rating">${stars} ${v.rating.toFixed(1)}</div>` : ''}
+            </div>
+            <div class="vsc-venue-actions">
+              <button class="vsc-select-btn${isSel ? ' selected' : ''}" onclick="event.stopPropagation();selectVenue(${wi},${vi})">
+                ${isSel ? 'Selected ✓' : 'Select →'}
+              </button>
+              <button class="vsc-info-btn" onclick="event.stopPropagation();openVenueInfoModal(${wi},${vi})">More Info</button>
+            </div>
+          </div>`;
+        }).join('');
+
+    return `<div class="venue-select-card${hasSel ? ' complete' : ''}" id="vsc-${wi}">
+      <div class="vsc-header">
+        <div class="vsc-city">${city}</div>
+        <div class="vsc-date">${dateStr}</div>
+      </div>
+      <div class="vsc-venues">${venuesHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('venueSelectionArea').style.display = 'block';
+  updateSelectionProgress();
+  document.getElementById('venueSelectionArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectVenue(wpIndex, venueIndex) {
+  tourWaypoints[wpIndex].selectedVenueIndex = venueIndex;
+
+  // Update every venue row in this card
+  (tourWaypoints[wpIndex].venueResults || []).forEach((_, vi) => {
+    const el = document.getElementById(`vscv-${wpIndex}-${vi}`);
+    if (!el) return;
+    const isSel = vi === venueIndex;
+    el.classList.toggle('selected', isSel);
+    const btn = el.querySelector('.vsc-select-btn');
+    if (btn) { btn.textContent = isSel ? 'Selected ✓' : 'Select →'; btn.classList.toggle('selected', isSel); }
+  });
+
+  const card = document.getElementById(`vsc-${wpIndex}`);
+  if (card) card.classList.add('complete');
+
+  updateSelectionProgress();
+  saveTourState();
+  checkAllSelected();
+}
+
+function updateSelectionProgress() {
+  const total    = tourWaypoints.length;
+  const selected = tourWaypoints.filter(wp =>
+    !wp.venueResults?.length ||
+    (wp.selectedVenueIndex !== null && wp.selectedVenueIndex !== undefined)
+  ).length;
+  const el = document.getElementById('selectionProgress');
+  if (!el) return;
+  el.textContent = `${selected} of ${total} stops selected`;
+  el.classList.toggle('complete', selected === total);
+}
+
+// Triggers Step 2 automatically once every stop has a venue chosen
+function checkAllSelected() {
+  if (tourWaypoints.length < 2) return;
+  const allDone = tourWaypoints.every(wp =>
+    !wp.venueResults?.length ||
+    (wp.selectedVenueIndex !== null && wp.selectedVenueIndex !== undefined)
+  );
+  if (allDone) buildFinalItinerary();
+}
+
+// ── Step 2: Final itinerary ───────────────────────────────────────────────────
+
+async function buildFinalItinerary() {
+  setTourStatus('amber', 'Calculating precise drive times between venues...');
+  const driveTimes = await getDriveTimesBetweenVenues();
+  const isPremium  = currentBandProfile ? await checkPremiumAccess(currentBandProfile.id) : false;
+  buildItinerary(driveTimes, isPremium);
+  setTourStatus('green', `Itinerary ready — ${tourWaypoints.length} stops`);
+}
+
+// ── Drive time helpers ────────────────────────────────────────────────────────
+
+// Straight-line distance in km using the Haversine formula
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R    = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a    = Math.sin(dLat / 2) ** 2
+             + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+             * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Synthetic drive-time element based on straight-line distance.
+// Road distance ≈ 1.3× crow-flies; effective speed ≈ 50 mph for long legs.
+function fallbackDriveTime(lat1, lng1, lat2, lng2) {
+  const km        = haversineKm(lat1, lng1, lat2, lng2);
+  const miles     = km * 0.621371;
+  const roadMiles = miles * 1.3;
+  const hours     = roadMiles / 50;
+  const totalMin  = Math.round(hours * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  const timeStr = h > 0
+    ? `${h} hr${h !== 1 ? 's' : ''}${m > 0 ? ' ' + m + ' min' : ''}`
+    : `${m} min`;
+  console.warn('[DM fallback] Using haversine estimate:', timeStr, `(${Math.round(roadMiles)} mi road est.)`);
+  return {
+    duration: { value: Math.round(hours * 3600), text: `~${timeStr} (est.)` },
+    distance: { value: Math.round(roadMiles * 1609.34), text: `~${Math.round(roadMiles)} mi (est.)` },
+    status:   'OK',
+  };
+}
+
+// Calls Distance Matrix for a single origin→destination pair.
+// Falls back to haversine estimate if the API fails for any reason.
+function singleLegDriveTime(service, origin, destination, label) {
+  return new Promise(resolve => {
+    const request = {
+      origins:      [origin],
+      destinations: [destination],
+      travelMode:   google.maps.TravelMode.DRIVING,
+      unitSystem:   google.maps.UnitSystem.IMPERIAL,
+    };
+    console.log(`[DM ${label}] Request:`, {
+      origin:      `${origin.lat()},${origin.lng()}`,
+      destination: `${destination.lat()},${destination.lng()}`,
+    });
+    service.getDistanceMatrix(request, (response, status) => {
+      console.log(`[DM ${label}] Response status: "${status}"`);
+      console.log(`[DM ${label}] Full response:`, JSON.stringify(response));
+      if (status !== 'OK') {
+        console.error(`[DM ${label}] API error "${status}" — falling back to haversine estimate.`);
+        console.info('[DM] To fix: enable the Distance Matrix API at console.cloud.google.com and ensure billing is active for key AIzaSyD3mnxx…');
+        resolve(fallbackDriveTime(origin.lat(), origin.lng(), destination.lat(), destination.lng()));
+        return;
+      }
+      const element = response.rows[0]?.elements[0];
+      console.log(`[DM ${label}] Element:`, element);
+      if (element?.status !== 'OK') {
+        console.warn(`[DM ${label}] Element status "${element?.status}" — falling back to haversine estimate.`);
+        resolve(fallbackDriveTime(origin.lat(), origin.lng(), destination.lat(), destination.lng()));
+        return;
+      }
+      resolve(element);
+    });
+  });
+}
+
+// City-centre drive times — used only for Step 1 date estimation
+async function getDriveTimes() {
+  if (tourWaypoints.length < 2) return [];
+  const service = new google.maps.DistanceMatrixService();
+  const results = [];
+  for (let i = 0; i < tourWaypoints.length - 1; i++) {
+    const origin      = new google.maps.LatLng(tourWaypoints[i].latLng.lat(),   tourWaypoints[i].latLng.lng());
+    const destination = new google.maps.LatLng(tourWaypoints[i+1].latLng.lat(), tourWaypoints[i+1].latLng.lng());
+    results.push(await singleLegDriveTime(service, origin, destination, `est leg${i}→${i+1}`));
+  }
+  return results;
+}
+
+// Precise venue-to-venue drive times — used to build the final itinerary
+async function getDriveTimesBetweenVenues() {
+  if (tourWaypoints.length < 2) return [];
+  const service = new google.maps.DistanceMatrixService();
+  const results = [];
+  for (let i = 0; i < tourWaypoints.length - 1; i++) {
+    const fromWp    = tourWaypoints[i];
+    const toWp      = tourWaypoints[i + 1];
+    const fromVenue = fromWp.venueResults?.[fromWp.selectedVenueIndex];
+    const toVenue   = toWp.venueResults?.[toWp.selectedVenueIndex];
+    const origin      = (fromVenue?.lat && fromVenue?.lng)
+      ? new google.maps.LatLng(fromVenue.lat, fromVenue.lng)
+      : new google.maps.LatLng(fromWp.latLng.lat(), fromWp.latLng.lng());
+    const destination = (toVenue?.lat && toVenue?.lng)
+      ? new google.maps.LatLng(toVenue.lat, toVenue.lng)
+      : new google.maps.LatLng(toWp.latLng.lat(), toWp.latLng.lng());
+    results.push(await singleLegDriveTime(service, origin, destination, `final leg${i}→${i+1}`));
+  }
+  return results;
+}
+
+// ── Itinerary builder ─────────────────────────────────────────────────────────
+//
+// Spacing rules (every show gets its own calendar day):
+//   < 2 hrs  → travel morning + show evening on the same day
+//   2–4 hrs  → dedicated drive day then show day
+//   > 4 hrs  → drive day + rest/arrival day + show day
+
+function buildItinerary(driveTimes, isPremium) {
+  const startVal  = document.getElementById('tourStartDate').value;
+  const startDate = startVal ? new Date(startVal + 'T12:00:00') : new Date();
+  const days      = [];
+  const date      = new Date(startDate);
+
+  // Opening night — no drive before it
+  days.push({ type: 'show', date: new Date(date), wpIndex: 0, travelNote: null });
+  date.setDate(date.getDate() + 1);
+
+  for (let i = 0; i < driveTimes.length; i++) {
+    const leg        = driveTimes[i];
+    const driveSecs  = leg?.duration?.value || 0;
+    const driveHours = driveSecs / 3600;
+    const driveText  = leg?.duration?.text  || null;
+    const distText   = leg?.distance?.text  || '';
+
+    if (driveHours > 0 && driveHours < 2) {
+      // Same day: travel in the morning, show that evening
+      days.push({
+        type: 'show', date: new Date(date), wpIndex: i + 1,
+        travelNote: `${driveText}${distText ? ' · ' + distText : ''} — travel morning, show evening`,
+      });
+      date.setDate(date.getDate() + 1);
+
+    } else if (driveHours >= 2 && driveHours <= 4) {
+      // Dedicated drive day then show day
+      days.push({ type: 'drive', date: new Date(date), driveText, distText, from: i, to: i + 1 });
+      date.setDate(date.getDate() + 1);
+      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, travelNote: null });
+      date.setDate(date.getDate() + 1);
+
+    } else if (driveHours > 4) {
+      // Long haul: drive day + rest/arrival day + show day
+      days.push({ type: 'drive', date: new Date(date), driveText, distText, from: i, to: i + 1 });
+      date.setDate(date.getDate() + 1);
+      days.push({ type: 'rest',  date: new Date(date), wpIndex: i + 1 });
+      date.setDate(date.getDate() + 1);
+      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, travelNote: null });
+      date.setDate(date.getDate() + 1);
+
+    } else {
+      // Drive time unavailable — show still gets its own day
+      days.push({
+        type: 'show', date: new Date(date), wpIndex: i + 1,
+        travelNote: 'Drive time unavailable',
+      });
+      date.setDate(date.getDate() + 1);
+    }
+  }
+
+  renderItinerary(days, isPremium);
+}
+
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function fmtDate(d) {
+  return `${DAY_ABBR[d.getDay()]}, ${MONTH_ABBR[d.getMonth()]} ${d.getDate()}`;
+}
+
+function renderItinerary(days, isPremium) {
+  let showCount = 0;
+
+  const html = days.map(day => {
+
+    // ── Drive day ─────────────────────────────────────────────────────────────
+    if (day.type === 'drive') {
+      const fromCity = tourWaypoints[day.from]?.city || `Stop ${day.from + 1}`;
+      const toCity   = tourWaypoints[day.to]?.city   || `Stop ${day.to   + 1}`;
+      return `<div class="itin-day itin-drive">
+        <div class="itin-date">${fmtDate(day.date)}</div>
+        <div class="itin-type-label">Drive Day</div>
+        <div class="itin-city">${fromCity} → ${toCity}</div>
+        ${day.driveText ? `<div class="itin-drive-detail">${day.driveText}${day.distText ? ' · ' + day.distText : ''}</div>` : ''}
+      </div>`;
+    }
+
+    // ── Rest / arrival day ────────────────────────────────────────────────────
+    if (day.type === 'rest') {
+      const city = tourWaypoints[day.wpIndex]?.city || `Stop ${day.wpIndex + 1}`;
+      return `<div class="itin-day itin-rest">
+        <div class="itin-date">${fmtDate(day.date)}</div>
+        <div class="itin-type-label">Rest Day</div>
+        <div class="itin-city">${city}</div>
+        <div class="itin-drive-detail">Arriving after a long drive — rest before the show tomorrow</div>
+      </div>`;
+    }
+
+    // ── Show day ──────────────────────────────────────────────────────────────
+    showCount++;
+    const isLocked = !isPremium && showCount > 2;
+    const wp       = tourWaypoints[day.wpIndex];
+    const city     = wp?.city || `Stop ${day.wpIndex + 1}`;
+    const venue    = wp?.venueResults?.[wp?.selectedVenueIndex];
+
+    const travelHtml = day.travelNote
+      ? `<div class="itin-drive-detail" style="margin-bottom:8px">${day.travelNote}</div>`
+      : '';
+
+    let venueHtml = '';
+    if (venue) {
+      const stars = venue.rating ? '★'.repeat(Math.round(venue.rating)) + '☆'.repeat(5 - Math.round(venue.rating)) : '';
+      venueHtml = `<div class="itin-venue">
+        <div class="itin-venue-name">${venue.name}</div>
+        <div class="itin-venue-address">${venue.vicinity || ''}</div>
+        ${venue.rating ? `<div class="itin-venue-rating">${stars} ${venue.rating.toFixed(1)}</div>` : ''}
+        <button class="itin-contact-btn" onclick="tourContactVenue('${escTourStr(venue.name)}','${escTourStr(venue.vicinity || '')}')">
+          Contact This Venue →
+        </button>
+      </div>`;
+    } else {
+      venueHtml = `<div class="itin-no-venue">No venue selected for this stop</div>`;
+    }
+
+    const paywallHtml = isLocked ? `
+      <div class="paywall-overlay">
+        <div class="paywall-card">
+          <div class="paywall-eyebrow">Bandmate Premium</div>
+          <div class="paywall-title">Unlock the full route.</div>
+          <div class="paywall-sub">See venue picks for all ${tourWaypoints.length} stops and get direct booking contacts.</div>
+          <button class="paywall-btn" onclick="showPremiumToast()">Upgrade to Premium →</button>
+        </div>
+      </div>` : '';
+
+    return `<div class="itin-day itin-show" ${isLocked ? 'style="position:relative;overflow:hidden;"' : ''}>
+      <div class="itin-date">${fmtDate(day.date)}</div>
+      <div class="itin-type-label">Show Day</div>
+      <div class="itin-city">${city}</div>
+      ${travelHtml}
+      <div class="${isLocked ? 'itin-venue blurred' : ''}">${venueHtml}</div>
+      ${paywallHtml}
+    </div>`;
+  }).join('');
+
+  const showDays  = days.filter(d => d.type === 'show').length;
+  const driveDays = days.filter(d => d.type === 'drive').length;
+  const restDays  = days.filter(d => d.type === 'rest').length;
+  const parts     = [`${showDays} show${showDays !== 1 ? 's' : ''}`];
+  if (driveDays) parts.push(`${driveDays} drive day${driveDays !== 1 ? 's' : ''}`);
+  if (restDays)  parts.push(`${restDays} rest day${restDays !== 1 ? 's' : ''}`);
+
+  document.getElementById('itinContainer').innerHTML          = html;
+  document.getElementById('itinCount').textContent            = parts.join(' · ');
+  document.getElementById('itinArea').style.display           = 'block';
+  document.getElementById('downloadItinBtn').style.display    = 'block';
+
+  saveTourState();
+  document.getElementById('itinArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function tourContactVenue(name, address) {
+  const q = encodeURIComponent(`${name} ${address} booking contact email`);
+  window.open(`https://www.google.com/search?q=${q}`, '_blank');
+}
+
+function escTourStr(s) {
+  return (s || '').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
+}
+
+// ── Venue info modal ─────────────────────────────────────────────────────────
+
+async function openVenueInfoModal(wpIndex, venueIndex) {
+  const venue = tourWaypoints[wpIndex]?.venueResults?.[venueIndex];
+  if (!venue) return;
+
+  const modal = document.getElementById('venueInfoModal');
+  const content = document.getElementById('venueInfoContent');
+
+  // Show modal immediately with loading state
+  content.innerHTML = `<div class="vim-loading">Loading reviews...</div>`;
+  modal.classList.add('open');
+
+  // Store context for the Select button
+  modal.dataset.wpIndex    = wpIndex;
+  modal.dataset.venueIndex = venueIndex;
+
+  // Fetch Bandmate community reviews from Supabase
+  let bmReviews = [];
+  if (venue.place_id) {
+    const { data } = await sb
+      .from('reviews')
+      .select('overall_rating, sound_rating, comms_rating, merch_rating, parking_rating, review_text, created_at, bands(band_name)')
+      .eq('google_place_id', venue.place_id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    bmReviews = data || [];
+  }
+
+  // Compute averages across all fetched reviews
+  const avg = key => bmReviews.length
+    ? (bmReviews.reduce((s, r) => s + (r[key] || 0), 0) / bmReviews.length).toFixed(1)
+    : null;
+
+  // Google rating
+  const gStars = venue.rating
+    ? '★'.repeat(Math.round(venue.rating)) + '☆'.repeat(5 - Math.round(venue.rating))
+    : '';
+
+  // Score breakdown block
+  const scoresHtml = bmReviews.length ? `
+    <div class="vim-scores">
+      <div class="vim-score"><div class="vim-score-label">Sound</div><div class="vim-score-val">${avg('sound_rating')}</div></div>
+      <div class="vim-score"><div class="vim-score-label">Communication</div><div class="vim-score-val">${avg('comms_rating')}</div></div>
+      <div class="vim-score"><div class="vim-score-label">Merch</div><div class="vim-score-val">${avg('merch_rating')}</div></div>
+      <div class="vim-score"><div class="vim-score-label">Parking</div><div class="vim-score-val">${avg('parking_rating')}</div></div>
+    </div>` : '';
+
+  // Two most recent written reviews
+  const recentHtml = bmReviews.slice(0, 2).map(r => {
+    const rStars = '★'.repeat(r.overall_rating || 0) + '☆'.repeat(5 - (r.overall_rating || 0));
+    const band   = r.bands?.band_name || 'Anonymous Band';
+    return `<div class="vim-review">
+      <div class="vim-review-header">
+        <span class="vim-review-band">${band}</span>
+        <span class="vim-review-stars">${rStars}</span>
+      </div>
+      <p class="vim-review-text">${r.review_text || ''}</p>
+    </div>`;
+  }).join('');
+
+  const communityHtml = bmReviews.length ? `
+    <div class="vim-section-label">Bandmate Community · ${bmReviews.length} review${bmReviews.length !== 1 ? 's' : ''}</div>
+    ${scoresHtml}
+    ${recentHtml}
+  ` : `<div class="vim-no-reviews">No Bandmate reviews yet — be the first to review this venue.</div>`;
+
+  const isSel = tourWaypoints[wpIndex]?.selectedVenueIndex === venueIndex;
+
+  content.innerHTML = `
+    <div class="vim-eyebrow">Venue Info</div>
+    <div class="vim-name">${venue.name}</div>
+    <div class="vim-address">${venue.vicinity || ''}</div>
+    ${venue.rating ? `<div class="vim-google-rating">${gStars} ${venue.rating.toFixed(1)}${venue.user_ratings_total ? ` &nbsp;·&nbsp; ${venue.user_ratings_total.toLocaleString()} Google reviews` : ''}</div>` : ''}
+    <div class="vim-divider"></div>
+    ${communityHtml}
+    <button class="vim-select-btn${isSel ? ' selected' : ''}" onclick="selectVenue(${wpIndex},${venueIndex});closeVenueInfoModal()">
+      ${isSel ? 'Selected ✓' : 'Select This Venue →'}
+    </button>
+  `;
+}
+
+function closeVenueInfoModal() {
+  document.getElementById('venueInfoModal').classList.remove('open');
+}
+
+function downloadItinerary() { window.print(); }
+
+function showPremiumToast() {
+  showToast('Premium coming soon — stay tuned for launch pricing.');
+}
+
+function setTourStatus(type, msg) {
+  const dot = document.getElementById('tourStatusDot');
+  const txt = document.getElementById('tourStatusText');
+  const bg  = type === 'green' ? 'var(--sage)' : type === 'amber' ? 'var(--gold)' : 'var(--muted)';
+  if (dot) dot.style.background = bg;
+  if (txt) txt.textContent = msg;
+}
+
+// ── Map style ─────────────────────────────────────────────────────────────────
+
+function getTourMapStyle() {
+  return [
+    { elementType: 'geometry',            stylers: [{ color: '#ede9e0' }] },
+    { elementType: 'labels.text.fill',    stylers: [{ color: '#4a4540' }] },
+    { elementType: 'labels.text.stroke',  stylers: [{ color: '#f5f0e8' }] },
+    { featureType: 'road',            elementType: 'geometry',        stylers: [{ color: '#ffffff' }] },
+    { featureType: 'road',            elementType: 'geometry.stroke', stylers: [{ color: '#ddd8cc' }] },
+    { featureType: 'road.highway',    elementType: 'geometry',        stylers: [{ color: '#f0e9d6' }] },
+    { featureType: 'water',           elementType: 'geometry',        stylers: [{ color: '#c8d8e8' }] },
+    { featureType: 'poi.park',        elementType: 'geometry',        stylers: [{ color: '#d8e8d0' }] },
+    { featureType: 'poi',             elementType: 'labels',          stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit',                                          stylers: [{ visibility: 'off' }] },
+  ];
+}

@@ -179,6 +179,12 @@ async function submitReview() {
     return;
   }
 
+  // Increment review_count on the band — used for community premium threshold
+  const newCount = (currentBandProfile.review_count || 0) + 1;
+  await sb.from('bands').update({ review_count: newCount }).eq('id', currentBandProfile.id);
+  currentBandProfile.review_count = newCount;
+  updateNavAuth();
+
   showToast('Review posted — thanks for helping the community.', 'success');
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('vrfText').value = '';

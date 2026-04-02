@@ -1240,6 +1240,26 @@ footer {
 }
 .nav-signout:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
 
+.nav-review-progress {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.nav-premium-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sage);
+  border: 1px solid var(--sage);
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 /* VENUE PAGE OVERLAY */
 .venue-page-overlay {
   position: fixed;
@@ -1662,3 +1682,918 @@ footer {
 }
 .pac-matched { color: var(--rust); font-weight: 600; }
 .pac-icon { display: none; }
+
+/* =============================================
+   TOUR PLANNER PAGE
+   ============================================= */
+
+.tour-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  height: 100vh;
+  padding-top: 57px;
+}
+
+.tour-panel {
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  z-index: 10;
+}
+
+.tour-panel::-webkit-scrollbar { width: 4px; }
+.tour-panel::-webkit-scrollbar-track { background: transparent; }
+.tour-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.tour-map-wrap { position: relative; overflow: hidden; }
+#tourMap { width: 100%; height: 100%; }
+
+/* Heading */
+.tour-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tour-eyebrow::before {
+  content: '';
+  display: block;
+  width: 20px; height: 1px;
+  background: var(--rust);
+}
+
+.tour-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.2rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.tour-heading em { color: var(--rust); font-style: italic; }
+
+.tour-sub {
+  font-size: 0.86rem;
+  color: #5a5550;
+  font-weight: 300;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+/* Form */
+.tour-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.tour-field label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tour-field input[type="date"],
+.tour-field input[type="number"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 9px 11px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.tour-field input:focus { border-color: var(--rust); }
+
+.tour-genre-row { margin-bottom: 16px; }
+.tour-genre-row label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.genre-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--warm);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.genre-pill-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--rust);
+  flex-shrink: 0;
+}
+
+/* Status */
+.tour-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--warm);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-bottom: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.tour-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+/* Buttons */
+.tour-btn {
+  width: 100%;
+  padding: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+.tour-btn-primary {
+  background: var(--rust);
+  color: white;
+  border: 1.5px solid var(--rust);
+}
+.tour-btn-primary:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); }
+.tour-btn-primary:disabled { background: var(--muted); border-color: var(--muted); cursor: not-allowed; }
+.tour-btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+}
+.tour-btn-secondary:hover { color: var(--ink); border-color: var(--ink); background: var(--warm); }
+
+.tour-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0 14px;
+}
+
+/* Itinerary */
+.itin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.itin-header-label {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+}
+.itin-header-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.itin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.itin-day {
+  border-radius: 3px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+}
+.itin-show  { background: white;        border-left: 3px solid var(--rust);   }
+.itin-drive { background: var(--warm); border-left: 3px solid var(--border); }
+.itin-rest  { background: var(--warm); border-left: 3px solid var(--sage);   }
+
+.itin-date {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.itin-type-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.itin-city {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.itin-drive-detail {
+  font-size: 0.8rem;
+  color: #5a5550;
+  font-weight: 300;
+}
+
+.itin-venue {
+  background: var(--warm);
+  border-radius: 2px;
+  padding: 10px 12px;
+  transition: filter 0.2s;
+}
+.itin-venue.blurred {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+.itin-venue-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+.itin-venue-address {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.itin-venue-rating { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--gold); }
+.itin-no-venue {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Paywall overlay */
+.paywall-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; top: 35%;
+  background: linear-gradient(to bottom, rgba(245,240,232,0) 0%, rgba(245,240,232,0.98) 28%);
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 20px;
+}
+.paywall-card {
+  background: white;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  padding: 22px 24px;
+  box-shadow: 5px 5px 0 var(--ink);
+  width: 100%;
+}
+.paywall-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--rust);
+  margin-bottom: 5px;
+}
+.paywall-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem;
+  margin-bottom: 7px;
+}
+.paywall-sub {
+  font-size: 0.8rem;
+  color: #5a5550;
+  font-weight: 300;
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.paywall-btn {
+  width: 100%;
+  background: var(--rust);
+  color: white;
+  border: none;
+  padding: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+.paywall-btn:hover { background: var(--ink); }
+
+/* Map hint badge */
+.map-hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(245,240,232,0.95);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  backdrop-filter: blur(8px);
+  box-shadow: 2px 2px 0 var(--border);
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.4s;
+}
+.map-hint.hidden { opacity: 0; }
+
+/* Tour city search row */
+.tour-city-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tour-city-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 13px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tour-city-input:focus {
+  border-color: var(--rust);
+  box-shadow: 2px 2px 0 rgba(201,75,42,0.12);
+}
+.tour-city-input::placeholder { color: var(--muted); }
+.tour-add-btn {
+  flex-shrink: 0;
+  background: var(--ink);
+  color: var(--cream);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  padding: 10px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+.tour-add-btn:hover { background: var(--rust); border-color: var(--rust); }
+
+/* ── Step 1: Venue selection ── */
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.step-label {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.step-progress {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+.step-progress.complete { color: var(--sage); }
+
+.venue-select-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.venue-select-card.complete { border-color: var(--sage); }
+
+.vsc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--warm);
+}
+.vsc-city {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.vsc-date {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.vsc-venues { padding: 6px 0; }
+
+.vsc-venue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vsc-venue:hover   { background: var(--warm); }
+.vsc-venue.selected {
+  background: rgba(201,75,42,0.05);
+  border-left-color: var(--rust);
+}
+.vsc-venue + .vsc-venue { border-top: 1px solid rgba(14,13,11,0.06); }
+
+.vsc-venue-inner { flex: 1; min-width: 0; }
+.vsc-venue-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.vsc-venue-address {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.vsc-venue-rating {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+
+.vsc-select-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 11px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.vsc-select-btn:hover { border-color: var(--rust); color: var(--rust); }
+.vsc-select-btn.selected {
+  background: var(--rust);
+  border-color: var(--rust);
+  color: white;
+}
+
+.vsc-no-venues {
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Contact button inside the final itinerary show-day cards */
+.itin-contact-btn {
+  display: inline-block;
+  margin-top: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.itin-contact-btn:hover { border-color: var(--rust); color: var(--rust); }
+
+/* Waypoint list items */
+.wp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-bottom: 6px;
+}
+.wp-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: 20px;
+  flex-shrink: 0;
+}
+.wp-city {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--ink);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wp-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.wp-remove:hover { color: var(--rust); }
+
+@media (max-width: 768px) {
+  .tour-layout { grid-template-columns: 1fr; grid-template-rows: auto 400px; }
+  .tour-panel { max-height: 55vh; }
+}
+
+/* Venue select card — action row (Select + More Info buttons) */
+.vsc-venue-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.vsc-info-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.vsc-info-btn:hover { border-color: var(--sage); color: var(--sage); }
+
+/* ── Venue Info Modal ─────────────────────────────────────── */
+.vim-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(14,13,11,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.vim-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vim-modal {
+  position: relative;
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 32px 28px 28px;
+}
+
+.vim-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.15s;
+}
+.vim-close:hover { color: var(--ink); }
+
+.vim-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.vim-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.vim-address {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.vim-google-rating {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.vim-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.vim-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.vim-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.vim-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px 12px;
+}
+
+.vim-score-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.vim-score-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.vim-review {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.vim-review:first-child { border-top: none; }
+
+.vim-review-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.vim-review-band {
+  font-weight: 600;
+  font-size: 0.82rem;
+  flex: 1;
+}
+
+.vim-review-stars {
+  font-size: 0.7rem;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.vim-review-text {
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.vim-no-reviews {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 18px 0;
+}
+
+.vim-loading {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.vim-select-btn {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--ink);
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vim-select-btn:hover { background: var(--rust); }
+.vim-select-btn.selected {
+  background: var(--sage);
+  cursor: default;
+}
+
+/* =============================================
+   PRINT / PDF STYLES  (tour.html only)
+   Triggered by window.print() — hides map and
+   controls, formats itinerary as a clean document.
+   ============================================= */
+@media print {
+  /* Force visibility on (overrides the FOUC guard) */
+  body { visibility: visible !important; background: white; }
+
+  /* Hide everything except the itinerary panel */
+  nav,
+  .toast,
+  .auth-modal-overlay,
+  .tour-map-wrap,
+  .map-hint,
+  .tour-eyebrow,
+  .tour-heading,
+  .tour-sub,
+  #tourGenreArea,
+  .tour-fields,
+  .tour-city-search,
+  .tour-status,
+  #waypointList,
+  #findVenuesBtn,
+  .tour-btn-secondary,
+  .tour-divider,
+  #venueSelectionArea,
+  #downloadItinBtn,
+  .paywall-overlay,
+  #venueInfoModal { display: none !important; }
+
+  /* Reset grid — panel fills full width */
+  .tour-layout {
+    display: block;
+    padding-top: 0;
+    height: auto;
+  }
+  .tour-panel {
+    border: none;
+    padding: 0;
+    overflow: visible;
+    max-height: none;
+  }
+
+  /* Print header above the itinerary */
+  #itinArea {
+    display: block !important;
+  }
+  #itinArea::before {
+    content: "BANDMATE";
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #0e0d0b;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+  #itinArea::after {
+    content: "Tour Itinerary — bandmate.app";
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8a8278;
+    border-bottom: 1.5px solid #0e0d0b;
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+  }
+
+  /* Itinerary layout */
+  .itin-header {
+    margin-bottom: 16px;
+  }
+  .itin-header-label {
+    font-size: 1rem;
+  }
+  .itin-list {
+    gap: 6px;
+    padding-bottom: 0;
+  }
+
+  /* Day cards */
+  .itin-day {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-radius: 0;
+    padding: 10px 14px;
+  }
+  .itin-show  { border-left-width: 3px; }
+  .itin-drive { border-left-width: 3px; }
+  .itin-rest  { border-left-width: 3px; }
+
+  /* Unblur locked venues in print */
+  .itin-venue.blurred {
+    filter: none !important;
+    user-select: auto;
+    pointer-events: auto;
+  }
+}
