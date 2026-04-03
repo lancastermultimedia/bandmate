@@ -2207,6 +2207,17 @@ footer {
   color: white;
 }
 
+.vsc-search-note {
+  padding: 6px 14px 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sage);
+  border-bottom: 1px solid var(--border);
+  background: rgba(90,122,106,0.06);
+}
+
 .vsc-no-venues {
   padding: 12px 14px;
   font-family: 'Space Mono', monospace;

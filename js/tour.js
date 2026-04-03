@@ -77,6 +77,7 @@ function saveTourState() {
         lat:               toLatLng(wp.latLng).lat(),
         lng:               toLatLng(wp.latLng).lng(),
         city:              wp.city,
+        searchNote:        wp.searchNote || null,
         selectedVenueIndex: wp.selectedVenueIndex ?? null,
         venues: (wp.venueResults || []).map(v => ({
           name:               v.name,
@@ -118,6 +119,7 @@ function restoreTourState() {
         tourWaypoints.push({
           latLng,
           city:               wp.city,
+          searchNote:         wp.searchNote || null,
           selectedVenueIndex: wp.selectedVenueIndex ?? null,
           venueResults: (wp.venues || []).map(v => ({
             name:               v.name,
@@ -377,38 +379,137 @@ function getGenreKeywords() {
   return 'live music bar venue music hall';
 }
 
-function searchVenuesAtWaypoint(index) {
+// Wraps nearbySearch in a Promise; resolves with raw results array (never rejects)
+function nearbySearchPromise(location, radiusMeters) {
   return new Promise(resolve => {
-    const wp = tourWaypoints[index];
     tourPlacesService.nearbySearch(
-      { location: wp.latLng, radius: 8047, type: 'bar', keyword: getGenreKeywords() },
+      { location, radius: radiusMeters, type: 'bar', keyword: getGenreKeywords() },
       (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results?.length) {
-          tourWaypoints[index].venueResults = results
-            .filter(p => {
-              const t = p.types || [];
-              return t.includes('bar') || t.includes('night_club') || t.includes('music_store');
-            })
-            .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-            .slice(0, 3)
-            .map(p => ({
-              name:               p.name,
-              vicinity:           p.vicinity || '',
-              rating:             p.rating   || null,
-              user_ratings_total: p.user_ratings_total || null,
-              place_id:           p.place_id  || null,
-              lat:                p.geometry?.location?.lat() || null,
-              lng:                p.geometry?.location?.lng() || null,
-            }));
-        } else {
-          tourWaypoints[index].venueResults = [];
-        }
-        // Clear stale selection when venues refresh
-        tourWaypoints[index].selectedVenueIndex = null;
-        resolve();
+        resolve(status === google.maps.places.PlacesServiceStatus.OK ? results || [] : []);
       }
     );
   });
+}
+
+// Filter to venue-type places, sort by rating, map to our schema
+function filterAndSortVenues(results) {
+  return (results || [])
+    .filter(p => {
+      const t = p.types || [];
+      return t.includes('bar') || t.includes('night_club') || t.includes('music_store');
+    })
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .map(p => ({
+      name:               p.name,
+      vicinity:           p.vicinity || p.formatted_address || '',
+      rating:             p.rating   || null,
+      user_ratings_total: p.user_ratings_total || null,
+      place_id:           p.place_id  || null,
+      lat:                p.geometry?.location?.lat() || null,
+      lng:                p.geometry?.location?.lng() || null,
+    }));
+}
+
+// Reverse-geocode a LatLng to "City, ST" string
+function geocodeCityName(latLng) {
+  return new Promise(resolve => {
+    new google.maps.Geocoder().geocode({ location: latLng }, (results, status) => {
+      if (status !== 'OK' || !results[0]) { resolve(null); return; }
+      const comps = results[0].address_components;
+      const city  = comps.find(c => c.types.includes('locality') || c.types.includes('sublocality'));
+      const state = comps.find(c => c.types.includes('administrative_area_level_1'));
+      resolve(city && state
+        ? `${city.long_name}, ${state.short_name}`
+        : results[0].formatted_address.split(',').slice(0, 2).join(',').trim());
+    });
+  });
+}
+
+async function searchVenuesAtWaypoint(index) {
+  const wp = tourWaypoints[index];
+  tourWaypoints[index].searchNote = null; // clear stale note from previous search
+
+  // Progressive radii in metres: 5 → 15 → 25 → 40 → 60 miles
+  const RADII_M  = [8047, 24140, 40234, 64374, 96560];
+  const RADII_MI = [5,    15,    25,    40,    60];
+
+  let venues       = [];
+  let usedRadiusMi = RADII_MI[0];
+
+  for (let r = 0; r < RADII_M.length; r++) {
+    usedRadiusMi = RADII_MI[r];
+    if (r > 0) {
+      // Signal to the status bar that we're widening the net
+      setTourStatus('amber', `Stop ${index + 1}: Searching wider area (${usedRadiusMi} mi)…`);
+    }
+    const raw = await nearbySearchPromise(toLatLng(wp.latLng), RADII_M[r]);
+    venues = filterAndSortVenues(raw);
+    if (venues.length >= 3) break;
+  }
+
+  // ── Nearest-city fallback ────────────────────────────────────────────────────
+  // If even 60 mi didn't return 3 venues, try a text search over ~100 miles to
+  // find the closest city that has live music, then shift the waypoint there.
+  if (venues.length < 3) {
+    setTourStatus('amber', `Stop ${index + 1}: Trying nearest city…`);
+    const fbRaw = await new Promise(resolve => {
+      tourPlacesService.textSearch(
+        { query: 'live music bar venue', location: toLatLng(wp.latLng), radius: 160934 },
+        (r, s) => resolve(s === google.maps.places.PlacesServiceStatus.OK ? r || [] : [])
+      );
+    });
+    const fbVenues = filterAndSortVenues(fbRaw);
+
+    if (fbVenues.length > venues.length) {
+      const firstLoc = fbRaw[0]?.geometry?.location;
+      if (firstLoc) {
+        const distMi = Math.round(
+          haversineKm(
+            toLatLng(wp.latLng).lat(), toLatLng(wp.latLng).lng(),
+            firstLoc.lat(), firstLoc.lng()
+          ) * 0.621371
+        );
+
+        if (distMi > 10) {
+          // Far enough away to count as "different city" — shift the waypoint
+          const originalCity = tourWaypoints[index].city || `Stop ${index + 1}`;
+          const fbCityName   = await geocodeCityName(firstLoc);
+
+          tourWaypoints[index].latLng    = firstLoc;
+          tourWaypoints[index].city      = fbCityName || originalCity;
+          tourWaypoints[index].searchNote =
+            `No venues near ${originalCity} — showing venues near ${fbCityName || 'nearby city'}, ${distMi} mi away`;
+
+          // Move map marker to new location
+          if (tourMarkers[index]) {
+            tourMarkers[index].setPosition(firstLoc);
+            updatePolyline();
+            fitBoundsToWaypoints();
+          }
+          renderWaypointList();
+        }
+        venues = fbVenues;
+        usedRadiusMi = distMi;
+      }
+    }
+  }
+
+  // ── Final search note ────────────────────────────────────────────────────────
+  if (!tourWaypoints[index].searchNote) {
+    if (venues.length === 0) {
+      tourWaypoints[index].searchNote = 'No venues found within 60 miles';
+    } else if (venues.length < 3) {
+      tourWaypoints[index].searchNote =
+        `Limited venues in this area — ${venues.length} venue${venues.length !== 1 ? 's' : ''} found within ${usedRadiusMi} miles`;
+    } else if (usedRadiusMi > 5) {
+      tourWaypoints[index].searchNote = `Venues found within ${usedRadiusMi} miles`;
+    } else {
+      tourWaypoints[index].searchNote = null;
+    }
+  }
+
+  tourWaypoints[index].venueResults       = venues.slice(0, 3);
+  tourWaypoints[index].selectedVenueIndex = null;
 }
 
 // Compute estimated show dates from city-centre drive times
@@ -458,11 +559,16 @@ function renderVenueSelection(showDates) {
           </div>`;
         }).join('');
 
+    const noteHtml = wp.searchNote
+      ? `<div class="vsc-search-note">${wp.searchNote}</div>`
+      : '';
+
     return `<div class="venue-select-card${hasSel ? ' complete' : ''}" id="vsc-${wi}">
       <div class="vsc-header">
         <div class="vsc-city">${city}</div>
         <div class="vsc-date">${dateStr}</div>
       </div>
+      ${noteHtml}
       <div class="vsc-venues">${venuesHtml}</div>
     </div>`;
   }).join('');
