@@ -420,9 +420,9 @@ function computeShowDates(driveTimes) {
 
   for (let i = 0; i < driveTimes.length; i++) {
     const driveHours = ((driveTimes[i]?.duration?.value || 0) / 3600);
-    if (driveHours > 4)      date.setDate(date.getDate() + 2); // drive + rest
-    else if (driveHours >= 2) date.setDate(date.getDate() + 1); // drive only
-    // < 2 hrs: same-day travel, no extra days
+    if (driveHours > 6)      date.setDate(date.getDate() + 2); // drive + rest day
+    else if (driveHours >= 4) date.setDate(date.getDate() + 1); // drive day only
+    // < 4 hrs: consecutive day, no extra gap
     dates.push(new Date(date));
     date.setDate(date.getDate() + 1);
   }
@@ -630,10 +630,13 @@ async function getDriveTimesBetweenVenues() {
 
 // ── Itinerary builder ─────────────────────────────────────────────────────────
 //
-// Spacing rules (every show gets its own calendar day):
-//   < 2 hrs  → travel morning + show evening on the same day
-//   2–4 hrs  → dedicated drive day then show day
-//   > 4 hrs  → drive day + rest/arrival day + show day
+// Spacing rules — pack shows as tightly as drive time allows:
+//   < 4 hrs  → consecutive show days (travel morning of show day)
+//   4–6 hrs  → one dedicated drive day, then show
+//   > 6 hrs  → drive day + rest/buffer day + show
+//
+// driveInfo is stored on each show day so renderItinerary can display
+// the drive from the previous stop beneath the show card.
 
 function buildItinerary(driveTimes, isPremium) {
   const startVal  = document.getElementById('tourStartDate').value;
@@ -642,7 +645,7 @@ function buildItinerary(driveTimes, isPremium) {
   const date      = new Date(startDate);
 
   // Opening night — no drive before it
-  days.push({ type: 'show', date: new Date(date), wpIndex: 0, travelNote: null });
+  days.push({ type: 'show', date: new Date(date), wpIndex: 0, driveInfo: null });
   date.setDate(date.getDate() + 1);
 
   for (let i = 0; i < driveTimes.length; i++) {
@@ -651,37 +654,34 @@ function buildItinerary(driveTimes, isPremium) {
     const driveHours = driveSecs / 3600;
     const driveText  = leg?.duration?.text  || null;
     const distText   = leg?.distance?.text  || '';
+    const driveInfo  = driveText
+      ? `${driveText}${distText ? ' · ' + distText : ''}`
+      : null;
 
-    if (driveHours > 0 && driveHours < 2) {
-      // Same day: travel in the morning, show that evening
-      days.push({
-        type: 'show', date: new Date(date), wpIndex: i + 1,
-        travelNote: `${driveText}${distText ? ' · ' + distText : ''} — travel morning, show evening`,
-      });
+    if (!driveText || driveSecs === 0) {
+      // Drive time unavailable — schedule next day anyway
+      days.push({ type: 'show', date: new Date(date), wpIndex: i + 1, driveInfo: null });
       date.setDate(date.getDate() + 1);
 
-    } else if (driveHours >= 2 && driveHours <= 4) {
-      // Dedicated drive day then show day
+    } else if (driveHours < 4) {
+      // Under 4 hrs: show the very next day, travel morning of show
+      days.push({ type: 'show', date: new Date(date), wpIndex: i + 1, driveInfo });
+      date.setDate(date.getDate() + 1);
+
+    } else if (driveHours <= 6) {
+      // 4–6 hrs: one dedicated drive day, then show
       days.push({ type: 'drive', date: new Date(date), driveText, distText, from: i, to: i + 1 });
       date.setDate(date.getDate() + 1);
-      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, travelNote: null });
+      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, driveInfo });
       date.setDate(date.getDate() + 1);
 
-    } else if (driveHours > 4) {
-      // Long haul: drive day + rest/arrival day + show day
+    } else {
+      // Over 6 hrs: drive day + rest/buffer day + show
       days.push({ type: 'drive', date: new Date(date), driveText, distText, from: i, to: i + 1 });
       date.setDate(date.getDate() + 1);
       days.push({ type: 'rest',  date: new Date(date), wpIndex: i + 1 });
       date.setDate(date.getDate() + 1);
-      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, travelNote: null });
-      date.setDate(date.getDate() + 1);
-
-    } else {
-      // Drive time unavailable — show still gets its own day
-      days.push({
-        type: 'show', date: new Date(date), wpIndex: i + 1,
-        travelNote: 'Drive time unavailable',
-      });
+      days.push({ type: 'show',  date: new Date(date), wpIndex: i + 1, driveInfo });
       date.setDate(date.getDate() + 1);
     }
   }
@@ -731,8 +731,8 @@ function renderItinerary(days, isPremium) {
     const city     = wp?.city || `Stop ${day.wpIndex + 1}`;
     const venue    = wp?.venueResults?.[wp?.selectedVenueIndex];
 
-    const travelHtml = day.travelNote
-      ? `<div class="itin-drive-detail" style="margin-bottom:8px">${day.travelNote}</div>`
+    const travelHtml = day.driveInfo
+      ? `<div class="itin-drive-detail" style="margin-bottom:8px">↳ ${day.driveInfo} from previous stop</div>`
       : '';
 
     let venueHtml = '';
