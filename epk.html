@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPK — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>body { visibility: hidden; }</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- EPK NAV -->
+<div class="epk-nav">
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
+  <a href="index.html" class="nav-cta" style="font-size:0.56rem">Find Venues →</a>
+</div>
+
+<!-- EPK CONTENT -->
+<div class="epk-page">
+  <div class="epk-wrap" id="epkMount">
+    <!-- populated by epk.js -->
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/epk.js"></script>
+</body>
+</html>

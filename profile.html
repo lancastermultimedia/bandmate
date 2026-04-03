@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Profile — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>body { visibility: hidden; }</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Find Venues</a></li>
+    <li><a href="index.html#how-it-works">How It Works</a></li>
+    <li><a href="index.html" onclick="sessionStorage.setItem('openReviewModal','1')">Leave a Review</a></li>
+    <li><a href="tour.html">Tour Planner</a></li>
+    <li id="navAuthArea" style="display:contents">
+      <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
+    </li>
+  </ul>
+</nav>
+
+<!-- AUTH MODAL -->
+<div class="auth-modal-overlay" id="authModal">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;margin-bottom:6px">Join Bandmate</div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px">The venue guide built for bands</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signup')">Sign Up</button>
+      <button class="auth-tab" onclick="switchAuthTab('login')">Log In</button>
+    </div>
+    <div id="signupForm">
+      <div class="auth-field"><label>Band Name</label><input type="text" id="signupBandName" placeholder="Your band name"></div>
+      <div class="auth-field"><label>Genre</label>
+        <select id="signupGenre">
+          <option value="">Select your genre...</option>
+          <option>Indie / Alt</option><option>Folk / Acoustic</option><option>Punk / Metal</option>
+          <option>Jazz / Blues</option><option>Hip-Hop</option><option>Country</option>
+          <option>Rock</option><option>Electronic</option><option>R&B / Soul</option><option>Other</option>
+        </select>
+      </div>
+      <div class="auth-field"><label>Home City</label><input type="text" id="signupCity" placeholder="e.g. Lexington, KY"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="signupEmail" placeholder="your@email.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="signupPassword" placeholder="Min 6 characters"></div>
+      <button class="auth-submit" onclick="handleSignup()">Create Free Account →</button>
+    </div>
+    <div id="loginForm" style="display:none">
+      <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Your password"></div>
+      <button class="auth-submit" onclick="handleLogin()">Log In →</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE (logged in) -->
+<main class="profile-page" id="profilePage" style="display:none">
+
+  <!-- Hero band -->
+  <div class="profile-hero-band">
+    <div class="profile-wrap">
+      <div class="profile-hero">
+
+        <!-- Photo -->
+        <div class="profile-photo-wrap">
+          <div id="profilePhotoEl"></div>
+          <button class="profile-photo-edit-btn" title="Change photo" onclick="document.getElementById('photoInput').click()">✎</button>
+          <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
+        </div>
+
+        <!-- Info -->
+        <div class="profile-info">
+          <div class="profile-name-row">
+            <h1 class="profile-name" id="profileName">—</h1>
+            <span class="profile-premium-badge" id="profileBadge" style="display:none">Community Premium</span>
+          </div>
+          <div class="profile-meta" id="profileMeta"></div>
+          <div class="profile-action-btns" id="profileActions" style="display:none">
+            <a id="epkPageLink" href="#" class="profile-action-btn profile-action-btn-primary">Your EPK Page →</a>
+            <button class="profile-action-btn profile-action-btn-secondary" onclick="showComingSoon()">Analytics</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-wrap profile-body">
+
+    <!-- Edit Profile (premium only) -->
+    <div class="profile-section" id="editSection" style="display:none">
+      <div class="profile-section-title">Edit Profile</div>
+      <div class="profile-field">
+        <label>Bio</label>
+        <textarea id="profileBio" rows="4" placeholder="Tell bookers about your band — where you're from, your sound, your story..."></textarea>
+      </div>
+      <div class="profile-field">
+        <label>Website</label>
+        <input type="url" id="profileWebsite" placeholder="https://yourband.com">
+      </div>
+      <div class="profile-field">
+        <label>Spotify Artist URL</label>
+        <input type="url" id="profileSpotify" placeholder="https://open.spotify.com/artist/...">
+      </div>
+      <div class="profile-field">
+        <label>Instagram URL</label>
+        <input type="url" id="profileInstagram" placeholder="https://instagram.com/yourband">
+      </div>
+      <button class="profile-save-btn" onclick="saveProfileEdits()">Save Changes →</button>
+    </div>
+
+    <!-- Review progress (free only) -->
+    <div class="profile-section" id="progressSection" style="display:none">
+      <div class="profile-section-title">Unlock Community Premium</div>
+      <div class="progress-label" id="progressLabel"></div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-sub">Leave reviews after shows to unlock free Community Premium access — EPK page, profile editing, and more.</div>
+    </div>
+
+    <!-- Review history -->
+    <div class="profile-section">
+      <div class="profile-section-title">Venues You've Reviewed</div>
+      <div id="reviewHistoryList"><div class="profile-no-reviews">Loading...</div></div>
+    </div>
+
+    <!-- Coming soon (premium only) -->
+    <div id="premiumExtras" style="display:none">
+      <div class="profile-section">
+        <div class="profile-section-title">Saved Tour Routes</div>
+        <div class="coming-soon-body">Save and revisit your Tour Planner routes — coming soon.</div>
+      </div>
+    </div>
+
+    <!-- Upgrade CTA (free only) -->
+    <div class="profile-section upgrade-section" id="upgradeSection" style="display:none">
+      <div class="profile-section-title">What You Unlock With Community Premium</div>
+      <div class="upgrade-features">
+        <div class="upgrade-feature">✦ &nbsp;Public EPK page to share with bookers and festivals</div>
+        <div class="upgrade-feature">✦ &nbsp;Add your bio, website, Spotify, and Instagram</div>
+        <div class="upgrade-feature">✦ &nbsp;Tour analytics — see which cities book most (coming soon)</div>
+        <div class="upgrade-feature">✦ &nbsp;Saved tour routes from the Tour Planner (coming soon)</div>
+        <div class="upgrade-feature">✦ &nbsp;Unlimited venue results in Tour Planner</div>
+      </div>
+      <div class="upgrade-remaining" id="upgradeRemaining"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- NOT LOGGED IN -->
+<div class="profile-not-authed" id="profileNotAuthed" style="display:none">
+  <div class="pna-title">Sign in to view your profile.</div>
+  <button class="pna-btn" onclick="openAuth('login')">Log In →</button>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/profile.js"></script>
+</body>
+</html>
