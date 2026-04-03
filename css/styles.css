@@ -3195,3 +3195,107 @@ footer {
   font-size: 0.86rem;
   color: var(--muted);
 }
+
+/* EPK press photos grid */
+.epk-press-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.epk-press-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+}
+
+/* ── Press Photos (profile page) ── */
+.profile-section-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.profile-section-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.press-photos-usage {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.press-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 3px;
+  padding: 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  user-select: none;
+}
+.press-upload-area:hover  { border-color: var(--ink); }
+.press-upload-area.drag-over {
+  border-color: var(--rust);
+  background: rgba(201,75,42,0.04);
+}
+.press-upload-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.press-upload-label {
+  font-size: 0.86rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.press-upload-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.press-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.press-photo-thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--warm);
+  border: 1px solid var(--border);
+}
+.press-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.press-photo-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(14,13,11,0.72);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.press-photo-thumb:hover .press-photo-delete { opacity: 1; }

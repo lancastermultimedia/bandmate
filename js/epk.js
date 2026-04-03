@@ -13,13 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Convert slug → approximate name for search ("the-midnight" → "the midnight")
   const nameSearch = slug.replace(/-/g, ' ');
 
-  // Fetch band — case-insensitive match
   const { data: bands } = await sb
     .from('bands')
-    .select('id, band_name, genre, home_city, bio, website, spotify_url, instagram_url, photo_url, is_premium, review_count')
+    .select('id, band_name, genre, home_city, bio, website, spotify_url, instagram_url, profile_photo_url, is_premium, review_count')
     .ilike('band_name', nameSearch)
     .limit(1);
 
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Check premium access
   const isPremium = band.is_premium === true
     || (band.review_count || 0) >= 5
     || band.band_name === 'Campers';
@@ -42,27 +39,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Update page title
   document.title = `${band.band_name} — EPK · Bandmate`;
 
-  // Fetch recent reviews
-  const { data: reviews } = await sb
-    .from('reviews')
-    .select('venue_name, overall_rating, review_text, created_at')
-    .eq('band_id', band.id)
-    .order('created_at', { ascending: false })
-    .limit(3);
+  // Fetch reviews and press photos in parallel
+  const [reviewsRes, photosRes] = await Promise.all([
+    sb.from('reviews')
+      .select('venue_name, overall_rating, review_text, created_at')
+      .eq('band_id', band.id)
+      .order('created_at', { ascending: false })
+      .limit(3),
+    sb.from('band_photos')
+      .select('photo_url')
+      .eq('band_id', band.id)
+      .order('created_at', { ascending: false }),
+  ]);
 
-  renderEPK(band, reviews || []);
+  renderEPK(band, reviewsRes.data || [], photosRes.data || []);
   document.body.style.visibility = 'visible';
 });
 
 // ── Render full EPK ───────────────────────────────────────────────────────────
 
-function renderEPK(band, reviews) {
+function renderEPK(band, reviews, pressPhotos) {
   const initial   = (band.band_name || 'B')[0].toUpperCase();
-  const photoHtml = band.photo_url
-    ? `<img src="${band.photo_url}" class="epk-photo" alt="${band.band_name}">`
+  const photoHtml = band.profile_photo_url
+    ? `<img src="${band.profile_photo_url}" class="epk-photo" alt="${escHtml(band.band_name)}">`
     : `<div class="epk-photo-init">${initial}</div>`;
 
   // Social links
@@ -70,41 +71,46 @@ function renderEPK(band, reviews) {
   if (band.spotify_url)   linkBtns.push(`<a href="${band.spotify_url}" target="_blank" rel="noopener" class="epk-link-btn epk-link-spotify">Spotify</a>`);
   if (band.instagram_url) linkBtns.push(`<a href="${band.instagram_url}" target="_blank" rel="noopener" class="epk-link-btn epk-link-instagram">Instagram</a>`);
   if (band.website)       linkBtns.push(`<a href="${band.website}" target="_blank" rel="noopener" class="epk-link-btn epk-link-website">Website</a>`);
-  const linksHtml = linkBtns.length
-    ? `<div class="epk-links">${linkBtns.join('')}</div>`
-    : '';
+  const linksHtml = linkBtns.length ? `<div class="epk-links">${linkBtns.join('')}</div>` : '';
 
-  // Bio section
-  const bioHtml = band.bio
-    ? `<div class="epk-section">
-        <div class="epk-section-label">About</div>
-        <div class="epk-bio">${escHtml(band.bio)}</div>
-       </div>`
-    : '';
+  // Bio
+  const bioHtml = band.bio ? `
+    <div class="epk-section">
+      <div class="epk-section-label">About</div>
+      <div class="epk-bio">${escHtml(band.bio)}</div>
+    </div>` : '';
 
-  // Reviews section
-  const reviewsHtml = reviews.length
-    ? `<div class="epk-section">
-        <div class="epk-section-label">On Tour — Recent Venues</div>
-        ${reviews.map(r => {
-          const stars = '★'.repeat(r.overall_rating || 0) + '☆'.repeat(5 - (r.overall_rating || 0));
-          const d     = new Date(r.created_at);
-          const date  = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-          return `<div class="epk-review-item">
-            <div class="epk-review-venue">${escHtml(r.venue_name || 'Venue')}</div>
-            <div class="epk-review-meta">${stars} · ${date}</div>
-            ${r.review_text ? `<div class="epk-review-text">${escHtml(r.review_text)}</div>` : ''}
-          </div>`;
-        }).join('')}
-       </div>`
-    : '';
+  // Recent venue reviews
+  const reviewsHtml = reviews.length ? `
+    <div class="epk-section">
+      <div class="epk-section-label">On Tour — Recent Venues</div>
+      ${reviews.map(r => {
+        const stars = '★'.repeat(r.overall_rating || 0) + '☆'.repeat(5 - (r.overall_rating || 0));
+        const d     = new Date(r.created_at);
+        const date  = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+        return `<div class="epk-review-item">
+          <div class="epk-review-venue">${escHtml(r.venue_name || 'Venue')}</div>
+          <div class="epk-review-meta">${stars} · ${date}</div>
+          ${r.review_text ? `<div class="epk-review-text">${escHtml(r.review_text)}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // Press photos grid
+  const pressHtml = pressPhotos.length ? `
+    <div class="epk-section">
+      <div class="epk-section-label">Press Photos — right-click to save</div>
+      <div class="epk-press-grid">
+        ${pressPhotos.map(p => `<img src="${p.photo_url}" class="epk-press-photo" alt="${escHtml(band.band_name)} press photo" loading="lazy">`).join('')}
+      </div>
+    </div>` : '';
 
   // Book This Band mailto
-  const subject = encodeURIComponent(`Booking Inquiry — ${band.band_name}`);
-  const body    = encodeURIComponent(
+  const subject    = encodeURIComponent(`Booking Inquiry — ${band.band_name}`);
+  const mailtoBody = encodeURIComponent(
     `Hi,\n\nI found ${band.band_name} on Bandmate and I'm interested in booking you for a show.\n\nGenre: ${band.genre || '—'}\nHome City: ${band.home_city || '—'}\n\nPlease let me know your availability and rates.\n\nThanks!`
   );
-  const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+  const mailtoLink = `mailto:?subject=${subject}&body=${mailtoBody}`;
 
   document.getElementById('epkMount').innerHTML = `
     <div class="epk-hero">
@@ -119,6 +125,7 @@ function renderEPK(band, reviews) {
 
     ${bioHtml}
     ${reviewsHtml}
+    ${pressHtml}
 
     <div class="epk-book-section">
       <div class="epk-book-title">Book ${escHtml(band.band_name)}</div>
@@ -132,7 +139,7 @@ function renderEPK(band, reviews) {
   `;
 }
 
-// ── Not found state ───────────────────────────────────────────────────────────
+// ── Not found ─────────────────────────────────────────────────────────────────
 
 function renderNotFound(msg) {
   document.getElementById('epkMount').innerHTML = `
@@ -153,5 +160,3 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-// showToast is defined in auth.js (shared via script load order)

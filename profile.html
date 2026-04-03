@@ -106,6 +106,10 @@
         <textarea id="profileBio" rows="4" placeholder="Tell bookers about your band — where you're from, your sound, your story..."></textarea>
       </div>
       <div class="profile-field">
+        <label>Home City</label>
+        <input type="text" id="profileCity" placeholder="e.g. Nashville, TN">
+      </div>
+      <div class="profile-field">
         <label>Website</label>
         <input type="url" id="profileWebsite" placeholder="https://yourband.com">
       </div>
@@ -117,7 +121,23 @@
         <label>Instagram URL</label>
         <input type="url" id="profileInstagram" placeholder="https://instagram.com/yourband">
       </div>
-      <button class="profile-save-btn" onclick="saveProfileEdits()">Save Changes →</button>
+      <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileEdits()">Save Changes →</button>
+    </div>
+
+    <!-- Press Photos (all users) -->
+    <div class="profile-section" id="pressPhotosSection" style="display:none">
+      <div class="profile-section-title-row">
+        <div class="profile-section-title" style="margin-bottom:0">Press Photos</div>
+        <div class="press-photos-usage" id="pressPhotosUsage"></div>
+      </div>
+      <div class="profile-section-sub">High resolution photos for venues and media</div>
+      <div class="press-upload-area" id="pressUploadArea">
+        <div class="press-upload-icon">+</div>
+        <div class="press-upload-label">Click or drag photos here</div>
+        <div class="press-upload-sub">JPG, PNG · Max 10 MB each</div>
+        <input type="file" id="pressPhotoInput" accept="image/*" multiple style="display:none" onchange="handlePressPhotoUpload(this)">
+      </div>
+      <div class="press-photos-grid" id="pressPhotosGrid"></div>
     </div>
 
     <!-- Review progress (free only) -->
