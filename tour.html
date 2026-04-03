@@ -50,19 +50,12 @@
       </div>
       <div class="auth-field">
         <label>Genre</label>
-        <select id="signupGenre">
-          <option value="">Select your genre...</option>
-          <option>Indie / Alt</option>
-          <option>Folk / Acoustic</option>
-          <option>Punk / Metal</option>
-          <option>Jazz / Blues</option>
-          <option>Hip-Hop</option>
-          <option>Country</option>
-          <option>Rock</option>
-          <option>Electronic</option>
-          <option>R&B / Soul</option>
-          <option>Other</option>
-        </select>
+        <div class="genre-chips-wrap" id="signupGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row">
+          <input type="text" id="signupGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('signupGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
       </div>
       <div class="auth-field">
         <label>Home City</label>

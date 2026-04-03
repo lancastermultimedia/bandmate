@@ -48,6 +48,7 @@ function toggleReviewForm() {
     if (currentUser && currentBandProfile) {
       document.getElementById('vrfLoginPrompt').style.display  = 'none';
       document.getElementById('vrfFormFields').style.display   = 'block';
+      loadGenreChips('vrfGenreChips');
     } else {
       document.getElementById('vrfLoginPrompt').style.display  = 'block';
       document.getElementById('vrfFormFields').style.display   = 'none';
@@ -145,7 +146,7 @@ async function submitReview() {
   }
 
   const text  = document.getElementById('vrfText').value.trim();
-  const genre = document.getElementById('vrfGenre').value;
+  const genre = getSelectedGenres('vrfGenreChips')[0] || null;
   if (!vrfStarRating)    { showToast('Please select a star rating', 'error'); return; }
   if (text.length < 50)  { showToast('Please write at least 50 characters', 'error'); return; }
 

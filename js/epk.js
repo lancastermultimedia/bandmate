@@ -15,12 +15,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const nameSearch = slug.replace(/-/g, ' ');
 
-  const { data: bands } = await sb
-    .from('bands')
-    .select('id, band_name, genre, home_city, bio, website, spotify_url, instagram_url, profile_photo_url, is_premium, review_count')
-    .ilike('band_name', nameSearch)
-    .limit(1);
+  // Load band data and current auth session in parallel
+  const [bandsRes] = await Promise.all([
+    sb.from('bands')
+      .select('id, band_name, genre, home_city, bio, website, spotify_url, instagram_url, profile_photo_url, is_premium, review_count')
+      .ilike('band_name', nameSearch)
+      .limit(1),
+    initAuth(),
+  ]);
 
+  const { data: bands } = bandsRes;
   const band = bands?.[0];
 
   if (!band) {
@@ -54,9 +58,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       .order('created_at', { ascending: false }),
   ]);
 
+  // Show owner buttons if the logged-in band is the EPK owner
+  if (currentBandProfile && currentBandProfile.id === band.id) {
+    const ownerArea = document.getElementById('epkOwnerArea');
+    if (ownerArea) ownerArea.style.display = 'flex';
+    // Hide the generic "Find Venues" link to keep nav clean for owner
+    const findLink = document.getElementById('epkFindVenuesLink');
+    if (findLink) findLink.style.display = 'none';
+  }
+
   renderEPK(band, reviewsRes.data || [], photosRes.data || []);
   document.body.style.visibility = 'visible';
 });
+
+function shareEPK() {
+  const url = window.location.href;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Link copied!', 'success'))
+      .catch(() => fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+}
+
+function fallbackCopy(text) {
+  const el = document.createElement('input');
+  el.value = text;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  showToast('Link copied!', 'success');
+}
 
 // ── Render full EPK ───────────────────────────────────────────────────────────
 

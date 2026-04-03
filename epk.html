@@ -18,7 +18,11 @@
 <!-- EPK NAV -->
 <div class="epk-nav">
   <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
-  <a href="index.html" class="nav-cta" style="font-size:0.56rem">Find Venues →</a>
+  <div id="epkOwnerArea" class="epk-owner-area" style="display:none">
+    <a href="profile.html" class="epk-owner-btn epk-owner-btn-primary">Edit Profile</a>
+    <button class="epk-owner-btn" onclick="shareEPK()">Share EPK</button>
+  </div>
+  <a href="index.html" class="nav-cta" style="font-size:0.56rem" id="epkFindVenuesLink">Find Venues →</a>
 </div>
 
 <!-- EPK CONTENT -->

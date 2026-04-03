@@ -42,13 +42,14 @@
     </div>
     <div id="signupForm">
       <div class="auth-field"><label>Band Name</label><input type="text" id="signupBandName" placeholder="Your band name"></div>
-      <div class="auth-field"><label>Genre</label>
-        <select id="signupGenre">
-          <option value="">Select your genre...</option>
-          <option>Indie / Alt</option><option>Folk / Acoustic</option><option>Punk / Metal</option>
-          <option>Jazz / Blues</option><option>Hip-Hop</option><option>Country</option>
-          <option>Rock</option><option>Electronic</option><option>R&B / Soul</option><option>Other</option>
-        </select>
+      <div class="auth-field">
+        <label>Genre</label>
+        <div class="genre-chips-wrap" id="signupGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row">
+          <input type="text" id="signupGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('signupGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
       </div>
       <div class="auth-field"><label>Home City</label><input type="text" id="signupCity" placeholder="e.g. Lexington, KY"></div>
       <div class="auth-field"><label>Email</label><input type="email" id="signupEmail" placeholder="your@email.com"></div>
@@ -104,6 +105,15 @@
       <div class="profile-field">
         <label>Bio</label>
         <textarea id="profileBio" rows="4" placeholder="Tell bookers about your band — where you're from, your sound, your story..."></textarea>
+      </div>
+      <div class="profile-field">
+        <label>Genres</label>
+        <div class="genre-chips-wrap" id="profileGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row">
+          <input type="text" id="profileGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('profileGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
       </div>
       <div class="profile-field">
         <label>Home City</label>

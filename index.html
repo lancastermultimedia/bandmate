@@ -58,19 +58,12 @@
       </div>
       <div class="auth-field">
         <label>Genre</label>
-        <select id="signupGenre">
-          <option value="">Select your genre...</option>
-          <option>Indie / Alt</option>
-          <option>Folk / Acoustic</option>
-          <option>Punk / Metal</option>
-          <option>Jazz / Blues</option>
-          <option>Hip-Hop</option>
-          <option>Country</option>
-          <option>Rock</option>
-          <option>Electronic</option>
-          <option>R&B / Soul</option>
-          <option>Other</option>
-        </select>
+        <div class="genre-chips-wrap" id="signupGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row">
+          <input type="text" id="signupGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('signupGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
       </div>
       <div class="auth-field">
         <label>Home City</label>
@@ -166,19 +159,12 @@
 
         <div class="auth-field" style="margin-bottom:16px">
           <label>Genre You Played</label>
-          <select id="vrfGenre">
-            <option value="">Select genre...</option>
-            <option>Indie / Alt</option>
-            <option>Folk / Acoustic</option>
-            <option>Punk / Metal</option>
-            <option>Jazz / Blues</option>
-            <option>Hip-Hop</option>
-            <option>Country</option>
-            <option>Rock</option>
-            <option>Electronic</option>
-            <option>R&B / Soul</option>
-            <option>Other</option>
-          </select>
+          <div class="genre-chips-wrap" id="vrfGenreChips" data-max="1"><div class="genre-chips-loading">Loading…</div></div>
+          <div class="genre-custom-row">
+            <input type="text" id="vrfGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+            <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('vrfGenreChips')">Add</button>
+          </div>
+          <div class="genre-chips-hint">Can't find yours? Add it below</div>
         </div>
 
         <div class="vrf-sliders">
@@ -226,9 +212,9 @@
 
   <!-- LEFT PANEL -->
   <div class="hero-panel">
-    <div class="hero-eyebrow">For bands on the road</div>
+    <div class="hero-eyebrow">For independent bands everywhere</div>
     <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
-    <p class="hero-sub">Real venue reviews from real bands. Find places that fit your sound and treat musicians right.</p>
+    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
 
     <!-- SEARCH -->
     <div class="search-wrap">
@@ -292,28 +278,28 @@
 
 <!-- HOW IT WORKS -->
 <section class="section reveal" id="how-it-works">
-  <div class="section-label">How it works</div>
-  <h2 class="section-title">Built by musicians, for musicians.</h2>
-  <p class="section-sub">No booking agents. No gatekeepers. Just honest intel from bands who've been there.</p>
+  <div class="section-label">What Bandmate does</div>
+  <h2 class="section-title">Every tool you need to play further.</h2>
+  <p class="section-sub">Made for independent bands ready to take their music on the road.</p>
 
   <div class="steps">
     <div class="step">
       <div class="step-num">01</div>
       <span class="step-icon">01 —</span>
-      <h3 class="step-title">Find Venues Near You</h3>
-      <p class="step-desc">Search any city or use your location. Bandmate pulls real bars and venues from Google Maps and layers on band reviews.</p>
+      <h3 class="step-title">Discover Venues</h3>
+      <p class="step-desc">Search any city and find bars and venues reviewed by bands who have actually played there. Real scores on sound, hospitality, merch, and more.</p>
     </div>
     <div class="step">
       <div class="step-num">02</div>
       <span class="step-icon">02 —</span>
-      <h3 class="step-title">Filter What Matters</h3>
-      <p class="step-desc">Sort by sound quality, genre fit, hospitality, merch deal, and parking. Find the right room for your sound and budget.</p>
+      <h3 class="step-title">Plan Your Tour</h3>
+      <p class="step-desc">Draw your route, pick your cities, and let Bandmate build your itinerary with venue recommendations matched to your sound.</p>
     </div>
     <div class="step">
       <div class="step-num">03</div>
       <span class="step-icon">03 —</span>
-      <h3 class="step-title">Contact the Venue</h3>
-      <p class="step-desc">We surface the venue's booking contact from the web. Reach out with a pre-filled pitch template — no booking agent needed.</p>
+      <h3 class="step-title">Share Your Story</h3>
+      <p class="step-desc">Your Bandmate profile is your EPK. One link sends venues everything they need — your music, photos, bio, and reviews all in one place.</p>
     </div>
   </div>
 </section>

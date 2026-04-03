@@ -3196,6 +3196,112 @@ footer {
   color: var(--muted);
 }
 
+/* EPK owner action buttons */
+.epk-owner-area {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.epk-owner-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 7px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-block;
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+}
+.epk-owner-btn:hover { border-color: var(--rust); color: var(--rust); }
+.epk-owner-btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--cream);
+}
+.epk-owner-btn-primary:hover { background: var(--rust); border-color: var(--rust); color: white; }
+
+/* ── Genre chip picker ── */
+.genre-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.genre-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.13s;
+  white-space: nowrap;
+}
+.genre-chip:hover  { border-color: var(--rust); color: var(--rust); }
+.genre-chip-active {
+  background: var(--rust);
+  border-color: var(--rust);
+  color: white;
+}
+.genre-chip-active:hover { background: var(--rust-light); border-color: var(--rust-light); color: white; }
+.genre-chips-loading {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.genre-custom-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.genre-custom-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--warm);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.genre-custom-input:focus { outline: none; border-color: var(--ink); }
+.genre-custom-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 2px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.13s;
+}
+.genre-custom-btn:hover { border-color: var(--ink); background: var(--ink); color: var(--cream); }
+.genre-chips-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.48rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
 /* EPK press photos grid */
 .epk-press-grid {
   display: grid;

@@ -68,7 +68,7 @@ async function checkPremiumAccess(band_id) {
 function openAuth(tab) {
   document.getElementById('authModal').classList.add('open');
   if (tab === 'login') switchAuthTab('login');
-  else switchAuthTab('signup');
+  else { switchAuthTab('signup'); loadGenreChips('signupGenreChips'); }
   return false;
 }
 
@@ -83,16 +83,17 @@ function switchAuthTab(tab) {
   );
   document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
   document.getElementById('loginForm').style.display  = tab === 'login'  ? 'block' : 'none';
+  if (tab === 'signup') loadGenreChips('signupGenreChips');
 }
 
 async function handleSignup() {
   const bandName = document.getElementById('signupBandName').value.trim();
-  const genre    = document.getElementById('signupGenre').value;
+  const genre    = getSelectedGenres('signupGenreChips').join(', ');
   const city     = document.getElementById('signupCity').value.trim();
   const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
   if (!bandName || !genre || !city || !email || !password) {
-    showAuthMsg('Please fill in all fields', 'error'); return;
+    showAuthMsg('Please fill in all fields — select at least one genre', 'error'); return;
   }
   if (password.length < 6) { showAuthMsg('Password must be at least 6 characters', 'error'); return; }
   const { error } = await sb.auth.signUp({ email, password });
@@ -100,6 +101,106 @@ async function handleSignup() {
   await sb.from('bands').insert({ email, band_name: bandName, genre, home_city: city, is_premium: false });
   showAuthMsg('Welcome to Bandmate! Check your email to confirm.', 'success');
   setTimeout(() => closeAuth(), 2500);
+}
+
+// ── Genre chip picker ─────────────────────────────────────────────────────────
+
+let _genreCache   = null;   // cached list of genre names sorted by popularity
+const _genreState = {};     // containerId → Set of selected names
+
+async function loadGenreChips(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const max = parseInt(el.dataset.max) || 3;
+
+  if (!_genreCache) {
+    el.innerHTML = '<div class="genre-chips-loading">Loading…</div>';
+    const { data } = await sb.from('genres').select('name').order('count', { ascending: false }).limit(40);
+    _genreCache = (data || []).map(g => g.name);
+  }
+
+  _genreState[containerId] = _genreState[containerId] || new Set();
+  renderGenreChips(containerId, max);
+}
+
+function renderGenreChips(containerId, max) {
+  const el  = document.getElementById(containerId);
+  if (!el || !_genreCache) return;
+  const sel = _genreState[containerId] || new Set();
+  el.innerHTML = _genreCache.map(name => {
+    const safeName = name.replace(/'/g, "\\'");
+    const active   = sel.has(name) ? 'genre-chip-active' : '';
+    return `<button type="button" class="genre-chip ${active}"
+      onclick="toggleGenreChip('${containerId}',this,'${safeName}',${max})">${name}</button>`;
+  }).join('');
+}
+
+function toggleGenreChip(containerId, btn, name, max) {
+  const sel = _genreState[containerId] = _genreState[containerId] || new Set();
+  if (sel.has(name)) {
+    sel.delete(name);
+    btn.classList.remove('genre-chip-active');
+  } else {
+    if (sel.size >= max) {
+      showToast(`Select up to ${max} genre${max !== 1 ? 's' : ''}`, 'error');
+      return;
+    }
+    sel.add(name);
+    btn.classList.add('genre-chip-active');
+  }
+}
+
+function getSelectedGenres(containerId) {
+  return Array.from(_genreState[containerId] || []);
+}
+
+function preselectGenres(containerId, genreStr) {
+  if (!genreStr) return;
+  const names = genreStr.split(',').map(s => s.trim()).filter(Boolean);
+  const sel   = _genreState[containerId] = _genreState[containerId] || new Set();
+  names.forEach(n => sel.add(n));
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.querySelectorAll('.genre-chip').forEach(chip => {
+    if (sel.has(chip.textContent.trim())) chip.classList.add('genre-chip-active');
+    else chip.classList.remove('genre-chip-active');
+  });
+}
+
+async function addCustomGenreFromInput(containerId) {
+  const inputId = containerId.replace('Chips', 'CustomInput');
+  const inputEl = document.getElementById(inputId);
+  const name    = (inputEl?.value || '').trim();
+  if (!name) return;
+
+  const el  = document.getElementById(containerId);
+  const max = parseInt(el?.dataset.max) || 3;
+
+  // Upsert into genres table
+  const { data: existing } = await sb.from('genres').select('id, count').ilike('name', name).maybeSingle();
+  if (existing) {
+    await sb.from('genres').update({ count: (existing.count || 1) + 1 }).eq('id', existing.id);
+  } else {
+    await sb.from('genres').insert({ name, count: 1 });
+  }
+
+  // Add to cache if new
+  if (_genreCache && !_genreCache.find(n => n.toLowerCase() === name.toLowerCase())) {
+    _genreCache.push(name);
+  }
+
+  // Re-render chips and auto-select the new one
+  renderGenreChips(containerId, max);
+  const sel = _genreState[containerId] = _genreState[containerId] || new Set();
+  if (sel.size < max) {
+    sel.add(name);
+    // Find and highlight the chip
+    el?.querySelectorAll('.genre-chip').forEach(chip => {
+      if (chip.textContent.trim() === name) chip.classList.add('genre-chip-active');
+    });
+  }
+
+  if (inputEl) inputEl.value = '';
 }
 
 async function handleLogin() {

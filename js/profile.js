@@ -90,6 +90,10 @@ async function renderProfile() {
     document.getElementById('profileWebsite').value   = bp.website       || '';
     document.getElementById('profileSpotify').value   = bp.spotify_url   || '';
     document.getElementById('profileInstagram').value = bp.instagram_url || '';
+    // Load genre chips and pre-select saved genres
+    loadGenreChips('profileGenreChips').then(() => {
+      preselectGenres('profileGenreChips', bp.genre);
+    });
   }
 
   // ── Press photos (shown to all logged-in users) ──
@@ -193,12 +197,13 @@ async function saveProfileEdits() {
 
   const bio       = document.getElementById('profileBio').value.trim();
   const city      = document.getElementById('profileCity').value.trim();
+  const genre     = getSelectedGenres('profileGenreChips').join(', ') || currentBandProfile.genre || '';
   const website   = document.getElementById('profileWebsite').value.trim();
   const spotify   = document.getElementById('profileSpotify').value.trim();
   const instagram = document.getElementById('profileInstagram').value.trim();
 
   const { error } = await sb.from('bands')
-    .update({ bio, home_city: city, website, spotify_url: spotify, instagram_url: instagram })
+    .update({ bio, home_city: city, genre, website, spotify_url: spotify, instagram_url: instagram })
     .eq('id', currentBandProfile.id);
 
   btn.textContent = 'Save Changes →';
@@ -213,6 +218,7 @@ async function saveProfileEdits() {
   // Keep cached profile in sync
   currentBandProfile.bio          = bio;
   currentBandProfile.home_city    = city;
+  currentBandProfile.genre        = genre;
   currentBandProfile.website      = website;
   currentBandProfile.spotify_url  = spotify;
   currentBandProfile.instagram_url = instagram;
