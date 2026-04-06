@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 <style>body { visibility: hidden; }</style>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,11 +18,11 @@
 
 <!-- NAV -->
 <nav>
-  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
   <ul class="nav-links">
-    <li><a href="index.html">Find Venues</a></li>
-    <li><a href="index.html#how-it-works">How It Works</a></li>
-    <li><a href="index.html" onclick="sessionStorage.setItem('openReviewModal','1')">Leave a Review</a></li>
+    <li><a href="map.html">Find Venues</a></li>
+    <li><a href="map.html#leave-review">Leave a Review</a></li>
+    <li><a href="profile.html">Build EPK</a></li>
     <li><a href="tour.html" style="color:var(--rust)">Tour Planner</a></li>
     <li id="navAuthArea" style="display:contents">
       <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
@@ -119,6 +120,16 @@
       </div>
     </div>
 
+    <!-- CURATED ROUTES BANNER -->
+    <div class="ct-banner">
+      <div class="ct-banner-body">
+        <div class="ct-banner-title">Explore Curated Routes</div>
+        <div class="ct-banner-sub">Community-crafted tours worth playing</div>
+        <button class="ct-banner-btn" onclick="openCuratedToursModal()">Browse Routes →</button>
+      </div>
+      <div class="ct-banner-note">6 community curated routes · more coming soon</div>
+    </div>
+
     <!-- City search -->
     <div class="tour-city-search">
       <input
@@ -181,6 +192,38 @@
 
 </div>
 
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeContactModal()">✕</button>
+    <div class="modal-eyebrow">Contact Venue</div>
+    <div class="modal-title" id="modalVenueName">Venue Name</div>
+    <div class="modal-venue" id="modalVenueAddress">Address</div>
+
+    <div id="cmodalLoading" class="cmodal-loading">Finding contact info…</div>
+
+    <div id="cmodalOptions" style="display:none">
+      <div class="cmodal-option" id="cmodalFbOption" style="display:none">
+        <a id="cmodalFbBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-fb">Message on Facebook →</a>
+        <div class="cmodal-option-note">Many venues respond fastest on Facebook Messenger</div>
+      </div>
+      <div class="cmodal-option" id="cmodalEmailOption" style="display:none">
+        <a id="cmodalEmailBtn" href="#" class="cmodal-btn cmodal-btn-email">Send Booking Email →</a>
+        <div class="cmodal-option-note">Pre-filled booking inquiry — edit before sending</div>
+      </div>
+      <div class="cmodal-option" id="cmodalWebOption" style="display:none">
+        <a id="cmodalWebBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-web">Visit Their Website →</a>
+        <div class="cmodal-option-note">Check for a booking form or contact page</div>
+      </div>
+    </div>
+
+    <div class="modal-disclaimer">
+      Bandmate finds publicly available contact information.<br>
+      Always introduce yourself professionally.
+    </div>
+  </div>
+</div>
+
 <!-- VENUE INFO MODAL -->
 <div class="vim-overlay" id="venueInfoModal">
   <div class="vim-modal">
@@ -189,11 +232,46 @@
   </div>
 </div>
 
+<!-- CURATED TOURS LIST MODAL -->
+<div class="ct-modal-overlay" id="curatedToursModal" onclick="if(event.target===this)closeCuratedToursModal()">
+  <div class="ct-modal">
+    <div class="ct-modal-header">
+      <div>
+        <div class="ct-modal-eyebrow">Bandmate Community</div>
+        <h2 class="ct-modal-title">Curated Tour Routes</h2>
+        <p class="ct-modal-sub">Hand-picked routes built around great venues, great drives, and great shows</p>
+      </div>
+      <button class="ct-modal-close" onclick="closeCuratedToursModal()">✕</button>
+    </div>
+    <div class="ct-modal-body">
+      <div class="ct-grid" id="curatedToursGrid">
+        <!-- populated by renderCuratedToursGrid() -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INDIVIDUAL TOUR DETAIL OVERLAY -->
+<div class="ct-detail-overlay" id="tourDetailOverlay" onclick="if(event.target===this)closeTourDetail()">
+  <div class="ct-detail-panel">
+    <button class="ct-detail-close" onclick="closeTourDetail()">✕ Close</button>
+    <div id="tourDetailContent">
+      <!-- populated by openTourDetail() -->
+    </div>
+  </div>
+</div>
+
 <!-- JS: auth first (defines sb, currentUser, currentBandProfile, showToast, initAuth) -->
 <script src="js/auth.js"></script>
 <script src="js/tour.js"></script>
-<script async defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3mnxxKDgwd7D8yE5zI6phvucUpA7EZcg&libraries=places&callback=initTourMap">
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.async = true; s.defer = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=initTourMap';
+    document.head.appendChild(s);
+  })();
 </script>
+<script src="js/feedback.js"></script>
 </body>
 </html>

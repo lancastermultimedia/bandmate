@@ -1,7 +1,10 @@
-// Supabase config
-const SUPABASE_URL = 'https://nyqilsmzbzmbndkwaypl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cWlsc216YnptYm5ka3dheXBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjY4MDQsImV4cCI6MjA5MDU0MjgwNH0.go1KzmrMCEVIFL4O9n4NYYmwx3qCGg7veTvj1AhH8Cs';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Supabase config — credentials come from config.js (gitignored)
+const sb = supabase.createClient(BANDMATE_SUPABASE_URL, BANDMATE_SUPABASE_KEY);
+
+// Development logging — only active when BANDMATE_DEV=true in config.js
+function devLog(...args) {
+  if (typeof BANDMATE_DEV !== 'undefined' && BANDMATE_DEV) console.log(...args);
+}
 
 // Shared auth state (referenced by reviews.js)
 let currentUser = null;
@@ -34,6 +37,7 @@ function isBandPremium(profile) {
 
 function updateNavAuth() {
   const area = document.getElementById('navAuthArea');
+  if (!area) return;
   if (currentUser && currentBandProfile) {
     const isPremium   = isBandPremium(currentBandProfile);
     const reviewCount = currentBandProfile.review_count || 0;
@@ -66,23 +70,29 @@ async function checkPremiumAccess(band_id) {
 }
 
 function openAuth(tab) {
-  document.getElementById('authModal').classList.add('open');
+  const modal = document.getElementById('authModal');
+  if (!modal) return false;
+  modal.classList.add('open');
   if (tab === 'login') switchAuthTab('login');
   else { switchAuthTab('signup'); loadGenreChips('signupGenreChips'); }
   return false;
 }
 
 function closeAuth() {
-  document.getElementById('authModal').classList.remove('open');
-  document.getElementById('authMsg').className = 'auth-msg';
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('open');
+  const msg = document.getElementById('authMsg');
+  if (msg) msg.className = 'auth-msg';
 }
 
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t, i) =>
     t.classList.toggle('active', (i === 0 && tab === 'signup') || (i === 1 && tab === 'login'))
   );
-  document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
-  document.getElementById('loginForm').style.display  = tab === 'login'  ? 'block' : 'none';
+  const signupForm = document.getElementById('signupForm');
+  const loginForm  = document.getElementById('loginForm');
+  if (signupForm) signupForm.style.display = tab === 'signup' ? 'block' : 'none';
+  if (loginForm)  loginForm.style.display  = tab === 'login'  ? 'block' : 'none';
   if (tab === 'signup') loadGenreChips('signupGenreChips');
 }
 
@@ -220,6 +230,7 @@ async function handleSignout() {
 
 function showAuthMsg(msg, type) {
   const el = document.getElementById('authMsg');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'auth-msg ' + type;
 }
@@ -227,12 +238,80 @@ function showAuthMsg(msg, type) {
 // Shared toast utility used by auth.js, map.js, reviews.js
 function showToast(msg, type = '') {
   const toast = document.getElementById('toast');
+  if (!toast) return;
   toast.textContent = msg;
   toast.className = 'toast ' + type;
   setTimeout(() => toast.classList.add('show'), 10);
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-document.getElementById('authModal').addEventListener('click', function(e) {
-  if (e.target === this) closeAuth();
-});
+const _authModalEl = document.getElementById('authModal');
+if (_authModalEl) {
+  _authModalEl.addEventListener('click', function(e) {
+    if (e.target === this) closeAuth();
+  });
+}
+
+// ── Contact venue modal (shared across index + tour) ──────────────────────────
+
+async function openContactModal(placeId, name, address) {
+  const modal = document.getElementById('contactModal');
+  if (!modal) return;
+
+  document.getElementById('modalVenueName').textContent    = name;
+  document.getElementById('modalVenueAddress').textContent = address;
+
+  // Show loading state, hide options
+  document.getElementById('cmodalLoading').style.display  = 'block';
+  document.getElementById('cmodalOptions').style.display  = 'none';
+  modal.classList.add('open');
+
+  // Build email body
+  const subject = encodeURIComponent('Booking Inquiry — [Your Band Name]');
+  const body    = encodeURIComponent(
+    `Hi there,\n\nMy name is [Your Name] and I play in [Band Name], a [genre] band based in [Your City].\n\n` +
+    `We're planning a tour through your area and would love to discuss playing at ${name}. ` +
+    `We have a strong following and bring our own crowd wherever we go.\n\n` +
+    `You can check out our music and press kit here: [Your EPK Link]\n\n` +
+    `Would you have any open dates in [Month/Year]? We're flexible — opener, headliner, or shared bill.\n\n` +
+    `Looking forward to hearing from you,\n[Your Name]\n[Band Name]\n[Phone Number]`
+  );
+
+  // Fetch website via Places API (best-effort)
+  let website = null;
+  if (placeId && typeof google !== 'undefined' && google.maps?.places) {
+    try {
+      const svc = new google.maps.places.PlacesService(document.createElement('div'));
+      website = await new Promise(resolve => {
+        svc.getDetails({ placeId, fields: ['website'] }, (result, status) => {
+          resolve(status === google.maps.places.PlacesServiceStatus.OK ? (result?.website || null) : null);
+        });
+      });
+    } catch (_) { website = null; }
+  }
+
+  // Facebook option — always shown
+  document.getElementById('cmodalFbBtn').href = `https://www.facebook.com/search/top/?q=${encodeURIComponent(name)}`;
+  document.getElementById('cmodalFbOption').style.display = 'block';
+
+  // Email option — always shown (guessed address, user edits before sending)
+  const emailGuess = `booking@${name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20)}.com`;
+  document.getElementById('cmodalEmailBtn').href = `mailto:${emailGuess}?subject=${subject}&body=${body}`;
+  document.getElementById('cmodalEmailOption').style.display = 'block';
+
+  // Website option — only if Places returned one
+  if (website) {
+    document.getElementById('cmodalWebBtn').href = website;
+    document.getElementById('cmodalWebOption').style.display = 'block';
+  } else {
+    document.getElementById('cmodalWebOption').style.display = 'none';
+  }
+
+  document.getElementById('cmodalLoading').style.display = 'none';
+  document.getElementById('cmodalOptions').style.display = 'block';
+}
+
+function closeContactModal() {
+  const modal = document.getElementById('contactModal');
+  if (modal) modal.classList.remove('open');
+}

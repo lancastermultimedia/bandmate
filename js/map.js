@@ -1,4 +1,4 @@
-const GOOGLE_API_KEY   = 'AIzaSyD3mnxxKDgwd7D8yE5zI6phvucUpA7EZcg';
+const GOOGLE_API_KEY   = (typeof BANDMATE_MAPS_KEY !== 'undefined') ? BANDMATE_MAPS_KEY : '';
 const FALLBACK_LOCATION = { lat: 36.1627, lng: -86.7816, name: 'Nashville, TN' };
 const VENUE_KEYWORDS    = ['bar','tavern','pub','club','lounge','music','venue','hall','stage','brewery','taproom'];
 
@@ -258,7 +258,7 @@ function showInfoWindow(place, marker) {
            </div>`
         : '<div class="iw-reviews" style="margin-bottom:8px">No rating yet</div>'}
       <div class="iw-tags">${typeTags}${isOpen}</div>
-      <button class="iw-btn" onclick="openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}','${place.website || ''}')">
+      <button class="iw-btn" onclick="openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
         Contact This Venue
       </button>
       <button class="iw-btn" style="margin-top:6px;background:var(--ink)" onclick="openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
@@ -299,7 +299,7 @@ function updateVenuesList(venues) {
           ${isOpen ? '<span class="vrc-tag open">Open Now</span>' : ''}
         </div>
         <button class="vrc-contact-btn"
-          onclick="event.stopPropagation(); openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}','${place.website || ''}')">
+          onclick="event.stopPropagation(); openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
           Contact This Venue
         </button>
         <button class="vrc-contact-btn" style="margin-top:4px;border-color:var(--rust);color:var(--rust)"
@@ -360,32 +360,7 @@ function escapeStr(s) {
   return (s || '').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
 }
 
-// ─── Contact modal ────────────────────────────────────────────────────────────
-
-function openContactModal(placeId, name, address) {
-  document.getElementById('modalVenueName').textContent   = name;
-  document.getElementById('modalVenueAddress').textContent = address;
-
-  const subject = encodeURIComponent('Booking Inquiry — [Your Band Name]');
-  const body    = encodeURIComponent(
-    `Hi there,\n\nMy name is [Your Name] and I play in [Band Name], a [genre] band based in [Your City].\n\n` +
-    `We're planning a tour through your area and would love to discuss playing at ${name}. ` +
-    `We have a strong following and bring our own crowd wherever we go.\n\n` +
-    `You can check out our music and press kit here: [Your EPK Link]\n\n` +
-    `Would you have any open dates in [Month/Year]? We're flexible on the format — opener, headliner, or shared bill.\n\n` +
-    `Looking forward to hearing from you,\n[Your Name]\n[Band Name]\n[Phone Number]`
-  );
-
-  const emailGuess = `booking@${name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20)}.com`;
-  document.getElementById('modalEmailBtn').href = `mailto:${emailGuess}?subject=${subject}&body=${body}`;
-  document.getElementById('modalWebBtn').href   = `https://www.google.com/search?q=${encodeURIComponent(name + ' ' + address + ' booking contact email')}`;
-  document.getElementById('modalWebBtn').target = '_blank';
-  document.getElementById('contactModal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('contactModal').classList.remove('open');
-}
+// ─── Contact modal — defined in auth.js (openContactModal / closeContactModal) ─
 
 // ─── Review venue search modal ────────────────────────────────────────────────
 // Opened by the "Leave a Review" nav link. Uses Places Autocomplete filtered
@@ -420,7 +395,7 @@ function closeReviewSearchModal() {
 // ─── Event listeners ──────────────────────────────────────────────────────────
 
 document.getElementById('contactModal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+  if (e.target === this) closeContactModal();
 });
 
 document.getElementById('reviewSearchModal').addEventListener('click', function(e) {

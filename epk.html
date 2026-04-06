@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 <style>body { visibility: hidden; }</style>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,22 +18,120 @@
 
 <!-- EPK NAV -->
 <div class="epk-nav">
-  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
-  <div id="epkOwnerArea" class="epk-owner-area" style="display:none">
-    <a href="profile.html" class="epk-owner-btn epk-owner-btn-primary">Edit Profile</a>
-    <button class="epk-owner-btn" onclick="shareEPK()">Share EPK</button>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
+  <a href="map.html" class="nav-cta" style="font-size:0.56rem" id="epkFindVenuesLink">Find Venues →</a>
+</div>
+
+<!-- OWNER BAR (shown when viewing your own EPK) -->
+<div class="epk-owner-bar" id="epkOwnerBar">
+  <span class="epk-owner-bar-label">You're viewing your EPK</span>
+  <div class="epk-owner-bar-btns">
+    <a href="profile.html" class="epk-owner-bar-btn">Edit Profile</a>
+    <button class="epk-owner-bar-btn" onclick="openThemeSelectOverlay()">Change Theme</button>
+    <button class="epk-owner-bar-btn" onclick="shareEPK()">Copy Link</button>
   </div>
-  <a href="index.html" class="nav-cta" style="font-size:0.56rem" id="epkFindVenuesLink">Find Venues →</a>
+</div>
+
+<!-- THEME SELECTION OVERLAY -->
+<div class="theme-select-overlay" id="themeSelectOverlay" onclick="if(event.target===this)closeThemeSelectOverlay()">
+  <div class="theme-select-inner">
+    <div class="theme-select-eyebrow">Your EPK</div>
+    <h2 class="theme-select-title">Choose your look</h2>
+    <p class="theme-select-sub">Pick the visual style for your Electronic Press Kit. You can change it anytime.</p>
+    <div class="theme-cards">
+
+      <!-- CLEAN preview — white, centered italic name, rust rule, readable -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-clean" style="flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:0;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.38rem;text-transform:uppercase;letter-spacing:0.18em;color:#c94b2a;margin-bottom:8px;">Electronic Press Kit</div>
+          <div class="tpv-name-clean" id="epkTpvNameClean" style="font-size:1.3rem;margin-bottom:0;">Your Band</div>
+          <div style="width:36px;height:1.5px;background:#c94b2a;margin:8px auto;"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.1em;color:#8a8278;margin-bottom:10px;">Rock · Nashville, TN</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#f0ede6;border:1px solid rgba(14,13,11,0.12);"></div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Clean</div>
+          <div class="theme-card-desc">Editorial magazine style — centered italic serif, white background, generous whitespace.</div>
+          <button class="theme-select-btn theme-select-btn-clean" onclick="selectTheme('clean')">Select →</button>
+        </div>
+      </div>
+
+      <!-- BOLD preview — near-black, massive name left, rust vertical bar, photo right -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-bold" style="position:relative;justify-content:space-between;align-items:center;flex-direction:row;padding-left:20px;">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#c94b2a;"></div>
+          <div style="flex:1;padding-left:6px;">
+            <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.18em;color:#c94b2a;margin-bottom:6px;">EPK</div>
+            <div class="tpv-name-bold" id="epkTpvNameBold" style="font-size:1.45rem;line-height:0.95;letter-spacing:-0.02em;margin-bottom:6px;">Your<br>Band</div>
+            <div style="font-family:'Space Mono',monospace;font-size:0.34rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,240,232,0.4);">Rock · Nashville</div>
+          </div>
+          <div style="width:44px;height:44px;border-radius:2px;background:rgba(201,75,42,0.15);border:1.5px solid #c94b2a;flex-shrink:0;"></div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Bold</div>
+          <div class="theme-card-desc">Dramatic poster style — massive near-black layout with rust accent and alternating sections.</div>
+          <button class="theme-select-btn theme-select-btn-bold" onclick="selectTheme('bold')">Select →</button>
+        </div>
+      </div>
+
+      <!-- VIBRANT preview — forest green, gold name, square photo, gold diamond labels -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-vibrant" style="flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:0;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.16em;color:#d4a843;margin-bottom:8px;opacity:0.8;">◆ Electronic Press Kit</div>
+          <div style="width:40px;height:40px;border-radius:6px;border:1.5px solid #d4a843;background:rgba(212,168,67,0.12);margin-bottom:8px;"></div>
+          <div class="tpv-name-vibrant" id="epkTpvNameVibrant" style="font-size:1.2rem;margin-bottom:4px;">Your Band</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.34rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(245,240,232,0.45);">Rock · Nashville, TN</div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Vibrant</div>
+          <div class="theme-card-desc">Warm expressive style — deep forest green, gold accents, full-width alternating sections.</div>
+          <button class="theme-select-btn theme-select-btn-vibrant" onclick="selectTheme('vibrant')">Select →</button>
+        </div>
+      </div>
+
+    </div>
+    <button class="theme-select-cancel" onclick="closeThemeSelectOverlay()">Cancel</button>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeContactModal()">✕</button>
+    <div class="modal-eyebrow">Contact Venue</div>
+    <div class="modal-title" id="modalVenueName">Venue Name</div>
+    <div class="modal-venue" id="modalVenueAddress">Address</div>
+    <div id="cmodalLoading" class="cmodal-loading">Finding contact info…</div>
+    <div id="cmodalOptions" style="display:none">
+      <div class="cmodal-option" id="cmodalFbOption" style="display:none">
+        <a id="cmodalFbBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-fb">Message on Facebook →</a>
+        <div class="cmodal-option-note">Many venues respond fastest on Facebook Messenger</div>
+      </div>
+      <div class="cmodal-option" id="cmodalEmailOption" style="display:none">
+        <a id="cmodalEmailBtn" href="#" class="cmodal-btn cmodal-btn-email">Send Booking Email →</a>
+        <div class="cmodal-option-note">Pre-filled booking inquiry — edit before sending</div>
+      </div>
+      <div class="cmodal-option" id="cmodalWebOption" style="display:none">
+        <a id="cmodalWebBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-web">Visit Their Website →</a>
+        <div class="cmodal-option-note">Check for a booking form or contact page</div>
+      </div>
+    </div>
+    <div class="modal-disclaimer">
+      Bandmate finds publicly available contact information.<br>
+      Always introduce yourself professionally.
+    </div>
+  </div>
 </div>
 
 <!-- EPK CONTENT -->
 <div class="epk-page">
-  <div class="epk-wrap" id="epkMount">
+  <div id="epkMount">
     <!-- populated by epk.js -->
   </div>
 </div>
 
 <script src="js/auth.js"></script>
 <script src="js/epk.js"></script>
+<script src="js/feedback.js"></script>
 </body>
 </html>

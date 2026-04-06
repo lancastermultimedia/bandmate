@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 <style>body { visibility: hidden; }</style>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,12 +18,12 @@
 
 <!-- NAV -->
 <nav>
-  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span></a>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
   <ul class="nav-links">
-    <li><a href="index.html">Find Venues</a></li>
-    <li><a href="index.html#how-it-works">How It Works</a></li>
-    <li><a href="index.html" onclick="sessionStorage.setItem('openReviewModal','1')">Leave a Review</a></li>
+    <li><a href="map.html">Find Venues</a></li>
+    <li><a href="map.html#leave-review">Leave a Review</a></li>
     <li><a href="tour.html">Tour Planner</a></li>
+    <li><a href="profile.html" style="color:var(--rust)">Your EPK</a></li>
     <li id="navAuthArea" style="display:contents">
       <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
@@ -65,6 +66,68 @@
   </div>
 </div>
 
+<!-- THEME SELECTION OVERLAY -->
+<div class="theme-select-overlay" id="themeSelectOverlay" onclick="if(event.target===this)closeThemeSelector()">
+  <div class="theme-select-inner">
+    <div class="theme-select-eyebrow">Your EPK</div>
+    <h2 class="theme-select-title">Choose your look</h2>
+    <p class="theme-select-sub">Pick the visual style for your Electronic Press Kit. You can change it anytime.</p>
+    <div class="theme-cards">
+
+      <!-- CLEAN preview -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-clean" style="flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:0;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.38rem;text-transform:uppercase;letter-spacing:0.18em;color:#c94b2a;margin-bottom:8px;">Electronic Press Kit</div>
+          <div class="tpv-name-clean" id="tpvNameClean" style="font-size:1.3rem;margin-bottom:0;">Your Band</div>
+          <div style="width:36px;height:1.5px;background:#c94b2a;margin:8px auto;"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.1em;color:#8a8278;margin-bottom:10px;">Rock · Nashville, TN</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#f0ede6;border:1px solid rgba(14,13,11,0.12);"></div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Clean</div>
+          <div class="theme-card-desc">Editorial magazine style — centered italic serif, white background, generous whitespace.</div>
+          <button class="theme-select-btn theme-select-btn-clean" onclick="selectTheme('clean')">Select →</button>
+        </div>
+      </div>
+
+      <!-- BOLD preview -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-bold" style="position:relative;justify-content:space-between;align-items:center;flex-direction:row;padding-left:20px;">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#c94b2a;"></div>
+          <div style="flex:1;padding-left:6px;">
+            <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.18em;color:#c94b2a;margin-bottom:6px;">EPK</div>
+            <div class="tpv-name-bold" id="tpvNameBold" style="font-size:1.45rem;line-height:0.95;letter-spacing:-0.02em;margin-bottom:6px;">Your<br>Band</div>
+            <div style="font-family:'Space Mono',monospace;font-size:0.34rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,240,232,0.4);">Rock · Nashville</div>
+          </div>
+          <div style="width:44px;height:44px;border-radius:2px;background:rgba(201,75,42,0.15);border:1.5px solid #c94b2a;flex-shrink:0;"></div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Bold</div>
+          <div class="theme-card-desc">Dramatic poster style — massive near-black layout with rust accent and alternating sections.</div>
+          <button class="theme-select-btn theme-select-btn-bold" onclick="selectTheme('bold')">Select →</button>
+        </div>
+      </div>
+
+      <!-- VIBRANT preview -->
+      <div class="theme-card">
+        <div class="theme-preview theme-preview-vibrant" style="flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:0;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.36rem;text-transform:uppercase;letter-spacing:0.16em;color:#d4a843;margin-bottom:8px;opacity:0.8;">◆ Electronic Press Kit</div>
+          <div style="width:40px;height:40px;border-radius:6px;border:1.5px solid #d4a843;background:rgba(212,168,67,0.12);margin-bottom:8px;"></div>
+          <div class="tpv-name-vibrant" id="tpvNameVibrant" style="font-size:1.2rem;margin-bottom:4px;">Your Band</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.34rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(245,240,232,0.45);">Rock · Nashville, TN</div>
+        </div>
+        <div class="theme-card-body">
+          <div class="theme-card-label">Vibrant</div>
+          <div class="theme-card-desc">Warm expressive style — deep forest green, gold accents, full-width alternating sections.</div>
+          <button class="theme-select-btn theme-select-btn-vibrant" onclick="selectTheme('vibrant')">Select →</button>
+        </div>
+      </div>
+
+    </div>
+    <button class="theme-select-cancel" onclick="closeThemeSelector()">Cancel</button>
+  </div>
+</div>
+
 <!-- PROFILE PAGE (logged in) -->
 <main class="profile-page" id="profilePage" style="display:none">
 
@@ -88,8 +151,8 @@
           </div>
           <div class="profile-meta" id="profileMeta"></div>
           <div class="profile-action-btns" id="profileActions" style="display:none">
-            <a id="epkPageLink" href="#" class="profile-action-btn profile-action-btn-primary">Your EPK Page →</a>
-            <button class="profile-action-btn profile-action-btn-secondary" onclick="showComingSoon()">Analytics</button>
+            <button class="profile-action-btn profile-action-btn-primary" onclick="viewEpk()">Your EPK →</button>
+            <button class="profile-action-btn profile-action-btn-secondary" onclick="copyEpkLink()">Copy EPK Link</button>
           </div>
         </div>
 
@@ -119,19 +182,51 @@
         <label>Home City</label>
         <input type="text" id="profileCity" placeholder="e.g. Nashville, TN">
       </div>
-      <div class="profile-field">
-        <label>Website</label>
-        <input type="url" id="profileWebsite" placeholder="https://yourband.com">
-      </div>
-      <div class="profile-field">
-        <label>Spotify Artist URL</label>
-        <input type="url" id="profileSpotify" placeholder="https://open.spotify.com/artist/...">
-      </div>
-      <div class="profile-field">
-        <label>Instagram URL</label>
-        <input type="url" id="profileInstagram" placeholder="https://instagram.com/yourband">
-      </div>
       <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileEdits()">Save Changes →</button>
+    </div>
+
+    <!-- Music & Links (premium only) -->
+    <div class="profile-section" id="musicLinksSection" style="display:none">
+      <div class="profile-section-title">Music & Links</div>
+      <div class="pfl-grid">
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-spotify">SP</span> Spotify</label>
+          <input type="url" id="linkSpotify" placeholder="https://open.spotify.com/artist/...">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-youtube">YT</span> YouTube</label>
+          <input type="url" id="linkYoutube" placeholder="https://youtube.com/@yourchannel">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-sc">SC</span> SoundCloud</label>
+          <input type="url" id="linkSoundcloud" placeholder="https://soundcloud.com/yourband">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-apple">AM</span> Apple Music</label>
+          <input type="url" id="linkAppleMusic" placeholder="https://music.apple.com/...">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-bc">BC</span> Bandcamp</label>
+          <input type="url" id="linkBandcamp" placeholder="https://yourband.bandcamp.com">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-web">WB</span> Website</label>
+          <input type="url" id="linkWebsite" placeholder="https://yourband.com">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-ig">IG</span> Instagram</label>
+          <input type="url" id="linkInstagram" placeholder="https://instagram.com/yourband">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-tt">TK</span> TikTok</label>
+          <input type="url" id="linkTiktok" placeholder="https://tiktok.com/@yourband">
+        </div>
+        <div class="profile-field pfl-field">
+          <label><span class="pfl-tag pfl-fb">FB</span> Facebook</label>
+          <input type="url" id="linkFacebook" placeholder="https://facebook.com/yourband">
+        </div>
+      </div>
+      <button class="profile-save-btn" id="musicLinksSaveBtn" onclick="saveMusicLinks()">Save Links →</button>
     </div>
 
     <!-- Press Photos (all users) -->
@@ -150,6 +245,61 @@
       <div class="press-photos-grid" id="pressPhotosGrid"></div>
     </div>
 
+    <!-- Press Quotes (premium only) -->
+    <div class="profile-section" id="pressQuotesSection" style="display:none">
+      <div class="profile-section-title-row">
+        <div class="profile-section-title" style="margin-bottom:0">Press Quotes</div>
+        <div class="press-photos-usage" id="quotesUsage"></div>
+      </div>
+      <div class="profile-section-sub">Pull quotes from reviews, interviews, and media coverage</div>
+      <div id="quotesContainer"></div>
+      <button class="pf-add-btn" id="addQuoteBtn" onclick="addQuoteCard()">+ Add Quote</button>
+      <button class="profile-save-btn" style="margin-top:12px" id="saveQuotesBtn" onclick="saveQuotes()">Save Quotes →</button>
+    </div>
+
+    <!-- Stage Plot (premium only) -->
+    <div class="profile-section" id="stagePlotSection" style="display:none">
+      <div class="profile-section-title">Stage Plot & Tech Rider</div>
+      <div class="profile-section-sub">Upload a PDF for venues and production teams</div>
+      <div id="stagePlotStatus"></div>
+      <div class="press-upload-area" id="stagePlotUploadArea" style="margin-top:12px">
+        <div class="press-upload-icon">↑</div>
+        <div class="press-upload-label">Click to upload PDF</div>
+        <div class="press-upload-sub">PDF only · Max 10 MB</div>
+        <input type="file" id="stagePlotInput" accept=".pdf,application/pdf" style="display:none" onchange="handleStagePlotUpload(this)">
+      </div>
+    </div>
+
+    <!-- Live Video (premium only) -->
+    <div class="profile-section" id="videosSection" style="display:none">
+      <div class="profile-section-title">Live Video</div>
+      <div class="profile-section-sub">Up to 3 YouTube or Vimeo videos — shown on your EPK</div>
+      <div id="videosContainer">
+        <div class="pf-video-row">
+          <div class="profile-field pf-video-field">
+            <label>Video 1</label>
+            <input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=..." oninput="previewVideoThumb(this,0)">
+          </div>
+          <div class="pf-video-thumb" id="videoThumb0"></div>
+        </div>
+        <div class="pf-video-row">
+          <div class="profile-field pf-video-field">
+            <label>Video 2</label>
+            <input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=..." oninput="previewVideoThumb(this,1)">
+          </div>
+          <div class="pf-video-thumb" id="videoThumb1"></div>
+        </div>
+        <div class="pf-video-row">
+          <div class="profile-field pf-video-field">
+            <label>Video 3</label>
+            <input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=..." oninput="previewVideoThumb(this,2)">
+          </div>
+          <div class="pf-video-thumb" id="videoThumb2"></div>
+        </div>
+      </div>
+      <button class="profile-save-btn" style="margin-top:16px" id="saveVideosBtn" onclick="saveVideos()">Save Videos →</button>
+    </div>
+
     <!-- Review progress (free only) -->
     <div class="profile-section" id="progressSection" style="display:none">
       <div class="profile-section-title">Unlock Community Premium</div>
@@ -166,11 +316,14 @@
       <div id="reviewHistoryList"><div class="profile-no-reviews">Loading...</div></div>
     </div>
 
-    <!-- Coming soon (premium only) -->
-    <div id="premiumExtras" style="display:none">
-      <div class="profile-section">
-        <div class="profile-section-title">Saved Tour Routes</div>
-        <div class="coming-soon-body">Save and revisit your Tour Planner routes — coming soon.</div>
+    <!-- EPK Settings (premium only) -->
+    <div class="profile-section" id="epkSettingsSection" style="display:none">
+      <div class="profile-section-title">Your EPK Page</div>
+      <div class="epk-theme-status" id="epkCurrentTheme"></div>
+      <div class="profile-action-btns" style="margin-top:16px;flex-wrap:wrap">
+        <button class="profile-action-btn profile-action-btn-primary" onclick="viewEpk()">View Your EPK →</button>
+        <button class="profile-action-btn profile-action-btn-secondary" onclick="openThemeSelector()">Change Theme</button>
+        <button class="profile-action-btn profile-action-btn-secondary" onclick="copyEpkLink()">Copy EPK Link</button>
       </div>
     </div>
 
@@ -178,11 +331,11 @@
     <div class="profile-section upgrade-section" id="upgradeSection" style="display:none">
       <div class="profile-section-title">What You Unlock With Community Premium</div>
       <div class="upgrade-features">
-        <div class="upgrade-feature">✦ &nbsp;Public EPK page to share with bookers and festivals</div>
-        <div class="upgrade-feature">✦ &nbsp;Add your bio, website, Spotify, and Instagram</div>
-        <div class="upgrade-feature">✦ &nbsp;Tour analytics — see which cities book most (coming soon)</div>
-        <div class="upgrade-feature">✦ &nbsp;Saved tour routes from the Tour Planner (coming soon)</div>
-        <div class="upgrade-feature">✦ &nbsp;Unlimited venue results in Tour Planner</div>
+        <div class="upgrade-feature">✦ &nbsp;Public EPK page in three stunning themes</div>
+        <div class="upgrade-feature">✦ &nbsp;Press quotes, stage plot PDF, and video embeds</div>
+        <div class="upgrade-feature">✦ &nbsp;Music links: Spotify, YouTube, Bandcamp, Apple Music</div>
+        <div class="upgrade-feature">✦ &nbsp;Full bio, edit your profile, unlimited press photos</div>
+        <div class="upgrade-feature">✦ &nbsp;Tour analytics (coming soon)</div>
       </div>
       <div class="upgrade-remaining" id="upgradeRemaining"></div>
     </div>
@@ -198,5 +351,6 @@
 
 <script src="js/auth.js"></script>
 <script src="js/profile.js"></script>
+<script src="js/feedback.js"></script>
 </body>
 </html>

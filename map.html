@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Venues — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">
+    Bandmate <span class="nav-logo-dot" style="width:10px;height:10px;background:var(--rust);border-radius:50%;animation:pulse 1.5s infinite"></span>
+  </div>
+  <div class="loading-text">Finding venues near you...</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
+  <ul class="nav-links">
+    <li><a href="#map-section" onclick="closevenuePage()" style="color:var(--rust)">Find Venues</a></li>
+    <li><a href="tour.html">Tour Planner</a></li>
+    <li><a href="profile.html">Build EPK</a></li>
+    <li><a href="#" onclick="return openReviewSearchModal()">Leave a Review</a></li>
+    <li id="navAuthArea" style="display:contents">
+      <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
+    </li>
+  </ul>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- AUTH MODAL -->
+<div class="auth-modal-overlay" id="authModal">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;margin-bottom:6px">Join Bandmate</div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px">The venue guide built for bands</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signup')">Sign Up</button>
+      <button class="auth-tab" onclick="switchAuthTab('login')">Log In</button>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signupForm">
+      <div class="auth-field">
+        <label>Band Name</label>
+        <input type="text" id="signupBandName" placeholder="Your band name">
+      </div>
+      <div class="auth-field">
+        <label>Genre</label>
+        <div class="genre-chips-wrap" id="signupGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row">
+          <input type="text" id="signupGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('signupGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
+      </div>
+      <div class="auth-field">
+        <label>Home City</label>
+        <input type="text" id="signupCity" placeholder="e.g. Lexington, KY">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="your@email.com">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min 6 characters">
+      </div>
+      <button class="auth-submit" onclick="handleSignup()">Create Free Account →</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginForm" style="display:none">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="your@email.com">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Your password">
+      </div>
+      <button class="auth-submit" onclick="handleLogin()">Log In →</button>
+    </div>
+
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- VENUE PAGE OVERLAY -->
+<div class="venue-page-overlay" id="venuePage">
+  <div class="venue-page-inner">
+    <button class="venue-page-back" onclick="closevenuePage()">← Back to Map</button>
+
+    <div class="venue-page-header">
+      <div class="venue-page-eyebrow" id="vpEyebrow">Venue</div>
+      <div class="venue-page-name" id="vpName">Venue Name</div>
+      <div class="venue-page-address" id="vpAddress">Address</div>
+
+      <div class="venue-page-scores" id="vpScores">
+        <div class="score-card">
+          <div class="score-num" id="vpOverall">—</div>
+          <div class="score-label">Overall</div>
+        </div>
+        <div class="score-card">
+          <div class="score-num" id="vpSound">—</div>
+          <div class="score-label">Sound</div>
+        </div>
+        <div class="score-card">
+          <div class="score-num" id="vpComms">—</div>
+          <div class="score-label">Communication</div>
+        </div>
+        <div class="score-card">
+          <div class="score-num" id="vpMerch">—</div>
+          <div class="score-label">Merch</div>
+        </div>
+        <div class="score-card">
+          <div class="score-num" id="vpParking">—</div>
+          <div class="score-label">Parking</div>
+        </div>
+      </div>
+
+      <div class="venue-page-actions">
+        <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
+        <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
+      </div>
+    </div>
+
+    <!-- REVIEW FORM -->
+    <div class="venue-review-form" id="venueReviewForm">
+      <div class="vrf-title">Your Review</div>
+      <div class="vrf-sub" id="vrfSub">Reviewing: <span id="vrfVenueName"></span></div>
+
+      <div id="vrfLoginPrompt" class="vrf-login-prompt" style="display:none">
+        <a onclick="closevenuePage(); openAuth()">Sign in or create a free account</a> to leave a review.
+      </div>
+
+      <div id="vrfFormFields">
+        <div style="margin-bottom:16px">
+          <div style="font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);margin-bottom:8px">Overall Rating</div>
+          <div style="display:flex;gap:6px" id="vrfStars">
+            <button class="star-btn" data-val="1" onclick="setVrfStar(1)">★</button>
+            <button class="star-btn" data-val="2" onclick="setVrfStar(2)">★</button>
+            <button class="star-btn" data-val="3" onclick="setVrfStar(3)">★</button>
+            <button class="star-btn" data-val="4" onclick="setVrfStar(4)">★</button>
+            <button class="star-btn" data-val="5" onclick="setVrfStar(5)">★</button>
+          </div>
+        </div>
+
+        <div class="auth-field" style="margin-bottom:16px">
+          <label>Genre You Played</label>
+          <div class="genre-chips-wrap" id="vrfGenreChips" data-max="1"><div class="genre-chips-loading">Loading…</div></div>
+          <div class="genre-custom-row">
+            <input type="text" id="vrfGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+            <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('vrfGenreChips')">Add</button>
+          </div>
+          <div class="genre-chips-hint">Can't find yours? Add it below</div>
+        </div>
+
+        <div class="vrf-sliders">
+          <div>
+            <div class="vrf-slider-label">Sound System <span class="vrf-val" id="vrfSoundVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfSoundVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Communication <span class="vrf-val" id="vrfCommVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfCommVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Merch Sales <span class="vrf-val" id="vrfMerchVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfMerchVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Parking <span class="vrf-val" id="vrfParkVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfParkVal').textContent=this.value">
+          </div>
+        </div>
+
+        <textarea class="vrf-textarea" id="vrfText" rows="5"
+          placeholder="Tell other bands what it was actually like — load-in, sound check, crowd energy, payout, hospitality..."
+          oninput="updateCharCount()"></textarea>
+        <div class="vrf-char-count too-short" id="vrfCharCount">Minimum 50 characters required</div>
+
+        <button class="vrf-submit" id="vrfSubmitBtn" onclick="submitReview()" disabled>Post Review</button>
+      </div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div class="reviews-section-title" id="reviewsTitle">Band Reviews</div>
+    <div class="reviews-list" id="reviewsList">
+      <div class="no-reviews">
+        <div class="no-reviews-icon">— —</div>
+        <div class="no-reviews-title">No reviews yet</div>
+        <p>Be the first band to review this venue!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO: PANEL + MAP -->
+<section class="hero" id="map-section">
+
+  <!-- LEFT PANEL -->
+  <div class="hero-panel">
+    <div class="hero-eyebrow">For independent bands everywhere</div>
+    <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
+    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..." />
+        <button class="search-btn" onclick="searchLocation()">Search →</button>
+      </div>
+    </div>
+
+    <button class="locate-btn" onclick="locateMe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
+      </svg>
+      Use My Location
+    </button>
+
+    <!-- GENRE FILTER -->
+    <div class="filter-label">Filter by Genre</div>
+    <div class="filter-chips" id="genreChips">
+      <span class="chip active-rust" onclick="toggleChip(this)">All</span>
+      <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
+      <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
+      <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
+      <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
+      <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
+      <span class="chip" onclick="toggleChip(this)">Country</span>
+    </div>
+
+    <!-- RADIUS -->
+    <div class="radius-row">
+      <span class="filter-label" style="margin-bottom:0">Search Radius</span>
+      <span class="radius-val" id="radiusVal">10 miles</span>
+    </div>
+    <input type="range" min="1" max="50" value="10" id="radiusSlider"
+           oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
+
+    <!-- STATUS -->
+    <div class="status-bar" id="statusBar">
+      <div class="status-dot amber" id="statusDot"></div>
+      <span id="statusText">Locating you...</span>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="filter-label" id="resultsLabel">Venues Found</div>
+    <div class="venues-list" id="venuesList">
+      <div class="no-results">
+        <div class="no-results-icon">🗺️</div>
+        <div class="no-results-title">Loading map...</div>
+        <div class="no-results-sub">Venues will appear here once the map loads.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div style="position:relative; overflow:hidden;">
+    <div id="map"></div>
+  </div>
+
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section reveal" id="how-it-works">
+  <div class="section-label">What Bandmate does</div>
+  <h2 class="section-title">Every tool you need to play further.</h2>
+  <p class="section-sub">Made for independent bands ready to take their music on the road.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <span class="step-icon">01 —</span>
+      <h3 class="step-title">Discover Venues</h3>
+      <p class="step-desc">Search any city and find bars and venues reviewed by bands who have actually played there. Real scores on sound, hospitality, merch, and more.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <span class="step-icon">02 —</span>
+      <h3 class="step-title">Plan Your Tour</h3>
+      <p class="step-desc">Draw your route, pick your cities, and let Bandmate build your itinerary with venue recommendations matched to your sound.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <span class="step-icon">03 —</span>
+      <h3 class="step-title">Share Your Story</h3>
+      <p class="step-desc">Your Bandmate profile is your EPK. One link sends venues everything they need — your music, photos, bio, and reviews all in one place.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LEAVE A REVIEW -->
+<section class="review-section reveal" id="leave-review">
+  <div class="review-layout">
+    <div>
+      <div class="section-label">Leave a Review</div>
+      <h2 class="section-title">You played there.<br>Tell the next band.</h2>
+      <p class="section-sub" style="margin-bottom:28px;">
+        Honest reviews help other bands avoid bad nights and find great venues. Rate what actually matters on the road.
+      </p>
+
+      <div class="review-form-card">
+        <div class="form-title">Share Your Experience</div>
+        <div class="form-sub">Search for a venue you've played and leave an honest review for the community.</div>
+        <button class="submit-btn" onclick="openReviewSearchModal()">Leave a Review →</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label" style="margin-bottom:16px;">Sample Reviews</div>
+      <div class="review-feed">
+
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-avatar" style="background:var(--ink)">TK</div>
+            <div>
+              <div class="reviewer-name">The Kindred</div>
+              <div class="reviewer-meta">Folk Trio · Portland, OR</div>
+            </div>
+            <div class="review-stars">★★★★★</div>
+          </div>
+          <div class="review-venue-tag">📍 The Rusty Nail — Nashville, TN</div>
+          <p class="review-text">Best load-in we've had in years. Stage manager on site, incredible PA, and we kept 100% of merch. Played to 80 people on a Tuesday and made more than we do at home on a Friday.</p>
+          <div class="review-metrics-mini">
+            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Sound</span><span class="mini-val">5/5</span></div>
+            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Communication</span><span class="mini-val">5/5</span></div>
+            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Merch</span><span class="mini-val">5/5</span></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-avatar" style="background:var(--sage)">HF</div>
+            <div>
+              <div class="reviewer-name">Half Fiction</div>
+              <div class="reviewer-meta">Indie Rock · Denver, CO</div>
+            </div>
+            <div class="review-stars">★★★★☆</div>
+          </div>
+          <div class="review-venue-tag">📍 The Loft at 5th — Austin, TX</div>
+          <p class="review-text">Great crowd energy and a killer room. Sound engineer was distracted but got it together by song two. Parking is rough on weekends — plan to arrive an hour early with gear.</p>
+          <div class="review-metrics-mini">
+            <div class="mini-metric"><div class="mini-dot" style="background:var(--gold)"></div><span class="mini-label">Sound</span><span class="mini-val">4/5</span></div>
+            <div class="mini-metric"><div class="mini-dot" style="background:var(--gold)"></div><span class="mini-label">Communication</span><span class="mini-val">4/5</span></div>
+            <div class="mini-metric"><div class="mini-dot" style="background:var(--rust)"></div><span class="mini-label">Parking</span><span class="mini-val">2/5</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">Bandmate</div>
+    <div class="footer-tagline">The venue guide built for bands, by bands.</div>
+  </div>
+  <div class="footer-right">
+    <p>© 2025 Bandmate · Phase 2</p>
+    <p style="color:rgba(245,240,232,0.2)">Built for the road · Not for the boardroom</p>
+  </div>
+</footer>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeContactModal()">✕</button>
+    <div class="modal-eyebrow">Contact Venue</div>
+    <div class="modal-title" id="modalVenueName">Venue Name</div>
+    <div class="modal-venue" id="modalVenueAddress">Address</div>
+    <div id="cmodalLoading" class="cmodal-loading">Finding contact info…</div>
+    <div id="cmodalOptions" style="display:none">
+      <div class="cmodal-option" id="cmodalFbOption" style="display:none">
+        <a id="cmodalFbBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-fb">Message on Facebook →</a>
+        <div class="cmodal-option-note">Many venues respond fastest on Facebook Messenger</div>
+      </div>
+      <div class="cmodal-option" id="cmodalEmailOption" style="display:none">
+        <a id="cmodalEmailBtn" href="#" class="cmodal-btn cmodal-btn-email">Send Booking Email →</a>
+        <div class="cmodal-option-note">Pre-filled booking inquiry — edit before sending</div>
+      </div>
+      <div class="cmodal-option" id="cmodalWebOption" style="display:none">
+        <a id="cmodalWebBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-web">Visit Their Website →</a>
+        <div class="cmodal-option-note">Check for a booking form or contact page</div>
+      </div>
+    </div>
+    <div class="modal-disclaimer">
+      Bandmate finds publicly available contact information.<br>
+      Always introduce yourself professionally.
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW VENUE SEARCH MODAL -->
+<div class="modal-overlay" id="reviewSearchModal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeReviewSearchModal()">✕</button>
+    <div class="modal-eyebrow">Leave a Review</div>
+    <div class="modal-title">Which venue did you play?</div>
+    <div style="font-size:0.88rem;color:var(--muted);font-weight:300;line-height:1.6;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+      Start typing the venue's name and select it from the dropdown — we'll open its review page.
+    </div>
+    <input
+      type="text"
+      id="reviewVenueSearch"
+      class="review-search-input"
+      placeholder="e.g. The Basement East, Nashville…"
+      autocomplete="off"
+    />
+    <div class="review-search-hint">Powered by Google Places — pick a result from the dropdown to continue</div>
+  </div>
+</div>
+
+<!-- JS: order matters — auth → reviews → map → Google Maps -->
+<script src="js/auth.js"></script>
+<script src="js/reviews.js"></script>
+<script src="js/map.js"></script>
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.async = true; s.defer = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=initMap';
+    document.head.appendChild(s);
+  })();
+</script>
+<script src="js/feedback.js"></script>
+</body>
+</html>

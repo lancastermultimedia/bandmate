@@ -22,9 +22,9 @@ async function openVenuePage(placeId, name, address) {
       <div class="no-reviews-title">Loading reviews...</div>
     </div>`;
 
-  // Wire up contact button (openContactModal is defined in map.js)
+  // Wire up contact button (openContactModal is defined in auth.js)
   document.getElementById('vpContactBtn').onclick = () =>
-    openContactModal(placeId, name, address, '');
+    openContactModal(placeId, name, address);
 
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('venuePage').classList.add('open');
@@ -165,7 +165,7 @@ async function submitReview() {
     review_text:     text
   };
 
-  console.log('Submitting review:', reviewData);
+  devLog('Submitting review:', reviewData);
 
   const btn = document.getElementById('vrfSubmitBtn');
   btn.textContent = 'Posting...';

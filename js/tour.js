@@ -64,6 +64,11 @@ function initTourMap() {
     if (e.target === this) closeVenueInfoModal();
   });
 
+  // Click-outside closes contact modal
+  document.getElementById('contactModal').addEventListener('click', function(e) {
+    if (e.target === this) closeContactModal();
+  });
+
   setTourStatus('idle', 'Type a city or click the map to add a stop');
   document.body.style.visibility = 'visible';
 }
@@ -675,21 +680,21 @@ function singleLegDriveTime(service, origin, destination, label) {
       travelMode:   google.maps.TravelMode.DRIVING,
       unitSystem:   google.maps.UnitSystem.IMPERIAL,
     };
-    console.log(`[DM ${label}] Request:`, {
+    devLog(`[DM ${label}] Request:`, {
       origin:      `${origin.lat()},${origin.lng()}`,
       destination: `${destination.lat()},${destination.lng()}`,
     });
     service.getDistanceMatrix(request, (response, status) => {
-      console.log(`[DM ${label}] Response status: "${status}"`);
-      console.log(`[DM ${label}] Full response:`, JSON.stringify(response));
+      devLog(`[DM ${label}] Response status: "${status}"`);
+      devLog(`[DM ${label}] Full response:`, JSON.stringify(response));
       if (status !== 'OK') {
         console.error(`[DM ${label}] API error "${status}" — falling back to haversine estimate.`);
-        console.info('[DM] To fix: enable the Distance Matrix API at console.cloud.google.com and ensure billing is active for key AIzaSyD3mnxx…');
+        console.info('[DM] To fix: enable the Distance Matrix API at console.cloud.google.com and ensure billing is active');
         resolve(fallbackDriveTime(origin.lat(), origin.lng(), destination.lat(), destination.lng()));
         return;
       }
       const element = response.rows[0]?.elements[0];
-      console.log(`[DM ${label}] Element:`, element);
+      devLog(`[DM ${label}] Element:`, element);
       if (element?.status !== 'OK') {
         console.warn(`[DM ${label}] Element status "${element?.status}" — falling back to haversine estimate.`);
         resolve(fallbackDriveTime(origin.lat(), origin.lng(), destination.lat(), destination.lng()));
@@ -848,7 +853,7 @@ function renderItinerary(days, isPremium) {
         <div class="itin-venue-name">${venue.name}</div>
         <div class="itin-venue-address">${venue.vicinity || ''}</div>
         ${venue.rating ? `<div class="itin-venue-rating">${stars} ${venue.rating.toFixed(1)}</div>` : ''}
-        <button class="itin-contact-btn" onclick="tourContactVenue('${escTourStr(venue.name)}','${escTourStr(venue.vicinity || '')}')">
+        <button class="itin-contact-btn" onclick="openContactModal('${venue.place_id || ''}','${escTourStr(venue.name)}','${escTourStr(venue.vicinity || '')}')">
           Contact This Venue →
         </button>
       </div>`;
@@ -894,10 +899,6 @@ function renderItinerary(days, isPremium) {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-function tourContactVenue(name, address) {
-  const q = encodeURIComponent(`${name} ${address} booking contact email`);
-  window.open(`https://www.google.com/search?q=${q}`, '_blank');
-}
 
 function escTourStr(s) {
   return (s || '').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
@@ -1001,6 +1002,307 @@ function setTourStatus(type, msg) {
   const bg  = type === 'green' ? 'var(--sage)' : type === 'amber' ? 'var(--gold)' : 'var(--muted)';
   if (dot) dot.style.background = bg;
   if (txt) txt.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CURATED TOURS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CURATED_TOURS = [
+  {
+    id:      'americana-highway',
+    name:    'The Americana Highway',
+    tagline: 'Nashville to Austin through the heart of it all',
+    color:   '#c94b2a',
+    gradient:'linear-gradient(135deg, #c94b2a 0%, #8b3520 50%, #5c2415 100%)',
+    cities:  ['Nashville, TN', 'Memphis, TN', 'Oxford, MS', 'Jackson, MS', 'New Orleans, LA', 'Baton Rouge, LA', 'Houston, TX', 'Austin, TX'],
+    stats:   { cities: 8, days: '10–12 days', genres: 'Americana / Country / Blues', miles: '~1,100 mi' },
+    description: 'Follow the spine of American music from Nashville through the Delta and into Texas. This route hits some of the most music-rich cities in the country, passing through the birthplace of blues, soul, and country. Venues along this route tend to draw passionate local crowds and have deep respect for original music. Best run in spring or fall to avoid summer heat.',
+    expect: [
+      'Play weekday shows in smaller markets (Memphis, Oxford) and Thursday–Saturday in bigger cities (Nashville, Houston, Austin)',
+      'Delta blues venues in Mississippi often operate on door deals — get payout terms in writing before load-in',
+      'New Orleans requires extra lead time for booking; the scene is relationship-driven and social',
+      'Budget extra for parking and gear handling in Houston; Austin has excellent load-in infrastructure at most venues',
+    ],
+    venues: ['The Basement (Nashville)', 'Hi-Tone Café (Memphis)', "Tipitina's (New Orleans)"],
+  },
+  {
+    id:      'college-circuit',
+    name:    'The College Circuit',
+    tagline: 'Eight college towns, eight ready-made audiences',
+    color:   '#5a7a6a',
+    gradient:'linear-gradient(135deg, #5a7a6a 0%, #3d5c4e 50%, #253d34 100%)',
+    cities:  ['Columbus, OH', 'Athens, OH', 'Morgantown, WV', 'Charlottesville, VA', 'Chapel Hill, NC', 'Columbia, SC', 'Athens, GA', 'Tallahassee, FL'],
+    stats:   { cities: 8, days: '9–11 days', genres: 'Indie / Alt / Rock / Folk', miles: '~900 mi' },
+    description: 'College towns are the secret weapon of the independent touring band. Built-in young audiences, venues that love original music, affordable cities to stay in, and promoters who are genuinely excited about new acts. This southeastern college circuit hits some of the most underrated music scenes in the country. Athens GA alone is worth the whole trip.',
+    expect: [
+      'Book 6–8 weeks out — college venue calendars fill fast, especially near exam periods (avoid finals weeks)',
+      'Offer student pricing at the door to maximize turnout; college crowds are deal-conscious',
+      'Athens GA has a walkable venue district — plan for two nights to properly experience the scene',
+      'Connect with campus radio stations and student promoters 2–3 months ahead for social media support',
+    ],
+    venues: ['The Newport Music Hall (Columbus)', 'The Jefferson (Charlottesville)', '40 Watt Club (Athens GA)'],
+  },
+  {
+    id:      'diy-northeast',
+    name:    'The DIY Northeast',
+    tagline: 'Boston to Philly through the original indie underground',
+    color:   '#2a3a5a',
+    gradient:'linear-gradient(135deg, #2a3a5a 0%, #1a2540 50%, #0e1628 100%)',
+    cities:  ['Boston, MA', 'Providence, RI', 'New Haven, CT', 'New York, NY', 'Brooklyn, NY', 'Philadelphia, PA'],
+    stats:   { cities: 6, days: '7–8 days', genres: 'Punk / Indie / Experimental / Folk', miles: '~350 mi' },
+    description: 'The most densely packed music corridor in America. Short drives between major cities mean you can play every night without exhausting your band. The northeast DIY scene has been incubating groundbreaking music for decades and the venues here have seen everything — which means they appreciate something genuinely original. Budget for tolls and parking in New York.',
+    expect: [
+      'E-ZPass is essential — budget $30–50 in tolls per day through Connecticut and New Jersey',
+      'NYC parking is brutal; use load zones strategically and have a dedicated driver the whole time',
+      'Providence and New Haven punch well above their weight — dedicated scenes that reward originality',
+      'Book 2–3 months ahead in NYC; Providence and New Haven venues are far more accessible on short notice',
+    ],
+    venues: ['The Middle East (Boston)', 'Bowery Electric (New York)', 'Underground Arts (Philadelphia)'],
+  },
+  {
+    id:      'pacific-coast',
+    name:    'The Pacific Coast Run',
+    tagline: 'Seattle to San Diego with the Pacific always on your left',
+    color:   '#2a5a7a',
+    gradient:'linear-gradient(135deg, #2a5a7a 0%, #1a3d5c 50%, #0e2438 100%)',
+    cities:  ['Seattle, WA', 'Portland, OR', 'Eugene, OR', 'San Francisco, CA', 'Santa Cruz, CA', 'Los Angeles, CA', 'San Diego, CA'],
+    stats:   { cities: 7, days: '9–11 days', genres: 'Indie / Folk / Alternative / Electronic', miles: '~1,300 mi' },
+    description: 'One of the most beautiful drives in North America doubles as one of the best music corridors on the west coast. Each city has its own distinct scene and personality — Seattle and Portland for the moody indie crowd, San Francisco for the experimental and folk scene, LA for industry connections, San Diego to close it out with a beach town crowd. Camp in state parks to keep costs down.',
+    expect: [
+      'The I-5 corridor makes this easy driving; budget 3–4 hours Seattle to Portland, 10–12 hours Portland to SF',
+      'San Francisco requires advance booking; the Mission and SoMa venue scenes are competitive and slow to respond',
+      'LA shows often start late and run long; add 1–2 buffer days for industry meetings and recovery',
+      'State parks between cities are cheap and beautiful — Big Sur and the Redwoods are unmissable on days off',
+    ],
+    venues: ['The Crocodile (Seattle)', 'Doug Fir Lounge (Portland)', 'The Fillmore (San Francisco)'],
+  },
+  {
+    id:      'southern-gothic',
+    name:    'The Southern Gothic',
+    tagline: 'New Orleans to Asheville through the strange and beautiful south',
+    color:   '#3a2a4a',
+    gradient:'linear-gradient(135deg, #3a2a4a 0%, #261a34 50%, #140e1e 100%)',
+    cities:  ['New Orleans, LA', 'Mobile, AL', 'Birmingham, AL', 'Atlanta, GA', 'Greenville, SC', 'Charlotte, NC', 'Asheville, NC'],
+    stats:   { cities: 7, days: '8–10 days', genres: 'Jazz / Blues / Soul / Folk / Americana', miles: '~900 mi' },
+    description: 'The American south is one of the most misunderstood touring regions. Skip the stereotypes and you find some of the warmest crowds, most historic venues, and most soulful music scenes anywhere. This route ends in Asheville — one of the most vibrant small music cities in the country. The drive through the Blue Ridge mountains on the final leg is worth the entire trip.',
+    expect: [
+      'The deep south moves on its own schedule; add buffer days and don\'t over-pack the itinerary',
+      'Birmingham has a quietly excellent original music scene that is seriously and consistently underrated',
+      'Asheville is one of the best music cities in America per capita — save your energy for the last night',
+      'New Orleans load-in logistics can be complex in the French Quarter; hire a local stage hand if budget allows',
+    ],
+    venues: ["Tipitina's (New Orleans)", 'WorkPlay (Birmingham)', 'The Orange Peel (Asheville)'],
+  },
+  {
+    id:      'underground-circuit',
+    name:    'The Underground Circuit',
+    tagline: 'From the birthplace of house and techno to the new electronic frontier',
+    color:   '#7b2d8b',
+    gradient:'linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #1a1a2e 100%)',
+    cities:  ['Chicago, IL', 'Milwaukee, WI', 'Detroit, MI', 'Cleveland, OH', 'Pittsburgh, PA', 'Baltimore, MD', 'Washington, DC'],
+    stats:   { cities: 7, days: '8–10 days', genres: 'House / Techno / Electronic / EDM / Experimental', miles: '~900 mi' },
+    description: "This route traces the roots of modern electronic music back to where it all began. Chicago's South Side gave birth to house music in the early 1980s in venues like the Warehouse — the literal origin of the word. An hour and a half north Detroit was simultaneously developing techno in basement clubs and loft parties. These cities didn't just influence electronic music, they invented it. Today both cities still have thriving underground club scenes with deep respect for the music's origins. Milwaukee punches above its weight with a fierce DIY electronic scene. The route east takes you through Cleveland and Pittsburgh — both cities with growing underground followings — before finishing in the Baltimore and DC corridor which has one of the most active electronic and experimental scenes on the east coast. This route is best run Thursday through Sunday nights when the electronic venues are at full energy. Expect late nights, passionate crowds, and venues that care deeply about sound system quality.",
+    expect: [
+      'Late show times — most electronic venues don\'t peak until midnight or later, plan accordingly',
+      'Sound system matters — venues on this route are known for quality audio, bring your best setup',
+      'Chicago and Detroit stops are historically significant — mention this in your booking pitch, it resonates',
+      'The DC and Baltimore scene skews experimental — adventurous sets do well here',
+    ],
+    venues: ['Smartbar (Chicago)', 'Marble Bar (Detroit)', 'U Street Music Hall (Washington DC)'],
+    venuesByCity: {
+      'Chicago, IL':      ['Smartbar', 'The Empty Bottle', 'Schubas Tavern'],
+      'Detroit, MI':      ['Marble Bar', 'TV Lounge', 'Tangent Gallery'],
+      'Washington, DC':   ['U Street Music Hall', 'Black Cat', 'Songbyrd'],
+    },
+  },
+];
+
+// ── Open / close curated tours list modal ────────────────────────────────────
+
+function openCuratedToursModal() {
+  const overlay = document.getElementById('curatedToursModal');
+  if (!overlay) return;
+  renderCuratedToursGrid();
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCuratedToursModal() {
+  const overlay = document.getElementById('curatedToursModal');
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCuratedToursGrid() {
+  const grid = document.getElementById('curatedToursGrid');
+  if (!grid) return;
+  grid.innerHTML = CURATED_TOURS.map(tour => `
+    <div class="ct-card" onclick="openTourDetail('${tour.id}')">
+      <div class="ct-card-header" style="background:${tour.gradient}">
+        <div class="ct-card-eyebrow">Curated Route</div>
+        <div class="ct-card-name">${tour.name}</div>
+        <div class="ct-card-tagline">${tour.tagline}</div>
+      </div>
+      <div class="ct-card-body">
+        <div class="ct-card-stats">
+          <div class="ct-card-stat"><span class="ct-stat-num">${tour.stats.cities}</span><span class="ct-stat-label">Cities</span></div>
+          <div class="ct-card-stat"><span class="ct-stat-num">${tour.stats.days.split(' ')[0]}</span><span class="ct-stat-label">Days</span></div>
+          <div class="ct-card-stat ct-stat-wide"><span class="ct-stat-label">${tour.stats.genres}</span></div>
+          <div class="ct-card-stat"><span class="ct-stat-num" style="font-size:0.8rem">${tour.stats.miles}</span><span class="ct-stat-label">Est. Miles</span></div>
+        </div>
+        <button class="ct-card-btn" style="border-color:${tour.color};color:${tour.color}" onclick="event.stopPropagation();openTourDetail('${tour.id}')">View This Route →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Open / close individual tour detail overlay ───────────────────────────────
+
+function openTourDetail(tourId) {
+  const tour = CURATED_TOURS.find(t => t.id === tourId);
+  if (!tour) return;
+
+  const overlay = document.getElementById('tourDetailOverlay');
+  const content = document.getElementById('tourDetailContent');
+  if (!overlay || !content) return;
+
+  const citiesHtml = tour.cities.map((city, i) => `
+    <div class="ct-route-stop">
+      <div class="ct-route-dot" style="background:${tour.color}"></div>
+      <div class="ct-route-city">${city}</div>
+      ${i < tour.cities.length - 1 ? '<div class="ct-route-line"></div>' : ''}
+    </div>
+  `).join('');
+
+  const expectHtml = tour.expect.map(tip => `
+    <div class="ct-expect-item">
+      <div class="ct-expect-dot" style="background:${tour.color}"></div>
+      <div class="ct-expect-text">${tip}</div>
+    </div>
+  `).join('');
+
+  const venuesHtml = tour.venues.map(v => `
+    <div class="ct-venue-item">
+      <div class="ct-venue-pin" style="color:${tour.color}">📍</div>
+      <div class="ct-venue-name">${v}</div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="ct-detail-hero" style="background:${tour.gradient}">
+      <div class="ct-detail-hero-inner">
+        <div class="ct-detail-eyebrow">Curated Tour Route</div>
+        <h1 class="ct-detail-name">${tour.name}</h1>
+        <div class="ct-detail-tagline">${tour.tagline}</div>
+        <div class="ct-detail-stats-row">
+          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.cities}</div><div class="ct-detail-stat-label">Cities</div></div>
+          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.days}</div><div class="ct-detail-stat-label">Estimated</div></div>
+          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.miles}</div><div class="ct-detail-stat-label">Total Miles</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ct-detail-body">
+
+      <div class="ct-detail-section">
+        <div class="ct-detail-section-label">The Route</div>
+        <div class="ct-route-viz">${citiesHtml}</div>
+      </div>
+
+      <div class="ct-detail-section">
+        <div class="ct-detail-section-label">About This Route</div>
+        <p class="ct-detail-desc">${tour.description}</p>
+      </div>
+
+      <div class="ct-detail-section">
+        <div class="ct-detail-section-label">Genres</div>
+        <div class="ct-genres-wrap">
+          ${tour.stats.genres.split(' / ').map(g => `<span class="ct-genre-pill" style="border-color:${tour.color};color:${tour.color}">${g}</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="ct-detail-section">
+        <div class="ct-detail-section-label">What to Expect</div>
+        <div class="ct-expect-list">${expectHtml}</div>
+      </div>
+
+      <div class="ct-detail-section">
+        <div class="ct-detail-section-label">Great Venues on This Route</div>
+        <div class="ct-detail-venues-note">A few well-known spots to anchor your booking conversations. More data coming as the Bandmate community grows.</div>
+        <div class="ct-venues-list">${venuesHtml}</div>
+      </div>
+
+      <div class="ct-detail-cta">
+        <div class="ct-detail-cta-title">Ready to plan this tour?</div>
+        <div class="ct-detail-cta-sub">Load all ${tour.cities.length} cities into the Tour Planner with one click, then find venues and build your itinerary.</div>
+        <button class="ct-load-btn" style="background:${tour.color}" onclick="loadCuratedRoute('${tour.id}')">
+          Load This Route Into Tour Planner →
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  overlay.classList.add('open');
+}
+
+function closeTourDetail() {
+  const overlay = document.getElementById('tourDetailOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+// ── Load a curated route into the tour planner ───────────────────────────────
+
+async function loadCuratedRoute(tourId) {
+  const tour = CURATED_TOURS.find(t => t.id === tourId);
+  if (!tour) return;
+
+  closeTourDetail();
+  closeCuratedToursModal();
+  clearRoute();
+
+  setTourStatus('amber', `Loading ${tour.cities.length} cities…`);
+  showToast(`Loading route: ${tour.name}…`);
+
+  const geocoder = new google.maps.Geocoder();
+
+  for (const cityName of tour.cities) {
+    await new Promise(resolve => {
+      geocoder.geocode({ address: cityName }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const latLng = results[0].geometry.location;
+          const idx = tourWaypoints.length;
+          tourWaypoints.push({
+            latLng:             toLatLng(latLng),
+            city:               cityName,
+            venueResults:       [],
+            selectedVenueIndex: null,
+          });
+          tourMarkers.push(new google.maps.Marker({
+            position: toLatLng(latLng),
+            map:      tourMap,
+            title:    cityName,
+            icon:     makeMarkerIcon(idx),
+          }));
+        }
+        resolve();
+      });
+    });
+  }
+
+  updatePolyline();
+  renderWaypointList();
+  fitBoundsToWaypoints();
+  saveTourState();
+
+  if (tourWaypoints.length >= 2) {
+    document.getElementById('findVenuesBtn').disabled = false;
+    if (tourHintEl) tourHintEl.classList.add('hidden');
+  }
+
+  setTourStatus('green', `${tourWaypoints.length} stops loaded — find venues to continue`);
+  showToast(`"${tour.name}" loaded — ${tourWaypoints.length} cities`, 'success');
 }
 
 // ── Map style ─────────────────────────────────────────────────────────────────
