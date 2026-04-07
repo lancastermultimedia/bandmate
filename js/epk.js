@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!isPremium) {
     renderNotFound(
       isOwner
-        ? 'Upgrade to Community Premium or leave 5 reviews to unlock your EPK page.'
+        ? 'Upgrade to Community Premium or leave 3 reviews to unlock your EPK page.'
         : `${band.band_name} hasn't unlocked their EPK page yet.`
     );
     document.body.style.visibility = 'visible';
