@@ -555,8 +555,40 @@ body.lp-body { background: var(--cream); }
   flex-shrink: 0;
 }
 
-/* ── How It Works (below map) ────────────────────────────────────────────── */
-/* Uses existing .section, .step styles from styles.css */
+/* ── Map section overrides for index.html ───────────────────────────────── */
+/* Override the global height:100vh so the section sizes to content on this
+   page while still filling at least the full viewport. The map itself gets
+   an explicit viewport-relative height so Google Maps renders correctly. */
+#find-venues {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+#find-venues .hero {
+  height: auto;
+  min-height: calc(100vh - 60px);
+  overflow: visible;
+}
+#find-venues .hero-panel {
+  min-height: calc(100vh - 120px);
+  height: auto;
+  overflow-y: auto;
+}
+#find-venues .hero > div:last-child {
+  min-height: calc(100vh - 60px);
+  position: relative;
+}
+#find-venues #map {
+  height: calc(100vh - 60px);
+  min-height: 500px;
+}
+
+/* ── Map → testimonials separator ────────────────────────────────────────── */
+.map-to-testi {
+  background: var(--cream);
+  padding-top: 72px;
+  border-top: 1px solid var(--border);
+}
 
 /* ── Testimonials ────────────────────────────────────────────────────────── */
 .lp-testimonials {
@@ -993,99 +1025,15 @@ body.lp-body { background: var(--cream); }
     </div>
 
     <!-- MAP -->
-    <div style="position:relative; overflow:hidden;">
+    <div style="position:relative; overflow:hidden; min-height:calc(100vh - 60px);">
       <div id="map"></div>
     </div>
 
   </section>
 </div>
 
-<!-- HOW IT WORKS -->
-<section class="section reveal" id="how-it-works">
-  <div class="section-label">What Bandmate does</div>
-  <h2 class="section-title">Every tool you need to play further.</h2>
-  <p class="section-sub">Made for independent bands ready to take their music on the road.</p>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01</div>
-      <span class="step-icon">01 —</span>
-      <h3 class="step-title">Discover Venues</h3>
-      <p class="step-desc">Search any city and find bars and venues reviewed by bands who have actually played there. Real scores on sound, hospitality, merch, and more.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">02</div>
-      <span class="step-icon">02 —</span>
-      <h3 class="step-title">Plan Your Tour</h3>
-      <p class="step-desc">Draw your route, pick your cities, and let Bandmate build your itinerary with venue recommendations matched to your sound.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">03</div>
-      <span class="step-icon">03 —</span>
-      <h3 class="step-title">Share Your Story</h3>
-      <p class="step-desc">Your Bandmate profile is your EPK. One link sends venues everything they need — your music, photos, bio, and reviews all in one place.</p>
-    </div>
-  </div>
-</section>
-
-<!-- LEAVE A REVIEW -->
-<section class="review-section reveal" id="leave-review">
-  <div class="review-layout">
-    <div>
-      <div class="section-label">Leave a Review</div>
-      <h2 class="section-title">You played there.<br>Tell the next band.</h2>
-      <p class="section-sub" style="margin-bottom:28px;">
-        Honest reviews help other bands avoid bad nights and find great venues. Rate what actually matters on the road.
-      </p>
-      <div class="review-form-card">
-        <div class="form-title">Share Your Experience</div>
-        <div class="form-sub">Search for a venue you've played and leave an honest review for the community.</div>
-        <button class="submit-btn" onclick="openReviewSearchModal()">Leave a Review →</button>
-      </div>
-    </div>
-    <div>
-      <div class="section-label" style="margin-bottom:16px;">Sample Reviews</div>
-      <div class="review-feed">
-        <div class="review-card">
-          <div class="review-header">
-            <div class="reviewer-avatar" style="background:var(--ink)">TK</div>
-            <div>
-              <div class="reviewer-name">The Kindred</div>
-              <div class="reviewer-meta">Folk Trio · Portland, OR</div>
-            </div>
-            <div class="review-stars">★★★★★</div>
-          </div>
-          <div class="review-venue-tag">📍 The Rusty Nail — Nashville, TN</div>
-          <p class="review-text">Best load-in we've had in years. Stage manager on site, incredible PA, and we kept 100% of merch. Played to 80 people on a Tuesday and made more than we do at home on a Friday.</p>
-          <div class="review-metrics-mini">
-            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Sound</span><span class="mini-val">5/5</span></div>
-            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Communication</span><span class="mini-val">5/5</span></div>
-            <div class="mini-metric"><div class="mini-dot"></div><span class="mini-label">Merch</span><span class="mini-val">5/5</span></div>
-          </div>
-        </div>
-        <div class="review-card">
-          <div class="review-header">
-            <div class="reviewer-avatar" style="background:var(--sage)">HF</div>
-            <div>
-              <div class="reviewer-name">Half Fiction</div>
-              <div class="reviewer-meta">Indie Rock · Denver, CO</div>
-            </div>
-            <div class="review-stars">★★★★☆</div>
-          </div>
-          <div class="review-venue-tag">📍 The Loft at 5th — Austin, TX</div>
-          <p class="review-text">Great crowd energy and a killer room. Sound engineer was distracted but got it together by song two. Parking is rough on weekends — plan to arrive an hour early with gear.</p>
-          <div class="review-metrics-mini">
-            <div class="mini-metric"><div class="mini-dot" style="background:var(--gold)"></div><span class="mini-label">Sound</span><span class="mini-val">4/5</span></div>
-            <div class="mini-metric"><div class="mini-dot" style="background:var(--gold)"></div><span class="mini-label">Communication</span><span class="mini-val">4/5</span></div>
-            <div class="mini-metric"><div class="mini-dot" style="background:var(--rust)"></div><span class="mini-label">Parking</span><span class="mini-val">2/5</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- TESTIMONIALS -->
-<div style="background: var(--cream);">
+<div class="map-to-testi">
   <div class="lp-testimonials">
     <h2 class="lp-testimonials-heading">Built for the road</h2>
     <div class="lp-testi-cards">
@@ -1118,7 +1066,7 @@ body.lp-body { background: var(--cream); }
     <a href="#find-venues" onclick="smoothScrollTo('find-venues'); return false;">Find Venues</a>
     <a href="tour.html">Tour Planner</a>
     <a href="profile.html">EPK Builder</a>
-    <a href="#leave-review" onclick="smoothScrollTo('leave-review'); return false;">Leave a Review</a>
+    <a href="map.html#leave-review">Leave a Review</a>
   </div>
   <div class="lp-footer-right">
     <p>© 2025 Bandmate</p>
