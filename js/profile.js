@@ -140,15 +140,15 @@ async function renderProfile() {
   // ── Progress & upgrade (free only) ──
   if (!isPremium) {
     const count = bp.review_count || 0;
-    const pct   = Math.min((count / 5) * 100, 100);
+    const pct   = Math.min((count / 3) * 100, 100);
     document.getElementById('progressSection').style.display = 'block';
-    document.getElementById('progressLabel').textContent     = `${count} of 5 reviews`;
+    document.getElementById('progressLabel').textContent     = `${count} of 3 reviews`;
     document.getElementById('progressFill').style.width      = `${pct}%`;
     document.getElementById('upgradeSection').style.display  = 'block';
     document.getElementById('upgradeRemaining').textContent  =
-      count >= 5
+      count >= 3
         ? 'You\'ve unlocked Community Premium!'
-        : `${5 - count} more review${5 - count !== 1 ? 's' : ''} to unlock free Community Premium`;
+        : `${3 - count} more review${3 - count !== 1 ? 's' : ''} to unlock free Community Premium`;
   } else {
     document.getElementById('progressSection').style.display = 'none';
     document.getElementById('upgradeSection').style.display  = 'none';
