@@ -556,31 +556,35 @@ body.lp-body { background: var(--cream); }
 }
 
 /* ── Map section overrides for index.html ───────────────────────────────── */
-/* Override the global height:100vh so the section sizes to content on this
-   page while still filling at least the full viewport. The map itself gets
-   an explicit viewport-relative height so Google Maps renders correctly. */
+/* Fixed-height map section — panel scrolls internally, nothing grows. */
 #find-venues {
-  overflow: visible;
+  display: block;
   position: relative;
   z-index: 1;
 }
 #find-venues .hero {
-  height: auto;
-  min-height: calc(100vh - 60px);
-  overflow: visible;
+  height: 100vh;
+  overflow: hidden;
 }
 #find-venues .hero-panel {
-  min-height: calc(100vh - 120px);
-  height: auto;
+  height: 100%;
+  overflow: hidden;  /* panel itself does NOT scroll — only venues-list does */
+  display: flex;
+  flex-direction: column;
+}
+#find-venues #venuesList {
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;     /* critical: lets flexbox shrink this child so it scrolls */
 }
 #find-venues .hero > div:last-child {
-  min-height: calc(100vh - 60px);
+  height: 100%;
+  overflow: hidden;
   position: relative;
 }
 #find-venues #map {
-  height: calc(100vh - 60px);
-  min-height: 500px;
+  width: 100%;
+  height: 100%;
 }
 
 /* ── Map → testimonials separator ────────────────────────────────────────── */
@@ -1025,7 +1029,7 @@ body.lp-body { background: var(--cream); }
     </div>
 
     <!-- MAP -->
-    <div style="position:relative; overflow:hidden; min-height:calc(100vh - 60px);">
+    <div style="position:relative; overflow:hidden; height:100%;">
       <div id="map"></div>
     </div>
 
