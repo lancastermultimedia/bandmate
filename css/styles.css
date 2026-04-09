@@ -1143,14 +1143,19 @@ footer {
 
 @media (max-width: 768px) {
   .hero { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .hero-panel { height: auto; max-height: 50vh; }
+  .hero-panel { height: auto; max-height: 50vh; padding: 28px 24px; }
   nav { padding: 14px 20px; }
   .nav-links { display: none; }
-  .section { padding: 60px 24px; }
+  .section { padding: 52px 24px; }
   .steps { grid-template-columns: 1fr; }
   .step { border-right: none; border-bottom: 1.5px solid var(--ink); }
   .step:last-child { border-bottom: none; }
-  .review-layout { grid-template-columns: 1fr; }
+  .review-section { padding: 52px 24px; }
+  .review-layout { grid-template-columns: 1fr; gap: 40px; }
+  .venue-page-inner { padding: 80px 24px 48px; }
+  .venue-page-name { font-size: 2.2rem; }
+  .venue-page-scores { grid-template-columns: repeat(3, 1fr); }
+  .venue-page-actions { flex-direction: column; gap: 10px; }
   footer { flex-direction: column; gap: 20px; }
   .footer-right { text-align: left; }
 }
@@ -2378,8 +2383,9 @@ footer {
 .wp-remove:hover { color: var(--rust); }
 
 @media (max-width: 768px) {
-  .tour-layout { grid-template-columns: 1fr; grid-template-rows: auto 400px; }
-  .tour-panel { max-height: 55vh; }
+  .tour-layout { grid-template-columns: 1fr; grid-template-rows: auto minmax(340px, 45vh); }
+  .tour-panel { max-height: 55vh; padding: 24px 20px; }
+  .tour-fields { grid-template-columns: 1fr; gap: 10px; }
 }
 
 /* Venue select card — action row (Select + More Info buttons) */
@@ -5328,4 +5334,116 @@ body[data-epk-theme="vibrant"] .epkt-footer a:hover { color: var(--epkt-accent);
   margin-top: 40px;
   max-width: 280px;
   line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE — max-width: 480px
+   Covers iPhone SE (375px) through standard smartphones (430px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* ── NAV ── */
+  nav { padding: 12px 16px; }
+  .nav-links { display: none; }
+  .nav-logo { font-size: 1.3rem; }
+  /* Collapse "X of N reviews" text so it doesn't overflow nav */
+  .nav-review-progress { display: none; }
+  .nav-premium-badge { display: none; }
+  .nav-user { gap: 8px; }
+  .nav-signout { padding: 5px 8px; font-size: 0.52rem; }
+
+  /* ── HERO / MAP SPLIT LAYOUT ── */
+  .hero {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+  }
+  .hero-panel {
+    padding: 20px 16px 16px;
+    max-height: 56vh;
+    height: auto;
+    overflow-y: auto;
+  }
+  .hero-title { font-size: 1.9rem; }
+  .hero-sub { font-size: 0.84rem; margin-bottom: 16px; }
+
+  /* ── HOMEPAGE SECTIONS ── */
+  .section { padding: 40px 16px; }
+  .section-title { font-size: clamp(1.6rem, 6vw, 2.2rem); margin-bottom: 8px; }
+  .section-sub { font-size: 0.88rem; margin-bottom: 32px; }
+  .review-section { padding: 40px 16px; }
+  .review-layout { grid-template-columns: 1fr; gap: 32px; }
+  .review-form-card { padding: 20px; }
+
+  /* Steps grid → single column */
+  .steps { grid-template-columns: 1fr; }
+  .step { padding: 24px 20px; border-right: none; border-bottom: 1.5px solid var(--ink); }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-size: 2.5rem; }
+
+  /* ── AUTH MODAL ── */
+  .auth-modal { padding: 28px 20px; width: 95%; box-shadow: 4px 4px 0 var(--ink); }
+
+  /* ── VENUE PAGE OVERLAY ── */
+  .venue-page-inner { padding: 72px 16px 40px; }
+  .venue-page-name { font-size: 1.8rem; }
+  /* Scores: 5 columns → 2+3 wrap with auto-fill */
+  .venue-page-scores { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+  .score-card { padding: 12px 6px; }
+  .score-num { font-size: 1.5rem; }
+  .score-label { font-size: 0.46rem; }
+  /* Action buttons stack vertically */
+  .venue-page-actions { flex-direction: column; gap: 8px; }
+  .vp-btn { text-align: center; }
+  /* Review form sliders → single column */
+  .vrf-sliders { grid-template-columns: 1fr; gap: 12px; }
+  .venue-review-form { padding: 20px; }
+
+  /* ── TOUR LAYOUT ── */
+  .tour-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(300px, 45vh);
+  }
+  .tour-panel { padding: 20px 16px; max-height: 55vh; }
+  .tour-heading { font-size: 1.7rem; }
+  /* Date + length inputs stack */
+  .tour-fields { grid-template-columns: 1fr; gap: 10px; }
+  /* Venue selection cards */
+  .vsc-venue-actions { flex-wrap: wrap; }
+
+  /* ── VENUE INFO MODAL ── */
+  .vim-modal { padding: 24px 16px 20px; max-height: 85vh; }
+  .vim-name { font-size: 1.25rem; }
+
+  /* ── CONTACT MODAL ── */
+  .modal { padding: 28px 20px; width: 95%; }
+  .cmodal-btn { font-size: 0.6rem; padding: 12px 16px; }
+
+  /* ── PROFILE PAGE ── */
+  .pfl-grid { grid-template-columns: 1fr !important; }
+  .pfl-section { padding: 20px 16px; }
+
+  /* ── INPUT / BUTTON TOUCH TARGETS ── */
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea { min-height: 44px; }
+
+  /* ── PLACE AUTOCOMPLETE DROPDOWN ── */
+  .pac-container { max-width: calc(100vw - 32px); }
+
+  /* ── GENRE CHIPS ── */
+  .genre-chips-wrap { gap: 4px; }
+  .genre-chip { font-size: 0.6rem; padding: 5px 10px; }
+
+  /* ── FOOTER ── */
+  footer { flex-direction: column; gap: 16px; padding: 24px 16px; }
+  .footer-right { text-align: left; }
+
+  /* ── CURATED TOURS MODAL ── */
+  .ct-modal-header { padding: 20px 16px; }
+  .ct-modal-body { padding: 16px; }
 }
