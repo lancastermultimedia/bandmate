@@ -157,11 +157,11 @@ function restoreTourState() {
       renderVenueSelection(lastShowDates);
     }
 
-    if (state.itinVisible && state.itinHtml) {
-      document.getElementById('itinContainer').innerHTML       = state.itinHtml;
-      document.getElementById('itinCount').textContent         = state.itinCount || '';
-      document.getElementById('itinArea').style.display        = 'block';
-      document.getElementById('downloadItinBtn').style.display = 'block';
+    // itinHtml is intentionally not restored from localStorage to prevent
+    // stored HTML injection. Regenerate the itinerary from the venue selection.
+    if (state.itinVisible && state.venueSelectionVisible) {
+      document.getElementById('itinArea').style.display        = 'none';
+      document.getElementById('downloadItinBtn').style.display = 'none';
     }
   } catch (e) {
     console.warn('Could not restore tour state:', e);
@@ -955,13 +955,13 @@ async function openVenueInfoModal(wpIndex, venueIndex) {
   // Two most recent written reviews
   const recentHtml = bmReviews.slice(0, 2).map(r => {
     const rStars = '★'.repeat(r.overall_rating || 0) + '☆'.repeat(5 - (r.overall_rating || 0));
-    const band   = r.bands?.band_name || 'Anonymous Band';
+    const band   = escapeHtml(r.bands?.band_name || 'Anonymous Band');
     return `<div class="vim-review">
       <div class="vim-review-header">
         <span class="vim-review-band">${band}</span>
         <span class="vim-review-stars">${rStars}</span>
       </div>
-      <p class="vim-review-text">${r.review_text || ''}</p>
+      <p class="vim-review-text">${escapeHtml(r.review_text || '')}</p>
     </div>`;
   }).join('');
 
@@ -975,8 +975,8 @@ async function openVenueInfoModal(wpIndex, venueIndex) {
 
   content.innerHTML = `
     <div class="vim-eyebrow">Venue Info</div>
-    <div class="vim-name">${venue.name}</div>
-    <div class="vim-address">${venue.vicinity || ''}</div>
+    <div class="vim-name">${escapeHtml(venue.name)}</div>
+    <div class="vim-address">${escapeHtml(venue.vicinity || '')}</div>
     ${venue.rating ? `<div class="vim-google-rating">${gStars} ${venue.rating.toFixed(1)}${venue.user_ratings_total ? ` &nbsp;·&nbsp; ${venue.user_ratings_total.toLocaleString()} Google reviews` : ''}</div>` : ''}
     <div class="vim-divider"></div>
     ${communityHtml}
