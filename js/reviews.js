@@ -86,20 +86,20 @@ async function loadVenueReviews(placeId, venueName) {
 
   document.getElementById('reviewsList').innerHTML = reviews.map(r => {
     const band     = r.bands || {};
-    const initials = (band.band_name || 'B').substring(0, 2).toUpperCase();
+    const initials = escapeHtml((band.band_name || 'B').substring(0, 2).toUpperCase());
     const stars    = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
     const date     = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     return `<div class="review-item">
       <div class="ri-header">
         <div class="ri-avatar">${initials}</div>
         <div>
-          <div class="ri-band">${band.band_name || 'Anonymous Band'}</div>
-          <div class="ri-meta">${band.genre || ''} · ${band.home_city || ''} · ${date}</div>
+          <div class="ri-band">${escapeHtml(band.band_name || 'Anonymous Band')}</div>
+          <div class="ri-meta">${escapeHtml(band.genre || '')} · ${escapeHtml(band.home_city || '')} · ${date}</div>
         </div>
         <div class="ri-stars">${stars}</div>
       </div>
-      ${r.genre_played ? `<div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sage);margin-bottom:10px">Played as: ${r.genre_played}</div>` : ''}
-      <p class="ri-text">${r.review_text}</p>
+      ${r.genre_played ? `<div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sage);margin-bottom:10px">Played as: ${escapeHtml(r.genre_played)}</div>` : ''}
+      <p class="ri-text">${escapeHtml(r.review_text)}</p>
       <div class="ri-scores">
         <div class="ri-score"><div class="ri-score-dot"></div>Sound <strong>${r.sound_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Communication <strong>${r.comms_rating}/5</strong></div>

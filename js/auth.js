@@ -6,6 +6,16 @@ function devLog(...args) {
   if (typeof BANDMATE_DEV !== 'undefined' && BANDMATE_DEV) console.log(...args);
 }
 
+// HTML escaping utility — use for all user-supplied data inserted into innerHTML
+function escapeHtml(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Shared auth state (referenced by reviews.js)
 let currentUser = null;
 let currentBandProfile = null;
@@ -28,10 +38,8 @@ async function loadBandProfile() {
 
 // Single source of truth for premium logic.
 // Accepts any object shaped like a bands row.
-// Campers always gets god-mode access regardless of review count or flag.
 function isBandPremium(profile) {
   if (!profile) return false;
-  if (profile.band_name === 'Campers') return true;
   return profile.is_premium === true || (profile.review_count || 0) >= 3;
 }
 
@@ -44,11 +52,12 @@ function updateNavAuth() {
     const statusHtml  = isPremium
       ? `<span class="nav-premium-badge">Community Premium</span>`
       : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock premium</span>`;
-    const avatarHtml  = currentBandProfile.photo_url
-      ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
-      : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;
+    const safePhotoUrl = /^https:\/\//i.test(currentBandProfile.photo_url || '') ? currentBandProfile.photo_url : null;
+    const avatarHtml  = safePhotoUrl
+      ? `<img src="${escapeHtml(safePhotoUrl)}" class="nav-avatar" alt="">`
+      : `<div class="nav-avatar nav-avatar-init">${escapeHtml((currentBandProfile.band_name || 'B')[0].toUpperCase())}</div>`;
     area.innerHTML = `<div class="nav-user">
-      <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${currentBandProfile.band_name}</span></a>
+      <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${escapeHtml(currentBandProfile.band_name)}</span></a>
       ${statusHtml}
       <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
     </div>`;
@@ -105,7 +114,7 @@ async function handleSignup() {
   if (!bandName || !genre || !city || !email || !password) {
     showAuthMsg('Please fill in all fields — select at least one genre', 'error'); return;
   }
-  if (password.length < 6) { showAuthMsg('Password must be at least 6 characters', 'error'); return; }
+  if (password.length < 8) { showAuthMsg('Password must be at least 8 characters', 'error'); return; }
   const { error } = await sb.auth.signUp({ email, password });
   if (error) { showAuthMsg(error.message, 'error'); return; }
   await sb.from('bands').insert({ email, band_name: bandName, genre, home_city: city, is_premium: false });
@@ -138,10 +147,10 @@ function renderGenreChips(containerId, max) {
   if (!el || !_genreCache) return;
   const sel = _genreState[containerId] || new Set();
   el.innerHTML = _genreCache.map(name => {
-    const safeName = name.replace(/'/g, "\\'");
+    const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const active   = sel.has(name) ? 'genre-chip-active' : '';
     return `<button type="button" class="genre-chip ${active}"
-      onclick="toggleGenreChip('${containerId}',this,'${safeName}',${max})">${name}</button>`;
+      onclick="toggleGenreChip('${containerId}',this,'${safeName}',${max})">${escapeHtml(name)}</button>`;
   }).join('');
 }
 
@@ -180,7 +189,7 @@ function preselectGenres(containerId, genreStr) {
 async function addCustomGenreFromInput(containerId) {
   const inputId = containerId.replace('Chips', 'CustomInput');
   const inputEl = document.getElementById(inputId);
-  const name    = (inputEl?.value || '').trim();
+  const name    = (inputEl?.value || '').trim().substring(0, 50);
   if (!name) return;
 
   const el  = document.getElementById(containerId);
@@ -299,9 +308,10 @@ async function openContactModal(placeId, name, address) {
   document.getElementById('cmodalEmailBtn').href = `mailto:${emailGuess}?subject=${subject}&body=${body}`;
   document.getElementById('cmodalEmailOption').style.display = 'block';
 
-  // Website option — only if Places returned one
-  if (website) {
-    document.getElementById('cmodalWebBtn').href = website;
+  // Website option — only if Places returned a valid https URL
+  const safeWebsite = (website && /^https?:\/\//i.test(website)) ? website : null;
+  if (safeWebsite) {
+    document.getElementById('cmodalWebBtn').href = safeWebsite;
     document.getElementById('cmodalWebOption').style.display = 'block';
   } else {
     document.getElementById('cmodalWebOption').style.display = 'none';

@@ -163,10 +163,11 @@ async function renderProfile() {
 function renderAvatarEl(photoUrl, bandName, containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const initial = (bandName || 'B')[0].toUpperCase();
-  el.innerHTML = photoUrl
-    ? `<img src="${photoUrl}" class="profile-photo" alt="${bandName}">`
-    : `<div class="profile-photo-init">${initial}</div>`;
+  const initial    = (bandName || 'B')[0].toUpperCase();
+  const safeUrl    = (photoUrl && /^https:\/\//i.test(photoUrl)) ? photoUrl : null;
+  el.innerHTML = safeUrl
+    ? `<img src="${escapeHtml(safeUrl)}" class="profile-photo" alt="${escapeHtml(bandName || '')}">`
+    : `<div class="profile-photo-init">${escapeHtml(initial)}</div>`;
 }
 
 async function handlePhotoUpload(input) {
@@ -177,8 +178,13 @@ async function handlePhotoUpload(input) {
 
   const reader = new FileReader();
   reader.onload = e => {
-    document.getElementById('profilePhotoEl').innerHTML =
-      `<img src="${e.target.result}" class="profile-photo" alt="">`;
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.className = 'profile-photo';
+    img.alt = '';
+    const el = document.getElementById('profilePhotoEl');
+    el.innerHTML = '';
+    el.appendChild(img);
   };
   reader.readAsDataURL(file);
 
@@ -690,13 +696,13 @@ async function loadReviewHistory(bandId) {
   list.innerHTML = reviews.map(r => {
     const stars = '★'.repeat(r.overall_rating || 0) + '☆'.repeat(5 - (r.overall_rating || 0));
     const date  = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const blurb = (r.review_text || '').substring(0, 140).trim();
+    const blurb = escapeHtml((r.review_text || '').substring(0, 140).trim());
     return `<div class="review-history-item">
       <div class="rhi-stars">${stars}</div>
       <div class="rhi-body">
-        <div class="rhi-venue">${r.venue_name || 'Unknown Venue'}</div>
+        <div class="rhi-venue">${escapeHtml(r.venue_name || 'Unknown Venue')}</div>
         <div class="rhi-meta">${date}</div>
-        ${blurb ? `<div class="rhi-text">${blurb}${r.review_text?.length > 140 ? '…' : ''}</div>` : ''}
+        ${blurb ? `<div class="rhi-text">${blurb}${(r.review_text?.length || 0) > 140 ? '…' : ''}</div>` : ''}
       </div>
     </div>`;
   }).join('');
