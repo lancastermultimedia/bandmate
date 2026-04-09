@@ -248,8 +248,8 @@ function showInfoWindow(place, marker) {
 
   infoWindow.setContent(`
     <div class="info-window">
-      <div class="iw-name">${place.name}</div>
-      <div class="iw-address">${place.vicinity || ''}</div>
+      <div class="iw-name">${escapeHtml(place.name)}</div>
+      <div class="iw-address">${escapeHtml(place.vicinity || '')}</div>
       ${rating
         ? `<div class="iw-rating-row">
              <span class="iw-stars">${stars}</span>
@@ -290,10 +290,10 @@ function updateVenuesList(venues) {
     return `
       <div class="venue-result-card" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
         <div class="vrc-header">
-          <div class="vrc-name">${place.name}</div>
+          <div class="vrc-name">${escapeHtml(place.name)}</div>
           ${rating ? `<div class="vrc-rating"><span style="color:var(--gold)">${stars}</span> ${rating.toFixed(1)}</div>` : ''}
         </div>
-        <div class="vrc-address">${place.vicinity || ''}</div>
+        <div class="vrc-address">${escapeHtml(place.vicinity || '')}</div>
         <div class="vrc-tags">
           ${types.slice(0, 3).map(t => `<span class="vrc-tag">${t.replace(/_/g, ' ')}</span>`).join('')}
           ${isOpen ? '<span class="vrc-tag open">Open Now</span>' : ''}
