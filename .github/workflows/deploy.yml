@@ -1,0 +1,66 @@
+# Bandmate — GitHub Pages Deployment
+#
+# Credentials are stored as GitHub Actions Secrets (never in source code).
+# On every push to main this workflow:
+#   1. Generates config.js from secrets at runtime
+#   2. Deploys the full site to the gh-pages branch
+#
+# REQUIRED SETUP (one-time):
+#   1. Go to repo Settings → Secrets and variables → Actions → New repository secret
+#      Add each of these three secrets:
+#        BANDMATE_SUPABASE_URL   — e.g. https://xxxx.supabase.co
+#        BANDMATE_SUPABASE_KEY   — your Supabase anon/public key
+#        BANDMATE_MAPS_KEY       — your Google Maps API key (restrict to your domain!)
+#   2. Go to repo Settings → Pages → Source → select "Deploy from a branch"
+#      Branch: gh-pages  /  Folder: / (root)
+#   3. In Google Cloud Console, restrict your Maps API key to your domain
+#      so it cannot be abused if someone reads it from browser DevTools.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Generate config.js from GitHub Secrets
+        env:
+          SUPABASE_URL: ${{ secrets.BANDMATE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.BANDMATE_SUPABASE_KEY }}
+          MAPS_KEY: ${{ secrets.BANDMATE_MAPS_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import os
+          url  = os.environ['SUPABASE_URL']
+          key  = os.environ['SUPABASE_KEY']
+          maps = os.environ['MAPS_KEY']
+          with open('config.js', 'w') as f:
+              f.write(
+                  "// Auto-generated at deploy time by GitHub Actions.\n"
+                  "// Do NOT commit credentials — add them to repo Secrets instead.\n"
+                  "// See .github/workflows/deploy.yml for setup instructions.\n"
+                  f"const BANDMATE_SUPABASE_URL = '{url}';\n"
+                  f"const BANDMATE_SUPABASE_KEY = '{key}';\n"
+                  f"const BANDMATE_MAPS_KEY     = '{maps}';\n"
+                  "const BANDMATE_DEV          = false;\n"
+              )
+          print('config.js written successfully.')
+          PYEOF
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          exclude_assets: '.github,.gitignore,config.example.js'
