@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // If owner has no theme set, show theme selector
   if (isOwner && !band.epk_theme) {
-    ['epkTpvNameClean','epkTpvNameBold','epkTpvNameVibrant'].forEach(id => {
+    ['epkTpvNameClean','epkTpvNameBold','epkTpvNameVibrant','epkTpvNameStatic','epkTpvNameTorn','epkTpvNameSignal'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = band.band_name;
     });
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function openThemeSelectOverlay() {
   if (!currentEpkBand) return;
-  ['epkTpvNameClean','epkTpvNameBold','epkTpvNameVibrant'].forEach(id => {
+  ['epkTpvNameClean','epkTpvNameBold','epkTpvNameVibrant','epkTpvNameStatic','epkTpvNameTorn','epkTpvNameSignal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = currentEpkBand.band_name;
   });
@@ -270,6 +270,39 @@ function buildHero(band) {
         ${linksHtml}
       </div>
       ${photoHtml}
+    </div>`;
+  }
+
+  if (theme === 'static') {
+    return `<div class="epkt-hero">
+      <div class="epkt-eyebrow">// Electronic Press Kit</div>
+      <h1 class="epkt-band-name">${escHtml(band.band_name)}</h1>
+      <div class="epkt-genre-city">${genreCity}</div>
+      ${photoHtml}
+      ${linksHtml}
+    </div>`;
+  }
+
+  if (theme === 'torn') {
+    return `<div class="epkt-hero">
+      <div class="epkt-hero-side">
+        <h1 class="epkt-band-name">${escHtml(band.band_name)}</h1>
+      </div>
+      <div class="epkt-hero-main">
+        <div class="epkt-eyebrow">Electronic Press Kit</div>
+        ${photoHtml}
+        <div class="epkt-genre-city">${genreCity}</div>
+        ${linksHtml}
+      </div>
+    </div>`;
+  }
+
+  if (theme === 'signal') {
+    return `<div class="epkt-hero">
+      <h1 class="epkt-band-name">${escHtml(band.band_name)}</h1>
+      ${photoHtml}
+      <div class="epkt-genre-city">${genreCity}</div>
+      ${linksHtml}
     </div>`;
   }
 
