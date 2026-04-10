@@ -32,7 +32,7 @@ async function loadBandProfile() {
 function isBandPremium(profile) {
   if (!profile) return false;
   if (profile.band_name === 'Campers') return true;
-  return profile.is_premium === true || (profile.review_count || 0) >= 5;
+  return profile.is_premium === true || (profile.review_count || 0) >= 3;
 }
 
 function updateNavAuth() {
@@ -43,7 +43,7 @@ function updateNavAuth() {
     const reviewCount = currentBandProfile.review_count || 0;
     const statusHtml  = isPremium
       ? `<span class="nav-premium-badge">Community Premium</span>`
-      : `<span class="nav-review-progress">${reviewCount} of 5 reviews to unlock premium</span>`;
+      : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock premium</span>`;
     const avatarHtml  = currentBandProfile.photo_url
       ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
       : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;

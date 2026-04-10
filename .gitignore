@@ -1,5 +1,4 @@
-# Local credentials — NEVER commit config.js
-# Copy config.example.js to config.js and fill in your credentials
+# Local credentials — generated at deploy time, never commit
 config.js
 
 # macOS

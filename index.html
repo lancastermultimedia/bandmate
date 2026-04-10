@@ -11,17 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
-/* ── Landing page body gradient ── */
-body.lp-body {
-  background: linear-gradient(180deg,
-    #0e0d0b 0%,
-    #0e0d0b 45%,
-    #1a1713 52%,
-    #f5f0e8 62%,
-    #f5f0e8 100%
-  );
-  min-height: 100vh;
-}
+html { scroll-behavior: smooth; }
+body.lp-body { background: var(--cream); }
 
 /* ── Nav — always cream background, always readable ── */
 .lp-nav {
@@ -74,7 +65,7 @@ body.lp-body {
   color: var(--cream) !important;
   padding: 7px 16px;
   text-decoration: none;
-  transition: background 0.2s, color 0.2s !important;
+  transition: background 0.2s !important;
 }
 .lp-nav .lp-nav-cta:hover { background: var(--rust-light); }
 .lp-nav .nav-logo-dot { background: var(--rust); }
@@ -82,72 +73,167 @@ body.lp-body {
 /* Nav auth area */
 #navAuthArea a:not(.lp-nav-cta) { color: var(--muted) !important; }
 
-/* ── Toast ── */
-/* uses existing .toast from styles.css */
+/* Logged-in user nav components — always readable on cream background */
+.lp-nav .nav-user { display: flex; align-items: center; gap: 12px; }
+.lp-nav .nav-user-link {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: color 0.2s;
+}
+.lp-nav .nav-user-link:hover { color: var(--ink); }
+.lp-nav .nav-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.lp-nav .nav-avatar-init {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--rust); color: var(--cream);
+  font-family: 'DM Serif Display', serif; font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.lp-nav .nav-premium-badge {
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  background: var(--rust); color: var(--cream); padding: 3px 8px;
+}
+.lp-nav .nav-review-progress {
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+.lp-nav .nav-signout {
+  font-family: 'Space Mono', monospace; font-size: 0.55rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; padding: 0; transition: color 0.2s;
+}
+.lp-nav .nav-signout:hover { color: var(--ink); }
 
-/* ── Hero ── */
+/* ── Hero section ────────────────────────────────────────────────────────── */
 .lp-hero {
   position: relative;
   min-height: 100vh;
+  background: #0e0d0b;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 120px 24px 80px;
+  padding: 100px 24px 60px;
   overflow: hidden;
 }
 
-/* Animated background lines */
-.lp-hero-lines {
-  position: absolute;
-  inset: -60px 0 0 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-.lp-hero-lines::before {
+/* Map grid lines */
+.lp-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 47px,
-    rgba(245,240,232,0.03) 47px,
-    rgba(245,240,232,0.03) 48px
-  );
-  animation: lp-lines-drift 12s linear infinite;
-}
-@keyframes lp-lines-drift {
-  from { transform: translateY(0); }
-  to   { transform: translateY(48px); }
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Subtle radial glow behind headline */
+/* Radial focus glow */
 .lp-hero-glow {
   position: absolute;
-  top: 30%;
-  left: 50%;
+  top: 40%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(ellipse at center, rgba(201,75,42,0.08) 0%, transparent 70%);
+  width: 65vw; height: 55vh;
+  background: radial-gradient(ellipse at center, rgba(245,240,232,0.025) 0%, transparent 68%);
   pointer-events: none;
+  z-index: 0;
 }
 
+/* Hero content */
 .lp-hero-content {
   position: relative;
+  z-index: 2;
+  max-width: 1000px;
+  width: 100%;
+}
+
+/* Animated map pins */
+.hero-pin {
+  position: absolute;
   z-index: 1;
-  max-width: 820px;
+  width: 14px;
+  height: 20px;
+  pointer-events: none;
+  will-change: transform, opacity;
+  opacity: 0;
+  animation: pinDrop 9s ease-out infinite;
+}
+.hero-pin::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 1px;
+  width: 12px; height: 12px;
+  background: var(--rust);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+.hero-pin::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 4px;
+  width: 5px; height: 5px;
+  background: rgba(14,13,11,0.5);
+  border-radius: 50%;
+}
+
+@keyframes pinDrop {
+  0%   { transform: translateY(-60px); opacity: 0; }
+  8%   { transform: translateY(4px);   opacity: 0.18; }
+  10%  { transform: translateY(-2px);  opacity: 0.15; }
+  13%  { transform: translateY(0);     opacity: 0.12; }
+  87%  { transform: translateY(0);     opacity: 0.12; }
+  94%  { transform: translateY(0);     opacity: 0; }
+  100% { transform: translateY(-60px); opacity: 0; }
+}
+
+.hero-pin:nth-child(1)  { top: 12%; left: 7%;  animation-delay: 0s; }
+.hero-pin:nth-child(2)  { top: 20%; left: 22%; animation-delay: 0.6s; }
+.hero-pin:nth-child(3)  { top: 9%;  left: 41%; animation-delay: 1.4s; }
+.hero-pin:nth-child(4)  { top: 17%; left: 63%; animation-delay: 2.2s; }
+.hero-pin:nth-child(5)  { top: 13%; left: 83%; animation-delay: 0.9s; }
+.hero-pin:nth-child(6)  { top: 43%; left: 5%;  animation-delay: 3.5s; }
+.hero-pin:nth-child(7)  { top: 37%; left: 31%; animation-delay: 4.1s; }
+.hero-pin:nth-child(8)  { top: 35%; left: 55%; animation-delay: 1.8s; }
+.hero-pin:nth-child(9)  { top: 46%; left: 79%; animation-delay: 5.0s; }
+.hero-pin:nth-child(10) { top: 58%; left: 13%; animation-delay: 2.7s; }
+.hero-pin:nth-child(11) { top: 64%; left: 37%; animation-delay: 6.3s; }
+.hero-pin:nth-child(12) { top: 61%; left: 69%; animation-delay: 1.1s; }
+.hero-pin:nth-child(13) { top: 74%; left: 89%; animation-delay: 3.8s; }
+.hero-pin:nth-child(14) { top: 79%; left: 50%; animation-delay: 5.6s; }
+.hero-pin:nth-child(15) { top: 71%; left: 26%; animation-delay: 7.2s; }
+
+/* Hero logo mark */
+.hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem;
+  color: rgba(245,240,232,0.55);
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: lp-fade-up 0.45s ease forwards;
+  animation-delay: 0s;
 }
 
 .lp-eyebrow {
   font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   color: var(--rust);
-  margin-bottom: 28px;
+  margin-bottom: 22px;
   opacity: 0;
   animation: lp-fade-up 0.5s ease forwards;
   animation-delay: 0.1s;
@@ -155,366 +241,353 @@ body.lp-body {
 
 .lp-headline {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(3.6rem, 8vw, 7.5rem);
+  font-size: clamp(3rem, 6vw, 7rem);
   line-height: 1.05;
   color: var(--cream);
-  margin: 0 0 28px;
+  margin: 0 0 22px;
   letter-spacing: -0.01em;
 }
-.lp-headline .lp-h-line1 {
+.lp-h-line1 {
   display: block;
   opacity: 0;
   animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.25s;
+  animation-delay: 0.22s;
 }
-.lp-headline .lp-h-line2 {
+.lp-h-line2 {
   display: block;
   font-style: italic;
   color: var(--rust);
   opacity: 0;
   animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.42s;
+  animation-delay: 0.38s;
 }
 
 .lp-sub {
   font-family: 'Outfit', sans-serif;
   font-weight: 300;
-  font-size: clamp(1rem, 2vw, 1.15rem);
-  color: rgba(245,240,232,0.58);
+  font-size: 1.1rem;
+  color: rgba(245,240,232,0.55);
   line-height: 1.7;
-  max-width: 500px;
+  max-width: 520px;
   margin: 0 auto 44px;
   opacity: 0;
   animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.58s;
-}
-
-.lp-hero-btns {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  flex-wrap: wrap;
-  opacity: 0;
-  animation: lp-fade-up 0.5s ease forwards;
-  animation-delay: 0.72s;
-}
-
-.lp-btn-primary {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: var(--rust);
-  color: var(--cream);
-  border: none;
-  padding: 14px 32px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  transition: background 0.2s, transform 0.15s;
-}
-.lp-btn-primary:hover {
-  background: var(--rust-light);
-  transform: translateY(-1px);
-}
-
-.lp-btn-secondary {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: transparent;
-  color: var(--cream);
-  border: 1.5px solid rgba(245,240,232,0.35);
-  padding: 13px 32px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
-}
-.lp-btn-secondary:hover {
-  border-color: rgba(245,240,232,0.7);
-  background: rgba(245,240,232,0.06);
-  transform: translateY(-1px);
+  animation-delay: 0.52s;
 }
 
 @keyframes lp-fade-up {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Stats transition band ── */
-.lp-stats {
-  position: relative;
-  z-index: 2;
+/* ── Hero feature cards ──────────────────────────────────────────────────── */
+.hc-cards {
   display: flex;
+  gap: 18px;
   justify-content: center;
-  gap: 0;
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 0 24px;
-  transform: translateY(50%);
+  flex-wrap: wrap;
+  margin-bottom: 44px;
+  opacity: 0;
+  animation: lp-fade-up 0.55s ease forwards;
+  animation-delay: 0.66s;
 }
-.lp-stat {
+
+.hc-card {
   flex: 1;
-  text-align: center;
-  padding: 32px 24px;
-  background: var(--cream);
-  border: 1.5px solid var(--border);
-  box-shadow: 3px 3px 0 rgba(14,13,11,0.08);
-  position: relative;
-}
-.lp-stat + .lp-stat {
-  border-left: none;
-}
-.lp-stat-num {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  color: var(--ink);
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.lp-stat-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-}
-
-/* ── Tools section ── */
-.lp-tools {
-  background: transparent;
-  padding: 120px 24px 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.lp-section-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--rust);
-  margin-bottom: 48px;
-  text-align: center;
-}
-
-.lp-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.lp-card {
-  background: #fff;
-  border: 1.5px solid var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-  padding: 36px 28px 28px;
+  min-width: 240px;
+  max-width: 294px;
+  background: rgba(14,13,11,0.72);
+  border: 1.5px solid rgba(201,75,42,0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 26px 22px 22px;
+  text-align: left;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-  position: relative;
+  transition: border-color 0.2s, background 0.2s;
 }
-.lp-card:hover {
-  border-color: var(--rust);
-  box-shadow: 4px 4px 0 var(--rust);
-  transform: translateY(-3px);
+.hc-card:hover {
+  border-color: rgba(201,75,42,0.65);
+  background: rgba(14,13,11,0.85);
 }
 
-.lp-card-icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 24px;
+.hc-icon-wrap {
+  width: 44px; height: 44px;
+  margin-bottom: 18px;
   flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.lp-card-name {
+.hc-card-name {
   font-family: 'DM Serif Display', serif;
-  font-size: 1.5rem;
-  color: var(--ink);
-  margin-bottom: 12px;
+  font-size: 1.3rem;
+  color: var(--cream);
+  margin-bottom: 10px;
   line-height: 1.2;
 }
 
-.lp-card-desc {
+.hc-card-desc {
   font-family: 'Outfit', sans-serif;
   font-weight: 300;
-  font-size: 0.92rem;
-  color: var(--muted);
-  line-height: 1.7;
+  font-size: 0.85rem;
+  color: rgba(245,240,232,0.55);
+  line-height: 1.65;
   flex: 1;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
-.lp-card-btn {
+/* Unlocked buttons */
+.hc-btn {
   font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.57rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 11px 20px;
+  padding: 10px 18px;
   text-decoration: none;
   display: inline-block;
-  transition: background 0.2s, transform 0.15s;
   border: none;
   cursor: pointer;
   align-self: flex-start;
+  transition: background 0.18s, transform 0.12s;
 }
-.lp-card-btn:hover { transform: translateY(-1px); }
-.lp-card-btn-rust  { background: var(--rust); color: var(--cream); }
-.lp-card-btn-rust:hover { background: var(--rust-light); }
-.lp-card-btn-ink   { background: var(--ink); color: var(--cream); }
-.lp-card-btn-ink:hover { background: #2a2824; }
-.lp-card-btn-sage  { background: var(--sage); color: var(--cream); }
-.lp-card-btn-sage:hover { background: var(--sage-light); }
+.hc-btn:hover { transform: translateY(-1px); }
+.hc-btn-rust  { background: var(--rust);  color: var(--cream); }
+.hc-btn-rust:hover { background: var(--rust-light); }
+.hc-btn-ink   { background: var(--ink);   color: var(--cream); }
+.hc-btn-ink:hover  { background: #2a2824; }
+.hc-btn-sage  { background: var(--sage);  color: var(--cream); }
+.hc-btn-sage:hover { background: var(--sage-light); }
 
-/* Locked button */
-.lp-card-btn-locked {
-  background: rgba(14,13,11,0.07);
-  color: var(--muted);
-  cursor: default;
+/* Locked state */
+.hc-locked-wrap { position: relative; align-self: flex-start; }
+.hc-locked-wrap:hover .hc-locked-tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.hc-locked-tip {
+  position: absolute;
+  bottom: calc(100% + 8px); left: 0;
+  background: var(--cream); color: var(--ink);
+  font-family: 'Outfit', sans-serif; font-size: 0.75rem;
+  white-space: nowrap; padding: 6px 11px;
+  opacity: 0; transform: translateY(4px);
+  pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+  z-index: 10;
+}
+.hc-locked-tip::after {
+  content: ''; position: absolute;
+  top: 100%; left: 14px;
+  border: 5px solid transparent;
+  border-top-color: var(--cream);
+}
+.hc-btn-locked {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(245,240,232,0.07);
+  color: rgba(245,240,232,0.35);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 10px 16px;
+  border: 1.5px solid rgba(245,240,232,0.1);
+  cursor: default; pointer-events: none;
+}
+.hc-btn-locked .hc-lock { width: 10px; height: 10px; opacity: 0.5; flex-shrink: 0; }
+
+/* Progress bar (shown for logged-in locked users) */
+.hc-progress { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(245,240,232,0.1); }
+.hc-progress-label {
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: rgba(245,240,232,0.35); margin-bottom: 6px;
+}
+.hc-progress-track { height: 2px; background: rgba(245,240,232,0.1); width: 100%; }
+.hc-progress-fill  { height: 100%; background: var(--rust); transition: width 0.5s ease; }
+
+/* ── Hero card icon animations ───────────────────────────────────────────── */
+
+/* Card 1: map pin drop */
+.hc-pin-icon { animation: hcPinDrop 3s cubic-bezier(0.34, 1.4, 0.64, 1) infinite; will-change: transform; }
+@keyframes hcPinDrop {
+  0%, 15% { transform: translateY(-10px); opacity: 0; }
+  35%     { transform: translateY(2px);   opacity: 1; }
+  45%     { transform: translateY(-1px);  opacity: 1; }
+  55%, 80%{ transform: translateY(0);    opacity: 1; }
+  95%, 100%{ transform: translateY(-10px); opacity: 0; }
+}
+
+/* Card 2: route line drawing */
+.hc-route-path {
+  stroke-dasharray: 110;
+  stroke-dashoffset: 110;
+  animation: hcRouteDraw 3s ease-in-out infinite;
+  will-change: stroke-dashoffset;
+}
+@keyframes hcRouteDraw {
+  0%, 8%   { stroke-dashoffset: 110; opacity: 0; }
+  12%      { opacity: 1; }
+  60%      { stroke-dashoffset: 0;   opacity: 1; }
+  82%      { stroke-dashoffset: 0;   opacity: 1; }
+  95%, 100%{ stroke-dashoffset: 0;   opacity: 0; }
+}
+
+/* Card 3: doc lines fade in */
+@keyframes hcDocLine {
+  0%, 100% { opacity: 0; }
+  25%, 65% { opacity: 0.85; }
+}
+.hc-doc-l1 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0s; }
+.hc-doc-l2 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0.32s; }
+.hc-doc-l3 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0.64s; }
+
+/* ── Hero stats row ──────────────────────────────────────────────────────── */
+.hero-stats {
   display: flex;
   align-items: center;
-  gap: 7px;
-  pointer-events: none;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: lp-fade-up 0.5s ease forwards;
+  animation-delay: 0.78s;
+}
+.hero-stat {
   font-family: 'Space Mono', monospace;
   font-size: 0.58rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 11px 18px;
-  border: 1.5px solid rgba(14,13,11,0.12);
-  position: relative;
+  letter-spacing: 0.12em;
+  color: rgba(245,240,232,0.38);
 }
-.lp-card-btn-locked .lp-lock {
-  width: 11px; height: 11px;
-  opacity: 0.5;
+.hero-stat-sep {
+  color: rgba(245,240,232,0.18);
+  font-size: 0.7rem;
+}
+
+/* ── Down arrow ──────────────────────────────────────────────────────────── */
+.hero-arrow {
+  opacity: 0;
+  animation: lp-fade-up 0.5s ease forwards, heroArrowPulse 2.2s ease-in-out 1.2s infinite;
+  animation-delay: 0.9s, 1.2s;
+}
+@keyframes heroArrowPulse {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50%      { transform: translateY(5px); opacity: 0.7; }
+}
+
+/* ── Live ticker ─────────────────────────────────────────────────────────── */
+.ticker-wrap {
+  width: 100%;
+  background: rgba(201,75,42,0.12);
+  border-top: 1px solid rgba(201,75,42,0.28);
+  border-bottom: 1px solid rgba(201,75,42,0.28);
+  overflow: hidden;
+  position: relative;
+  height: 38px;
+  display: flex;
+  align-items: center;
+}
+.ticker-wrap:hover .ticker-track { animation-play-state: paused; }
+.ticker-live {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  z-index: 2;
+  background: var(--rust);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ticker-fade-l {
+  position: absolute;
+  left: 52px; top: 0; bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, #f5f0e8, transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+.ticker-inner {
+  overflow: hidden;
+  padding-left: 58px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.ticker-track {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: tickerScroll 60s linear infinite;
+  will-change: transform;
+}
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-item {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  padding: 0 24px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ticker-dot {
+  color: var(--rust);
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
-/* Tooltip on locked button */
-.lp-locked-wrap {
-  position: relative;
-  display: inline-block;
-  align-self: flex-start;
-}
-.lp-locked-wrap:hover .lp-locked-tip {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-.lp-locked-tip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  background: var(--ink);
-  color: var(--cream);
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 400;
-  white-space: nowrap;
-  padding: 7px 12px;
-  opacity: 0;
-  transform: translateY(4px);
-  pointer-events: none;
-  transition: opacity 0.15s, transform 0.15s;
-  z-index: 10;
-}
-.lp-locked-tip::after {
-  content: '';
-  position: absolute;
-  top: 100%; left: 16px;
-  border: 5px solid transparent;
-  border-top-color: var(--ink);
+/* ── Hero → map gradient transition ─────────────────────────────────────── */
+.hero-to-map {
+  background: linear-gradient(to bottom, #0e0d0b 0%, #f5f0e8 100%);
+  height: 80px;
+  flex-shrink: 0;
 }
 
-/* Progress bar under locked card */
-.lp-card-progress {
-  display: none;
-  margin-top: 14px;
-  padding-top: 14px;
+/* ── Map section overrides for index.html ───────────────────────────────── */
+/* Fixed-height map section — panel scrolls internally, nothing grows. */
+#find-venues {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+#find-venues .hero {
+  height: 100vh;
+  overflow: hidden;
+}
+#find-venues .hero-panel {
+  height: 100%;
+  overflow: hidden;  /* panel itself does NOT scroll — only venues-list does */
+  display: flex;
+  flex-direction: column;
+}
+#find-venues #venuesList {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;     /* critical: lets flexbox shrink this child so it scrolls */
+}
+#find-venues .hero > div:last-child {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+#find-venues #map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Map → testimonials separator ────────────────────────────────────────── */
+.map-to-testi {
+  background: var(--cream);
+  padding-top: 72px;
   border-top: 1px solid var(--border);
 }
-.lp-card-progress-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-bottom: 7px;
-}
-.lp-card-progress-track {
-  height: 3px;
-  background: rgba(14,13,11,0.1);
-  width: 100%;
-  position: relative;
-}
-.lp-card-progress-fill {
-  height: 100%;
-  background: var(--rust);
-  transition: width 0.5s ease;
-}
 
-/* ── Animated icons ── */
-
-/* Icon 1: Map pin that drops in and pulses */
-.lp-icon-pin {
-  animation: lp-pin-drop 2.5s ease infinite;
-  transform-origin: 50% 100%;
-}
-@keyframes lp-pin-drop {
-  0%   { transform: translateY(-8px); opacity: 0; }
-  15%  { transform: translateY(0); opacity: 1; }
-  70%  { transform: translateY(0) scale(1); }
-  80%  { transform: translateY(0) scale(1.08); }
-  90%  { transform: translateY(0) scale(0.97); }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-/* Icon 2: Route line draws left to right */
-.lp-icon-route-path {
-  stroke-dasharray: 80;
-  stroke-dashoffset: 80;
-  animation: lp-draw-route 2s ease infinite;
-  animation-delay: 0.3s;
-}
-@keyframes lp-draw-route {
-  0%   { stroke-dashoffset: 80; }
-  50%  { stroke-dashoffset: 0; }
-  75%  { stroke-dashoffset: 0; opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 1; }
-}
-.lp-icon-route-dot {
-  opacity: 0;
-  animation: lp-dot-appear 2s ease infinite;
-}
-.lp-icon-route-dot:nth-child(3) { animation-delay: 0.5s; }
-.lp-icon-route-dot:nth-child(4) { animation-delay: 0.9s; }
-.lp-icon-route-dot:nth-child(5) { animation-delay: 1.3s; }
-@keyframes lp-dot-appear {
-  0%   { opacity: 0; }
-  30%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* Icon 3: Document lines fade in sequentially */
-.lp-icon-line {
-  opacity: 0;
-  animation: lp-line-in 2.4s ease infinite;
-}
-.lp-icon-line:nth-child(2) { animation-delay: 0.2s; }
-.lp-icon-line:nth-child(3) { animation-delay: 0.5s; }
-.lp-icon-line:nth-child(4) { animation-delay: 0.8s; }
-.lp-icon-line:nth-child(5) { animation-delay: 1.1s; }
-@keyframes lp-line-in {
-  0%   { opacity: 0; transform: scaleX(0.3); transform-origin: left; }
-  25%  { opacity: 1; transform: scaleX(1); transform-origin: left; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* ── Testimonials ── */
+/* ── Testimonials ────────────────────────────────────────────────────────── */
 .lp-testimonials {
   padding: 80px 24px 100px;
   max-width: 1100px;
@@ -540,14 +613,11 @@ body.lp-body {
 }
 .lp-testi-quote {
   font-family: 'DM Serif Display', serif;
-  font-style: italic;
   font-size: 1.05rem;
   color: var(--ink);
-  line-height: 1.6;
+  line-height: 1.55;
   margin-bottom: 20px;
 }
-.lp-testi-quote::before { content: '\201C'; }
-.lp-testi-quote::after  { content: '\201D'; }
 .lp-testi-band {
   font-family: 'Space Mono', monospace;
   font-size: 0.6rem;
@@ -563,7 +633,7 @@ body.lp-body {
   letter-spacing: 0.06em;
 }
 
-/* ── Dark footer ── */
+/* ── Footer ──────────────────────────────────────────────────────────────── */
 .lp-footer {
   background: var(--ink);
   padding: 52px 40px;
@@ -575,123 +645,45 @@ body.lp-body {
 }
 .lp-footer-logo {
   font-family: 'DM Serif Display', serif;
-  font-size: 1.3rem;
-  color: var(--cream);
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 1.3rem; color: var(--cream); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
 }
 .lp-footer-tagline {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 300;
-  font-size: 0.85rem;
-  color: rgba(245,240,232,0.45);
+  font-family: 'Outfit', sans-serif; font-weight: 300;
+  font-size: 0.85rem; color: rgba(245,240,232,0.45);
 }
-.lp-footer-links {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-}
+.lp-footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
 .lp-footer-links a {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(245,240,232,0.45);
-  text-decoration: none;
-  transition: color 0.2s;
+  font-family: 'Space Mono', monospace; font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: rgba(245,240,232,0.45); text-decoration: none; transition: color 0.2s;
 }
 .lp-footer-links a:hover { color: var(--cream); }
-.lp-footer-right {
-  text-align: right;
-}
+.lp-footer-right { text-align: right; }
 .lp-footer-right p {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
-  color: rgba(245,240,232,0.25);
-  letter-spacing: 0.08em;
-  margin: 0 0 4px;
+  font-family: 'Space Mono', monospace; font-size: 0.55rem;
+  color: rgba(245,240,232,0.25); letter-spacing: 0.08em; margin: 0 0 4px;
 }
 .lp-footer-right p:last-child { margin-bottom: 0; }
 
-/* ── Nav user display (shared with other pages, adapted for dark nav) ── */
-.lp-nav .nav-user { display: flex; align-items: center; gap: 12px; }
-.lp-nav .nav-user-link {
-  display: flex; align-items: center; gap: 8px;
-  text-decoration: none;
-  color: rgba(245,240,232,0.8);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: color 0.2s;
-}
-.lp-nav .nav-user-link:hover { color: var(--cream); }
-.lp-nav.lp-nav--scrolled .nav-user-link { color: var(--muted); }
-.lp-nav.lp-nav--scrolled .nav-user-link:hover { color: var(--ink); }
-.lp-nav .nav-avatar {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.lp-nav .nav-avatar-init {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: var(--rust);
-  color: var(--cream);
-  font-family: 'DM Serif Display', serif;
-  font-size: 0.75rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.lp-nav .nav-premium-badge {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: var(--rust);
-  color: var(--cream);
-  padding: 3px 8px;
-}
-.lp-nav .nav-review-progress {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.5rem;
-  color: rgba(245,240,232,0.4);
-  letter-spacing: 0.06em;
-}
-.lp-nav.lp-nav--scrolled .nav-review-progress { color: var(--muted); }
-.lp-nav .nav-signout {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: none;
-  border: none;
-  color: rgba(245,240,232,0.4);
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
-.lp-nav .nav-signout:hover { color: rgba(245,240,232,0.9); }
-.lp-nav.lp-nav--scrolled .nav-signout { color: var(--muted); }
-.lp-nav.lp-nav--scrolled .nav-signout:hover { color: var(--ink); }
-
-/* ── Responsive ── */
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .lp-cards, .lp-testi-cards { grid-template-columns: 1fr; }
-  .lp-stats { transform: none; padding: 40px 24px 0; }
-  .lp-stat { padding: 24px 16px; }
-  .lp-tools { padding: 60px 24px 60px; }
+  .lp-testi-cards { grid-template-columns: 1fr; }
   .lp-nav { padding: 0 20px; }
   .lp-nav .lp-nav-links { gap: 16px; }
   .lp-footer { padding: 40px 24px; flex-direction: column; }
   .lp-footer-right { text-align: left; }
-  .lp-hero { padding: 100px 24px 60px; }
+  .lp-hero { padding: 90px 20px 40px; }
+  .hc-cards { gap: 14px; }
+  .hc-card { max-width: 100%; }
 }
 @media (max-width: 600px) {
   .lp-nav .lp-nav-links li:not(:last-child):not(:nth-last-child(2)) { display: none; }
-  .lp-stats { flex-direction: column; }
-  .lp-stat + .lp-stat { border-left: 1.5px solid var(--border); border-top: none; }
+  .lp-h-line1, .lp-h-line2 { font-size: clamp(2.4rem, 10vw, 3.5rem); }
+}
+@media (max-width: 480px) {
+  .hc-cards { flex-direction: column; align-items: stretch; }
+  .hc-card { min-width: 0; max-width: 100%; }
 }
 
 </style>
@@ -705,14 +697,9 @@ body.lp-body {
   <div class="bg-tagline">The venue guide and tour planner built for independent bands</div>
   <div class="bg-form">
     <div class="bg-input-wrap">
-      <input
-        class="bg-input"
-        type="password"
-        id="betaCodeInput"
-        placeholder="Enter beta access code"
-        autocomplete="off"
-        onkeydown="if(event.key==='Enter')checkBetaCode()"
-      >
+      <input class="bg-input" type="password" id="betaCodeInput"
+        placeholder="Enter beta access code" autocomplete="off"
+        onkeydown="if(event.key==='Enter')checkBetaCode()">
     </div>
     <div class="bg-error" id="betaError">&nbsp;</div>
     <button class="bg-btn" onclick="checkBetaCode()">Enter Bandmate →</button>
@@ -720,27 +707,26 @@ body.lp-body {
   <div class="bg-note">Early access. Things will break. Your feedback makes it better.</div>
 </div>
 <script>
-  // Run synchronously before any other render — skip gate if already cleared
   (function() {
     if (localStorage.getItem('bm_beta_access') === 'granted') {
       document.getElementById('betaGate').style.display = 'none';
     }
   })();
   function checkBetaCode() {
-    const input = document.getElementById('betaCodeInput');
-    const error = document.getElementById('betaError');
+    var input = document.getElementById('betaCodeInput');
+    var error = document.getElementById('betaError');
     if (!input) return;
     if (input.value.trim().toUpperCase() === 'BANDMATE2025') {
       localStorage.setItem('bm_beta_access', 'granted');
-      const gate = document.getElementById('betaGate');
+      var gate = document.getElementById('betaGate');
       gate.classList.add('bg-fade-out');
-      setTimeout(() => { gate.style.display = 'none'; }, 520);
+      setTimeout(function() { gate.style.display = 'none'; }, 520);
     } else {
       input.classList.remove('bg-shake');
-      void input.offsetWidth; // force reflow to restart animation
+      void input.offsetWidth;
       input.classList.add('bg-shake');
       if (error) error.textContent = 'Invalid code';
-      setTimeout(() => input.classList.remove('bg-shake'), 400);
+      setTimeout(function() { input.classList.remove('bg-shake'); }, 400);
     }
   }
 </script>
@@ -752,7 +738,7 @@ body.lp-body {
 <nav class="lp-nav" id="lpNav">
   <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
   <ul class="lp-nav-links">
-    <li><a href="map.html">Find Venues</a></li>
+    <li><a href="#find-venues" onclick="smoothScrollTo('find-venues'); return false;">Find Venues</a></li>
     <li><a href="tour.html">Tour Planner</a></li>
     <li><a href="profile.html">Build EPK</a></li>
     <li id="navAuthArea" style="display:contents">
@@ -797,171 +783,250 @@ body.lp-body {
   </div>
 </div>
 
-<!-- HERO -->
-<section class="lp-hero">
-  <div class="lp-hero-lines"></div>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SECTION 1 — HERO
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="lp-hero" id="lp-hero">
+
+  <!-- Background glow -->
   <div class="lp-hero-glow"></div>
+
+  <!-- Animated map pins -->
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+  <div class="hero-pin"></div>
+
+  <!-- Hero content -->
   <div class="lp-hero-content">
+
+    <!-- Logo mark -->
+    <div class="hero-logo">
+      Bandmate <span class="nav-logo-dot" style="width:7px;height:7px;display:inline-block;background:var(--rust);border-radius:50%;animation:pulse 1.8s ease-in-out infinite;flex-shrink:0;"></span>
+    </div>
+
+    <!-- Eyebrow -->
     <div class="lp-eyebrow">For independent bands everywhere</div>
+
+    <!-- Main headline -->
     <h1 class="lp-headline">
       <span class="lp-h-line1">Play further.</span>
       <span class="lp-h-line2">Play smarter.</span>
     </h1>
-    <p class="lp-sub">Everything you need to take your music on the road — venue reviews, tour planning, and your EPK in one place.</p>
-    <div class="lp-hero-btns">
-      <a href="#" class="lp-btn-primary" onclick="openAuth('signup'); return false;">Get Started Free</a>
-      <a href="map.html" class="lp-btn-secondary">Explore Venues</a>
+
+    <!-- Subtitle -->
+    <p class="lp-sub">Discover venues, plan your tour, share your music — everything you need to take your sound on the road.</p>
+
+    <!-- Three feature cards -->
+    <div class="hc-cards">
+
+      <!-- Card 1: Venue Reviews — always unlocked -->
+      <div class="hc-card">
+        <div class="hc-icon-wrap">
+          <svg class="hc-pin-icon" width="28" height="36" viewBox="0 0 28 36" fill="none">
+            <path d="M14 1C7.92 1 3 5.92 3 12C3 21.5 14 35 14 35C14 35 25 21.5 25 12C25 5.92 20.08 1 14 1Z"
+              fill="rgba(201,75,42,0.2)" stroke="#c94b2a" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="14" cy="12" r="4.5" fill="#c94b2a"/>
+          </svg>
+        </div>
+        <div class="hc-card-name">Venue Reviews</div>
+        <div class="hc-card-desc">Real scores on sound, hospitality, merch, and parking — from bands who've actually played there.</div>
+        <a href="#find-venues" class="hc-btn hc-btn-rust" onclick="smoothScrollTo('find-venues'); return false;">Find Venues →</a>
+      </div>
+
+      <!-- Card 2: Tour Planner — locked/unlocked -->
+      <div class="hc-card">
+        <div class="hc-icon-wrap">
+          <svg width="70" height="36" viewBox="0 0 70 36" fill="none">
+            <path class="hc-route-path" d="M6,28 C14,28 14,8 26,14 C38,20 36,8 48,8 C58,8 62,18 64,22"
+              stroke="#c94b2a" stroke-width="2" stroke-linecap="round" fill="none"
+              stroke-dasharray="5 4"/>
+            <circle cx="6"  cy="28" r="3.5" fill="#c94b2a" opacity="0.85"/>
+            <circle cx="26" cy="14" r="2.5" fill="#c94b2a" opacity="0.6"/>
+            <circle cx="48" cy="8"  r="2.5" fill="#c94b2a" opacity="0.6"/>
+            <circle cx="64" cy="22" r="3.5" fill="#c94b2a" opacity="0.85"/>
+          </svg>
+        </div>
+        <div class="hc-card-name">Tour Planner</div>
+        <div class="hc-card-desc">Draw your route, pick your cities, get a smart itinerary with venues matched to your sound.</div>
+
+        <a href="tour.html" class="hc-btn hc-btn-ink" id="tourCardBtn" style="display:none">Plan Your Tour →</a>
+
+        <div class="hc-locked-wrap" id="tourCardLocked">
+          <div class="hc-locked-tip">Leave 3 venue reviews to unlock the Tour Planner free</div>
+          <button class="hc-btn-locked" disabled>
+            <svg class="hc-lock" viewBox="0 0 12 14" fill="none">
+              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Review 3 venues to unlock
+          </button>
+        </div>
+
+        <div class="hc-progress" id="tourCardProgress">
+          <div class="hc-progress-label" id="tourCardProgressLabel">0 of 3 reviews</div>
+          <div class="hc-progress-track"><div class="hc-progress-fill" id="tourCardProgressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Card 3: EPK Builder — locked/unlocked -->
+      <div class="hc-card">
+        <div class="hc-icon-wrap">
+          <svg width="36" height="44" viewBox="0 0 36 44" fill="none">
+            <rect x="2" y="2" width="32" height="40" rx="2" stroke="rgba(245,240,232,0.4)" stroke-width="1.5" fill="none"/>
+            <line class="hc-doc-l1" x1="8" y1="13" x2="28" y2="13" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
+            <line class="hc-doc-l2" x1="8" y1="20" x2="24" y2="20" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
+            <line class="hc-doc-l3" x1="8" y1="27" x2="28" y2="27" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="hc-card-name">EPK Builder</div>
+        <div class="hc-card-desc">One link sends venues your music, photos, bio, and reviews — everything they need to book you.</div>
+
+        <a href="profile.html" class="hc-btn hc-btn-sage" id="epkCardBtn" style="display:none">Build Your EPK →</a>
+
+        <div class="hc-locked-wrap" id="epkCardLocked">
+          <div class="hc-locked-tip">Leave 3 venue reviews to unlock the EPK Builder free</div>
+          <button class="hc-btn-locked" disabled>
+            <svg class="hc-lock" viewBox="0 0 12 14" fill="none">
+              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Review 3 venues to unlock
+          </button>
+        </div>
+
+        <div class="hc-progress" id="epkCardProgress">
+          <div class="hc-progress-label" id="epkCardProgressLabel">0 of 3 reviews</div>
+          <div class="hc-progress-track"><div class="hc-progress-fill" id="epkCardProgressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+    </div><!-- /hc-cards -->
+
+    <!-- Inline stats -->
+    <div class="hero-stats">
+      <span class="hero-stat">2,400+ Venues</span>
+      <span class="hero-stat-sep">·</span>
+      <span class="hero-stat">47 States</span>
+      <span class="hero-stat-sep">·</span>
+      <span class="hero-stat">Free to Start</span>
     </div>
-  </div>
+
+    <!-- Down arrow -->
+    <div class="hero-arrow">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(245,240,232,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+
+  </div><!-- /lp-hero-content -->
 </section>
 
-<!-- STATS TRANSITION BAND -->
-<div style="background: linear-gradient(180deg, #0e0d0b 0%, #1a1713 60%, #f5f0e8 100%); padding-bottom: 60px;">
-  <div class="lp-stats">
-    <div class="lp-stat">
-      <div class="lp-stat-num">2,400+</div>
-      <div class="lp-stat-label">Venues Reviewed</div>
-    </div>
-    <div class="lp-stat">
-      <div class="lp-stat-num">47</div>
-      <div class="lp-stat-label">States Covered</div>
-    </div>
-    <div class="lp-stat">
-      <div class="lp-stat-num">Free</div>
-      <div class="lp-stat-label">To Get Started</div>
+<!-- LIVE TICKER -->
+<div class="ticker-wrap" id="tickerWrap">
+  <div class="ticker-live">Live</div>
+  <div class="ticker-fade-l"></div>
+  <div class="ticker-inner">
+    <div class="ticker-track" id="tickerTrack">
+      <!-- populated by JS, two identical copies for seamless loop -->
+      <span class="ticker-item">Loading community activity…</span>
     </div>
   </div>
 </div>
 
-<!-- TOOLS SECTION -->
-<div style="background: var(--cream); padding-top: 60px;">
-  <div class="lp-tools">
-    <div class="lp-section-label">What Bandmate does</div>
-    <div class="lp-cards">
+<!-- GRADIENT TRANSITION -->
+<div class="hero-to-map"></div>
 
-      <!-- CARD 1: Venue Reviews — always active -->
-      <div class="lp-card">
-        <!-- Map pin icon -->
-        <svg class="lp-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g class="lp-icon-pin">
-            <path d="M24 4C17.37 4 12 9.37 12 16C12 24.5 24 44 24 44C24 44 36 24.5 36 16C36 9.37 30.63 4 24 4Z"
-              fill="rgba(201,75,42,0.12)" stroke="#c94b2a" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="24" cy="16" r="5" fill="#c94b2a"/>
-          </g>
-        </svg>
-        <div class="lp-card-name">Venue Reviews</div>
-        <div class="lp-card-desc">Discover bars and venues reviewed by bands who have actually played there. Real scores on sound, hospitality, merch, and more.</div>
-        <a href="map.html" class="lp-card-btn lp-card-btn-rust">Find Venues →</a>
-      </div>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SECTION 2 — VENUE MAP (id="find-venues")
+     ═══════════════════════════════════════════════════════════════════════ -->
 
-      <!-- CARD 2: Tour Planner — locked/unlocked by auth -->
-      <div class="lp-card">
-        <!-- Route icon -->
-        <svg class="lp-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="8"  cy="24" r="3.5" stroke="#0e0d0b" stroke-width="1.5" class="lp-icon-route-dot"/>
-          <circle cx="24" cy="14" r="3.5" stroke="#0e0d0b" stroke-width="1.5" class="lp-icon-route-dot"/>
-          <circle cx="40" cy="24" r="3.5" stroke="#0e0d0b" stroke-width="1.5" class="lp-icon-route-dot"/>
-          <path d="M8 24 Q16 14 24 14 Q32 14 40 24"
-            stroke="#0e0d0b" stroke-width="1.5" fill="none" stroke-linecap="round"
-            class="lp-icon-route-path"/>
-          <circle cx="8"  cy="24" r="2" fill="#c94b2a" class="lp-icon-route-dot"/>
-          <circle cx="24" cy="14" r="2" fill="#c94b2a" class="lp-icon-route-dot"/>
-          <circle cx="40" cy="24" r="2" fill="#c94b2a" class="lp-icon-route-dot"/>
-        </svg>
-        <div class="lp-card-name">Tour Planner</div>
-        <div class="lp-card-desc">Draw your route, pick your cities, and get a smart itinerary with venue recommendations matched to your sound.</div>
-
-        <!-- Unlocked button (hidden by default, shown by JS) -->
-        <a href="tour.html" class="lp-card-btn lp-card-btn-ink" id="tourCardBtn" style="display:none">Plan Your Tour →</a>
-
-        <!-- Locked button (shown by default) -->
-        <div class="lp-locked-wrap" id="tourCardLocked">
-          <div class="lp-locked-tip">Review 5 venues to unlock the Tour Planner free</div>
-          <button class="lp-card-btn-locked" disabled>
-            <svg class="lp-lock" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            </svg>
-            Leave 5 reviews to unlock
-          </button>
-        </div>
-
-        <!-- Progress (shown for logged-in locked users) -->
-        <div class="lp-card-progress" id="tourCardProgress">
-          <div class="lp-card-progress-label" id="tourCardProgressLabel">0 of 5 reviews</div>
-          <div class="lp-card-progress-track">
-            <div class="lp-card-progress-fill" id="tourCardProgressFill" style="width:0%"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CARD 3: EPK Builder — locked/unlocked by auth -->
-      <div class="lp-card">
-        <!-- Document icon -->
-        <svg class="lp-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="4" width="28" height="36" rx="2" stroke="#0e0d0b" stroke-width="1.5" fill="rgba(90,122,106,0.08)"/>
-          <line x1="14" y1="15" x2="34" y2="15" stroke="#5a7a6a" stroke-width="1.5" stroke-linecap="round" class="lp-icon-line"/>
-          <line x1="14" y1="21" x2="30" y2="21" stroke="#5a7a6a" stroke-width="1.5" stroke-linecap="round" class="lp-icon-line"/>
-          <line x1="14" y1="27" x2="34" y2="27" stroke="#5a7a6a" stroke-width="1.5" stroke-linecap="round" class="lp-icon-line"/>
-          <line x1="14" y1="33" x2="26" y2="33" stroke="#5a7a6a" stroke-width="1.5" stroke-linecap="round" class="lp-icon-line"/>
-        </svg>
-        <div class="lp-card-name">EPK Builder</div>
-        <div class="lp-card-desc">Your Bandmate profile is your EPK. One link sends venues your music, photos, bio, and reviews — everything they need to book you.</div>
-
-        <!-- Unlocked button -->
-        <a href="profile.html" class="lp-card-btn lp-card-btn-sage" id="epkCardBtn" style="display:none">Build Your EPK →</a>
-
-        <!-- Locked button -->
-        <div class="lp-locked-wrap" id="epkCardLocked">
-          <div class="lp-locked-tip">Review 5 venues to unlock the EPK Builder free</div>
-          <button class="lp-card-btn-locked" disabled>
-            <svg class="lp-lock" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            </svg>
-            Leave 5 reviews to unlock
-          </button>
-        </div>
-
-        <!-- Progress -->
-        <div class="lp-card-progress" id="epkCardProgress">
-          <div class="lp-card-progress-label" id="epkCardProgressLabel">0 of 5 reviews</div>
-          <div class="lp-card-progress-track">
-            <div class="lp-card-progress-fill" id="epkCardProgressFill" style="width:0%"></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
+<!-- Loading overlay (starts hidden — hero is visible on load) -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none">
+  <div class="loading-logo">Bandmate <span class="nav-logo-dot" style="width:10px;height:10px;background:var(--rust);border-radius:50%;animation:pulse 1.5s infinite"></span></div>
+  <div class="loading-text">Finding venues near you...</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
 </div>
 
-<!-- TESTIMONIALS -->
-<div style="background: var(--cream);">
-  <div class="lp-testimonials">
-    <h2 class="lp-testimonials-heading">Built for the road</h2>
-    <div class="lp-testi-cards">
+<div id="find-venues">
+  <section class="hero" id="map-section">
 
-      <div class="lp-testi-card">
-        <div class="lp-testi-quote">Found three incredible venues in Nashville we never would have discovered. Bandmate paid for itself on the first tour.</div>
-        <div class="lp-testi-band">The Kindred</div>
-        <div class="lp-testi-meta">Folk Trio · Portland, OR</div>
+    <!-- LEFT PANEL -->
+    <div class="hero-panel">
+      <div class="hero-eyebrow">For independent bands everywhere</div>
+      <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
+      <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
+
+      <!-- SEARCH -->
+      <div class="search-wrap">
+        <div class="search-input-row">
+          <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..." />
+          <button class="search-btn" onclick="searchLocation()">Search →</button>
+        </div>
       </div>
 
-      <div class="lp-testi-card">
-        <div class="lp-testi-quote">The tour planner saved us weeks of research. We just drew our route and had a full itinerary in minutes.</div>
-        <div class="lp-testi-band">Half Fiction</div>
-        <div class="lp-testi-meta">Indie Rock · Denver, CO</div>
+      <button class="locate-btn" onclick="locateMe()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
+        </svg>
+        Use My Location
+      </button>
+
+      <!-- GENRE FILTER -->
+      <div class="filter-label">Filter by Genre</div>
+      <div class="filter-chips" id="genreChips">
+        <span class="chip active-rust" onclick="toggleChip(this)">All</span>
+        <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
+        <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
+        <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
+        <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
+        <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
+        <span class="chip" onclick="toggleChip(this)">Country</span>
       </div>
 
-      <div class="lp-testi-card">
-        <div class="lp-testi-quote">Our EPK used to be a Google Doc. Now it's something we're actually proud to send to venues.</div>
-        <div class="lp-testi-band">Bright Rooms</div>
-        <div class="lp-testi-meta">Dream Pop · Athens, GA</div>
+      <!-- RADIUS -->
+      <div class="radius-row">
+        <span class="filter-label" style="margin-bottom:0">Search Radius</span>
+        <span class="radius-val" id="radiusVal">10 miles</span>
+      </div>
+      <input type="range" min="1" max="50" value="10" id="radiusSlider"
+             oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
+
+      <!-- STATUS -->
+      <div class="status-bar" id="statusBar">
+        <div class="status-dot amber" id="statusDot"></div>
+        <span id="statusText">Locating you...</span>
       </div>
 
+      <!-- RESULTS -->
+      <div class="filter-label" id="resultsLabel">Venues Found</div>
+      <div class="venues-list" id="venuesList">
+        <div class="no-results">
+          <div class="no-results-icon">🗺️</div>
+          <div class="no-results-title">Loading map...</div>
+          <div class="no-results-sub">Venues will appear here once the map loads.</div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <!-- MAP -->
+    <div style="position:relative; overflow:hidden; height:100%;">
+      <div id="map"></div>
+    </div>
+
+  </section>
 </div>
 
 <!-- FOOTER -->
@@ -971,7 +1036,7 @@ body.lp-body {
     <div class="lp-footer-tagline">Every tool you need to play further.</div>
   </div>
   <div class="lp-footer-links">
-    <a href="map.html">Find Venues</a>
+    <a href="#find-venues" onclick="smoothScrollTo('find-venues'); return false;">Find Venues</a>
     <a href="tour.html">Tour Planner</a>
     <a href="profile.html">EPK Builder</a>
     <a href="map.html#leave-review">Leave a Review</a>
@@ -982,35 +1047,180 @@ body.lp-body {
   </div>
 </footer>
 
+<!-- VENUE PAGE OVERLAY -->
+<div class="venue-page-overlay" id="venuePage">
+  <div class="venue-page-inner">
+    <button class="venue-page-back" onclick="closevenuePage()">← Back to Map</button>
+    <div class="venue-page-header">
+      <div class="venue-page-eyebrow" id="vpEyebrow">Venue</div>
+      <div class="venue-page-name" id="vpName">Venue Name</div>
+      <div class="venue-page-address" id="vpAddress">Address</div>
+      <div class="venue-page-scores" id="vpScores">
+        <div class="score-card"><div class="score-num" id="vpOverall">—</div><div class="score-label">Overall</div></div>
+        <div class="score-card"><div class="score-num" id="vpSound">—</div><div class="score-label">Sound</div></div>
+        <div class="score-card"><div class="score-num" id="vpComms">—</div><div class="score-label">Communication</div></div>
+        <div class="score-card"><div class="score-num" id="vpMerch">—</div><div class="score-label">Merch</div></div>
+        <div class="score-card"><div class="score-num" id="vpParking">—</div><div class="score-label">Parking</div></div>
+      </div>
+      <div class="venue-page-actions">
+        <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
+        <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
+      </div>
+    </div>
+    <!-- REVIEW FORM -->
+    <div class="venue-review-form" id="venueReviewForm">
+      <div class="vrf-title">Your Review</div>
+      <div class="vrf-sub" id="vrfSub">Reviewing: <span id="vrfVenueName"></span></div>
+      <div id="vrfLoginPrompt" class="vrf-login-prompt" style="display:none">
+        <a onclick="closevenuePage(); openAuth()">Sign in or create a free account</a> to leave a review.
+      </div>
+      <div id="vrfFormFields">
+        <div style="margin-bottom:16px">
+          <div style="font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);margin-bottom:8px">Overall Rating</div>
+          <div style="display:flex;gap:6px" id="vrfStars">
+            <button class="star-btn" data-val="1" onclick="setVrfStar(1)">★</button>
+            <button class="star-btn" data-val="2" onclick="setVrfStar(2)">★</button>
+            <button class="star-btn" data-val="3" onclick="setVrfStar(3)">★</button>
+            <button class="star-btn" data-val="4" onclick="setVrfStar(4)">★</button>
+            <button class="star-btn" data-val="5" onclick="setVrfStar(5)">★</button>
+          </div>
+        </div>
+        <div class="auth-field" style="margin-bottom:16px">
+          <label>Genre You Played</label>
+          <div class="genre-chips-wrap" id="vrfGenreChips" data-max="1"><div class="genre-chips-loading">Loading…</div></div>
+          <div class="genre-custom-row">
+            <input type="text" id="vrfGenreCustomInput" class="genre-custom-input" placeholder="Add your own...">
+            <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('vrfGenreChips')">Add</button>
+          </div>
+          <div class="genre-chips-hint">Can't find yours? Add it below</div>
+        </div>
+        <div class="vrf-sliders">
+          <div>
+            <div class="vrf-slider-label">Sound System <span class="vrf-val" id="vrfSoundVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfSoundVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Communication <span class="vrf-val" id="vrfCommVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfCommVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Merch Sales <span class="vrf-val" id="vrfMerchVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfMerchVal').textContent=this.value">
+          </div>
+          <div>
+            <div class="vrf-slider-label">Parking <span class="vrf-val" id="vrfParkVal">3</span></div>
+            <input type="range" min="1" max="5" value="3" oninput="document.getElementById('vrfParkVal').textContent=this.value">
+          </div>
+        </div>
+        <textarea class="vrf-textarea" id="vrfText" rows="5"
+          placeholder="Tell other bands what it was actually like — load-in, sound check, crowd energy, payout, hospitality..."
+          oninput="updateCharCount()"></textarea>
+        <div class="vrf-char-count too-short" id="vrfCharCount">Minimum 50 characters required</div>
+        <button class="vrf-submit" id="vrfSubmitBtn" onclick="submitReview()" disabled>Post Review</button>
+      </div>
+    </div>
+    <!-- REVIEWS -->
+    <div class="reviews-section-title" id="reviewsTitle">Band Reviews</div>
+    <div class="reviews-list" id="reviewsList">
+      <div class="no-reviews">
+        <div class="no-reviews-icon">— —</div>
+        <div class="no-reviews-title">No reviews yet</div>
+        <p>Be the first band to review this venue!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeContactModal()">✕</button>
+    <div class="modal-eyebrow">Contact Venue</div>
+    <div class="modal-title" id="modalVenueName">Venue Name</div>
+    <div class="modal-venue" id="modalVenueAddress">Address</div>
+    <div id="cmodalLoading" class="cmodal-loading">Finding contact info…</div>
+    <div id="cmodalOptions" style="display:none">
+      <div class="cmodal-option" id="cmodalFbOption" style="display:none">
+        <a id="cmodalFbBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-fb">Message on Facebook →</a>
+        <div class="cmodal-option-note">Many venues respond fastest on Facebook Messenger</div>
+      </div>
+      <div class="cmodal-option" id="cmodalEmailOption" style="display:none">
+        <a id="cmodalEmailBtn" href="#" class="cmodal-btn cmodal-btn-email">Send Booking Email →</a>
+        <div class="cmodal-option-note">Pre-filled booking inquiry — edit before sending</div>
+      </div>
+      <div class="cmodal-option" id="cmodalWebOption" style="display:none">
+        <a id="cmodalWebBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-web">Visit Their Website →</a>
+        <div class="cmodal-option-note">Check for a booking form or contact page</div>
+      </div>
+    </div>
+    <div class="modal-disclaimer">
+      Bandmate finds publicly available contact information.<br>
+      Always introduce yourself professionally.
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW VENUE SEARCH MODAL -->
+<div class="modal-overlay" id="reviewSearchModal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeReviewSearchModal()">✕</button>
+    <div class="modal-eyebrow">Leave a Review</div>
+    <div class="modal-title">Which venue did you play?</div>
+    <div style="font-size:0.88rem;color:var(--muted);font-weight:300;line-height:1.6;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+      Start typing the venue's name and select it from the dropdown — we'll open its review page.
+    </div>
+    <input type="text" id="reviewVenueSearch" class="review-search-input"
+      placeholder="e.g. The Basement East, Nashville…" autocomplete="off"/>
+    <div class="review-search-hint">Powered by Google Places — pick a result from the dropdown to continue</div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
 <script src="js/auth.js"></script>
+<script src="js/reviews.js"></script>
+<script src="js/map.js"></script>
 <script>
-// ── Nav scroll transition ──────────────────────────────────────────────────────
+  // Google Maps dynamic injection (key from config.js)
+  (function() {
+    var s = document.createElement('script');
+    s.async = true; s.defer = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=initMap';
+    document.head.appendChild(s);
+  })();
+</script>
+<script src="js/feedback.js"></script>
+
+<script>
+// ── Nav scroll transition ─────────────────────────────────────────────────────
 (function() {
-  const nav = document.getElementById('lpNav');
-  function onScroll() {
-    nav.classList.toggle('lp-nav--scrolled', window.scrollY > window.innerHeight * 0.75);
+  var nav = document.getElementById('lpNav');
+  if (!nav) return;
+  function updateNav() {
+    if (window.scrollY > 60) nav.classList.add('lp-nav--scrolled');
+    else nav.classList.remove('lp-nav--scrolled');
   }
-  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('scroll', updateNav, { passive: true });
+  updateNav();
 })();
 
-// ── updateNavAuth override for landing page nav style ─────────────────────────
-// auth.js's updateNavAuth writes to #navAuthArea — it uses the existing
-// .nav-user / .nav-avatar classes which are styled above for .lp-nav.
-// No override needed; the CSS handles the color adaptation.
+// ── Smooth scroll helper ──────────────────────────────────────────────────────
+function smoothScrollTo(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-// ── Locked / unlocked card state ──────────────────────────────────────────────
+// ── Unlock card state (threshold: 3 reviews) ─────────────────────────────────
 function lpUnlockCards() {
-  // Show unlocked buttons, hide locked wrappers
-  ['tourCardBtn', 'epkCardBtn'].forEach(id => {
-    const el = document.getElementById(id);
+  ['tourCardBtn', 'epkCardBtn'].forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) el.style.display = 'inline-block';
   });
-  ['tourCardLocked', 'epkCardLocked'].forEach(id => {
-    const el = document.getElementById(id);
+  ['tourCardLocked', 'epkCardLocked'].forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-  ['tourCardProgress', 'epkCardProgress'].forEach(id => {
-    const el = document.getElementById(id);
+  ['tourCardProgress', 'epkCardProgress'].forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
 
@@ -1029,12 +1239,12 @@ function lpUnlockCards() {
 }
 
 function lpShowProgress(count) {
-  const pct = Math.min((count / 5) * 100, 100);
-  const label = `${count} of 5 reviews`;
-  ['tour', 'epk'].forEach(prefix => {
-    const prog = document.getElementById(prefix + 'CardProgress');
-    const lbl  = document.getElementById(prefix + 'CardProgressLabel');
-    const fill = document.getElementById(prefix + 'CardProgressFill');
+  var pct   = Math.min((count / 3) * 100, 100);
+  var label = count + ' of 3 reviews';
+  ['tour', 'epk'].forEach(function(prefix) {
+    var prog = document.getElementById(prefix + 'CardProgress');
+    var lbl  = document.getElementById(prefix + 'CardProgressLabel');
+    var fill = document.getElementById(prefix + 'CardProgressFill');
     if (prog) prog.style.display = 'block';
     if (lbl)  lbl.textContent = label;
     if (fill) fill.style.width = pct + '%';
@@ -1042,29 +1252,100 @@ function lpShowProgress(count) {
 }
 
 async function lpCheckAccess() {
-  // initAuth is called by auth.js on DOMContentLoaded; we wait for it here
-  // by checking after a short tick, then querying if needed.
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(function(r) { setTimeout(r, 420); });
+  if (!currentUser || !currentBandProfile) return;
+  var bp       = currentBandProfile;
+  var unlocked = bp.band_name === 'Campers' ||
+                 bp.is_premium === true ||
+                 (bp.review_count || 0) >= 3;
+  if (unlocked) lpUnlockCards();
+  else lpShowProgress(bp.review_count || 0);
+}
 
-  if (!currentUser || !currentBandProfile) return; // stays locked
+// ── Live ticker data ──────────────────────────────────────────────────────────
+var TICKER_FALLBACKS = [
+  "Be the first to review a venue in your city",
+  "The Americana Highway route is ready to explore",
+  "The Underground Circuit runs Chicago to DC",
+  "Draw your tour route and find venues along the way",
+  "Your EPK deserves better than a Word doc",
+  "Built by musicians for musicians",
+  "Leave 3 reviews to unlock the Tour Planner free",
+  "Join the community of bands building something together",
+];
 
-  const bp = currentBandProfile;
-  const unlocked = bp.band_name === 'Campers' ||
-                   bp.is_premium === true ||
-                   (bp.review_count || 0) >= 5;
+function renderTicker(items) {
+  var track = document.getElementById('tickerTrack');
+  if (!track) return;
+  if (!items || items.length === 0) items = TICKER_FALLBACKS.slice();
 
-  if (unlocked) {
-    lpUnlockCards();
-  } else {
-    lpShowProgress(bp.review_count || 0);
+  // Mix in fallbacks to ensure density
+  var combined = items.slice();
+  while (combined.length < 8) combined = combined.concat(TICKER_FALLBACKS);
+
+  function buildSet(arr) {
+    return arr.map(function(txt) {
+      return '<span class="ticker-item">' + txt + '</span><span class="ticker-dot">·</span>';
+    }).join('');
+  }
+
+  // Two identical copies for seamless CSS loop
+  var html = buildSet(combined) + buildSet(combined);
+  track.innerHTML = html;
+}
+
+async function loadTickerData() {
+  try {
+    var [reviewsRes, bandsRes] = await Promise.all([
+      sb.from('reviews')
+        .select('venue_name, venue_city, bands(band_name)')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      sb.from('bands')
+        .select('band_name, home_city')
+        .order('created_at', { ascending: false })
+        .limit(5)
+    ]);
+
+    var items = [];
+
+    if (reviewsRes.data) {
+      reviewsRes.data.forEach(function(r) {
+        var band  = r.bands && r.bands.band_name ? r.bands.band_name : null;
+        var venue = r.venue_name || 'a venue';
+        var city  = r.venue_city ? ' in ' + r.venue_city : '';
+        items.push(band
+          ? band + ' just reviewed ' + venue + city
+          : 'New review posted for ' + venue + city
+        );
+      });
+    }
+
+    if (bandsRes.data) {
+      bandsRes.data.forEach(function(b) {
+        var city = b.home_city ? ' from ' + b.home_city : '';
+        items.push((b.band_name || 'A new band') + city + ' just joined Bandmate');
+      });
+    }
+
+    renderTicker(items.length > 0 ? items : TICKER_FALLBACKS.slice());
+  } catch (e) {
+    renderTicker(TICKER_FALLBACKS.slice());
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initAuth().then(() => lpCheckAccess());
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
   document.body.style.visibility = 'visible';
+
+  // Show ticker fallback immediately, then replace with real data
+  renderTicker(TICKER_FALLBACKS.slice());
+
+  initAuth().then(function() {
+    lpCheckAccess();
+    loadTickerData();
+  });
 });
 </script>
-<script src="js/feedback.js"></script>
 </body>
 </html>
