@@ -105,10 +105,12 @@ async function handleSignup() {
     showAuthMsg('Please fill in all fields — select at least one genre', 'error'); return;
   }
   if (password.length < 6) { showAuthMsg('Password must be at least 6 characters', 'error'); return; }
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) { showAuthMsg(error.message, 'error'); return; }
-  await sb.from('bands').insert({ email, band_name: bandName, genre, home_city: city, is_premium: false });
-  showAuthMsg('Welcome to Bandmate! Check your email to confirm.', 'success');
+  const { data: authData, error: authError } = await sb.auth.signUp({ email, password });
+  if (authError) { showAuthMsg(authError.message, 'error'); return; }
+  if (!authData?.user) { showAuthMsg('Account could not be created — please try again.', 'error'); return; }
+  const { error: bandError } = await sb.from('bands').insert({ email, band_name: bandName, genre, home_city: city, is_premium: false });
+  if (bandError) { showAuthMsg('Profile could not be saved — ' + bandError.message, 'error'); return; }
+  showAuthMsg('Welcome to Bandmate! You can log in right away.', 'success');
   setTimeout(() => closeAuth(), 2500);
 }
 
