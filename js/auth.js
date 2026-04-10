@@ -31,7 +31,6 @@ async function loadBandProfile() {
 // Campers always gets god-mode access regardless of review count or flag.
 function isBandPremium(profile) {
   if (!profile) return false;
-  if (profile.band_name === 'Campers') return true;
   return profile.is_premium === true || (profile.review_count || 0) >= 3;
 }
 
@@ -218,9 +217,26 @@ async function handleLogin() {
   const password = document.getElementById('loginPassword').value;
   if (!email || !password) { showAuthMsg('Please enter email and password', 'error'); return; }
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) { showAuthMsg('Invalid email or password', 'error'); return; }
+  if (error) {
+    const msg = error.message || '';
+    if (msg.toLowerCase().includes('not confirmed') || msg.toLowerCase().includes('confirm')) {
+      showAuthMsg('Please confirm your email first — check your inbox (and spam folder). <a href="#" onclick="resendConfirmation(\'' + email.replace(/'/g, '') + '\');return false;" style="color:var(--rust);text-decoration:underline">Resend email →</a>', 'error');
+    } else {
+      showAuthMsg('Invalid email or password', 'error');
+    }
+    return;
+  }
   showAuthMsg('Welcome back!', 'success');
   setTimeout(() => closeAuth(), 1000);
+}
+
+async function resendConfirmation(email) {
+  const { error } = await sb.auth.resend({ type: 'signup', email });
+  if (error) {
+    showAuthMsg('Could not resend — ' + error.message, 'error');
+  } else {
+    showAuthMsg('Confirmation email resent — check your inbox!', 'success');
+  }
 }
 
 async function handleSignout() {
@@ -231,7 +247,7 @@ async function handleSignout() {
 function showAuthMsg(msg, type) {
   const el = document.getElementById('authMsg');
   if (!el) return;
-  el.textContent = msg;
+  el.innerHTML = msg;
   el.className = 'auth-msg ' + type;
 }
 
