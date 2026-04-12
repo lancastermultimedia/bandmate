@@ -220,12 +220,7 @@ async function handleLogin() {
   if (!email || !password) { showAuthMsg('Please enter email and password', 'error'); return; }
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    const msg = error.message || '';
-    if (msg.toLowerCase().includes('not confirmed') || msg.toLowerCase().includes('confirm')) {
-      showAuthMsg('Please confirm your email first — check your inbox (and spam folder). <a href="#" onclick="resendConfirmation(\'' + email.replace(/'/g, '') + '\');return false;" style="color:var(--rust);text-decoration:underline">Resend email →</a>', 'error');
-    } else {
-      showAuthMsg('Invalid email or password', 'error');
-    }
+    showAuthMsg(error.message, 'error');
     return;
   }
   showAuthMsg('Welcome back!', 'success');
