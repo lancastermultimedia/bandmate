@@ -572,7 +572,7 @@ function updateEpkThemeStatus() {
   const el = document.getElementById('epkCurrentTheme');
   if (!el || !currentBandProfile) return;
   const theme  = currentBandProfile.epk_theme;
-  const labels = { clean: 'Clean', bold: 'Bold', vibrant: 'Vibrant' };
+  const labels = { clean: 'Clean', bold: 'Bold', vibrant: 'Vibrant', static: 'Static', torn: 'Torn', signal: 'Signal' };
   el.innerHTML = theme
     ? `Current theme: <strong>${labels[theme] || theme}</strong>`
     : 'No theme selected yet — click <strong>View Your EPK</strong> to choose one';
@@ -614,7 +614,7 @@ function _fallbackCopyText(text) {
 function openThemeSelector() {
   const bp = currentBandProfile;
   if (!bp) return;
-  ['tpvNameClean', 'tpvNameBold', 'tpvNameVibrant'].forEach(id => {
+  ['tpvNameClean', 'tpvNameBold', 'tpvNameVibrant', 'tpvNameStatic', 'tpvNameTorn', 'tpvNameSignal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = bp.band_name || 'Your Band';
   });
