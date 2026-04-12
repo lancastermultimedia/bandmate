@@ -32,7 +32,7 @@ async function loadBandProfile() {
 // Campers always gets god-mode access regardless of review count or flag.
 function isBandPremium(profile) {
   if (!profile) return false;
-  return profile.is_premium === true || (profile.review_count || 0) >= 3;
+  return !!profile.is_premium || (profile.review_count || 0) >= 3;
 }
 
 function updateNavAuth() {

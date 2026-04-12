@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
     if (event === 'SIGNED_OUT') { formPopulated = false; renderProfile(); return; }
     await new Promise(r => setTimeout(r, 350));
+    await loadBandProfile();
     formPopulated = false;
     renderProfile();
   });
