@@ -22,8 +22,8 @@ async function initAuth() {
 
 async function loadBandProfile() {
   if (!currentUser) return;
-  const { data } = await sb.from('bands').select('*').ilike('email', currentUser.email).maybeSingle();
-  currentBandProfile = data || null;
+  const { data } = await sb.from('bands').select('*').ilike('email', currentUser.email).order('created_at', { ascending: false }).limit(1);
+  currentBandProfile = (data && data[0]) || null;
   devLog('[auth] loadBandProfile result:', currentBandProfile, 'for email:', currentUser.email);
 }
 
