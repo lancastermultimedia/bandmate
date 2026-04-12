@@ -182,7 +182,7 @@ async function submitReview() {
 
   // Increment review_count on the band — used for community premium threshold
   const newCount = (currentBandProfile.review_count || 0) + 1;
-  await sb.from('bands').update({ review_count: newCount }).eq('id', currentBandProfile.id);
+  await sb.from('bands').update({ review_count: newCount }).eq('email', currentUser.email);
   currentBandProfile.review_count = newCount;
   updateNavAuth();
 
