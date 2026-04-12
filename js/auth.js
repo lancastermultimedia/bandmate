@@ -22,8 +22,9 @@ async function initAuth() {
 
 async function loadBandProfile() {
   if (!currentUser) return;
-  const { data } = await sb.from('bands').select('*').eq('email', currentUser.email).single();
-  currentBandProfile = data;
+  const { data } = await sb.from('bands').select('*').ilike('email', currentUser.email).maybeSingle();
+  currentBandProfile = data || null;
+  devLog('[auth] loadBandProfile result:', currentBandProfile, 'for email:', currentUser.email);
 }
 
 // Single source of truth for premium logic.
@@ -37,6 +38,14 @@ function isBandPremium(profile) {
 function updateNavAuth() {
   const area = document.getElementById('navAuthArea');
   if (!area) return;
+  if (currentUser && !currentBandProfile) {
+    // Auth succeeded but no bands row found — show minimal logged-in state
+    area.innerHTML = `<div class="nav-user">
+      <span class="nav-review-progress">${currentUser.email}</span>
+      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
+    </div>`;
+    return;
+  }
   if (currentUser && currentBandProfile) {
     const isPremium   = isBandPremium(currentBandProfile);
     const reviewCount = currentBandProfile.review_count || 0;
