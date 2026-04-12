@@ -217,8 +217,11 @@ async function handlePhotoUpload(input) {
 // ── Save profile basics ───────────────────────────────────────────────────────
 
 async function saveProfileEdits() {
-  devLog('[profile] saveProfileEdits — currentUser:', currentUser?.email, 'bp.id:', currentBandProfile?.id);
-  if (!currentUser || !currentBandProfile || !isBandPremium(currentBandProfile)) return;
+  console.log('[save] currentUser:', currentUser?.email, '| is_premium:', currentBandProfile?.is_premium, '| review_count:', currentBandProfile?.review_count, '| isBandPremium:', isBandPremium(currentBandProfile));
+  if (!currentUser || !currentBandProfile || !isBandPremium(currentBandProfile)) {
+    showToast('Save blocked — not premium. Check console.', 'error');
+    return;
+  }
 
   const s = saveBtnCtrl('profileSaveBtn', 'Save Changes →');
   s.saving();
