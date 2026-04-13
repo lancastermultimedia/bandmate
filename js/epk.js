@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load band data and auth session in parallel
   const [bandsRes] = await Promise.all([
     sb.from('bands')
-      .select('id, band_name, genre, home_city, bio, website, spotify_url, youtube_url, soundcloud_url, apple_music_url, bandcamp_url, instagram_url, tiktok_url, facebook_url, profile_photo_url, is_premium, review_count, stage_plot_url, epk_theme')
+      .select('id, band_name, genre, home_city, bio, website, spotify_url, youtube_url, soundcloud_url, apple_music_url, bandcamp_url, bandcamp_embed, instagram_url, tiktok_url, facebook_url, profile_photo_url, is_premium, review_count, stage_plot_url, epk_theme')
       .ilike('band_name', nameSearch)
       .limit(1),
     initAuth(),
@@ -336,7 +336,7 @@ function buildBio(band) {
 
 function hasMusicContent(band) {
   return band.spotify_url || band.youtube_url || band.soundcloud_url ||
-         band.apple_music_url || band.bandcamp_url;
+         band.apple_music_url || band.bandcamp_url || band.bandcamp_embed;
 }
 
 function buildMusic(band, soundcloudEmbed) {
@@ -363,10 +363,15 @@ function buildMusic(band, soundcloudEmbed) {
     parts.push(`<div class="epkt-embed-wrap epkt-embed-sc">${soundcloudEmbed}</div>`);
   }
 
-  // Link buttons for Apple Music / Bandcamp
+  // Bandcamp embedded player (pasted iframe HTML) — shown instead of link button
+  if (band.bandcamp_embed) {
+    parts.push(`<div class="epkt-embed-wrap epkt-embed-bc">${band.bandcamp_embed}</div>`);
+  }
+
+  // Link buttons for Apple Music / Bandcamp (link fallback if no embed)
   const linkBtns = [];
   if (band.apple_music_url) linkBtns.push(`<a href="${band.apple_music_url}" target="_blank" rel="noopener" class="epkt-music-link-btn epkt-music-link-apple">Apple Music</a>`);
-  if (band.bandcamp_url)    linkBtns.push(`<a href="${band.bandcamp_url}"    target="_blank" rel="noopener" class="epkt-music-link-btn epkt-music-link-bc">Bandcamp</a>`);
+  if (band.bandcamp_url && !band.bandcamp_embed) linkBtns.push(`<a href="${band.bandcamp_url}" target="_blank" rel="noopener" class="epkt-music-link-btn epkt-music-link-bc">Bandcamp</a>`);
   if (linkBtns.length) {
     parts.push(`<div class="epkt-music-links">${linkBtns.join('')}</div>`);
   }

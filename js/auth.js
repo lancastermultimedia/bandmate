@@ -337,3 +337,52 @@ function closeContactModal() {
   const modal = document.getElementById('contactModal');
   if (modal) modal.classList.remove('open');
 }
+
+// ── Premium Unlock Celebration ────────────────────────────────────────────────
+
+function showUnlockCelebration(bandName) {
+  // Inject modal if not already in DOM
+  if (!document.getElementById('unlockCelebration')) {
+    const el = document.createElement('div');
+    el.id        = 'unlockCelebration';
+    el.className = 'unlock-celebration';
+    el.innerHTML = `
+      <div class="unlock-inner">
+        <button class="unlock-close" onclick="closeUnlockCelebration()">✕</button>
+        <div class="unlock-badge">★</div>
+        <div class="unlock-eyebrow">Community Premium Unlocked</div>
+        <h2 class="unlock-title">You're in, ${escapeHtml(bandName || 'friend')}.</h2>
+        <p class="unlock-sub">You've reviewed 3 venues — the community thanks you. Your full toolkit is now active.</p>
+        <div class="unlock-features">
+          <div class="unlock-feature">
+            <div class="unlock-feature-icon">◈</div>
+            <div>
+              <div class="unlock-feature-label">EPK Builder</div>
+              <div class="unlock-feature-desc">Build a shareable Electronic Press Kit with your music, photos, and press quotes.</div>
+            </div>
+          </div>
+          <div class="unlock-feature">
+            <div class="unlock-feature-icon">◎</div>
+            <div>
+              <div class="unlock-feature-label">Tour Planner</div>
+              <div class="unlock-feature-desc">Map your route, find venues at each stop, and build a complete itinerary.</div>
+            </div>
+          </div>
+        </div>
+        <div class="unlock-actions">
+          <a href="profile.html" class="unlock-btn-primary">Build Your EPK →</a>
+          <a href="tour.html" class="unlock-btn-secondary">Plan a Tour →</a>
+        </div>
+        <div class="unlock-dismiss" onclick="closeUnlockCelebration()">Maybe later</div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+  requestAnimationFrame(() => {
+    document.getElementById('unlockCelebration').classList.add('open');
+  });
+}
+
+function closeUnlockCelebration() {
+  const el = document.getElementById('unlockCelebration');
+  if (el) el.classList.remove('open');
+}

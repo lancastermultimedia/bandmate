@@ -254,6 +254,14 @@
         <div class="profile-field pfl-field">
           <label><span class="pfl-tag pfl-bc">BC</span> Bandcamp</label>
           <input type="url" id="linkBandcamp" placeholder="https://yourband.bandcamp.com">
+          <div class="pfl-embed-toggle">
+            <input type="checkbox" id="bandcampEmbedToggle" onchange="toggleBandcampEmbed(this.checked)">
+            <label for="bandcampEmbedToggle" style="font-family:'Space Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);cursor:pointer;margin:0;">Use embedded player instead</label>
+          </div>
+          <div id="bandcampEmbedField" style="display:none;margin-top:8px">
+            <textarea id="linkBandcampEmbed" class="pfl-embed-textarea" placeholder="Paste Bandcamp embed HTML here — from your Bandcamp page: Share / Embed → copy the iframe code"></textarea>
+            <div style="font-family:'Outfit',sans-serif;font-size:0.72rem;color:var(--muted);margin-top:4px">On Bandcamp: go to your album → Share / Embed → Embed this album → copy the iframe code</div>
+          </div>
         </div>
         <div class="profile-field pfl-field">
           <label><span class="pfl-tag pfl-web">WB</span> Website</label>

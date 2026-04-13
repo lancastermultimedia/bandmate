@@ -124,6 +124,12 @@ async function renderProfile() {
     document.getElementById('linkInstagram').value  = bp.instagram_url   || '';
     document.getElementById('linkTiktok').value     = bp.tiktok_url      || '';
     document.getElementById('linkFacebook').value   = bp.facebook_url    || '';
+    // Bandcamp embed
+    if (bp.bandcamp_embed) {
+      document.getElementById('linkBandcampEmbed').value = bp.bandcamp_embed;
+      document.getElementById('bandcampEmbedToggle').checked = true;
+      document.getElementById('bandcampEmbedField').style.display = 'block';
+    }
   }
 
   // ── Dynamic sections (always refresh from DB) ──
@@ -264,12 +270,18 @@ async function saveMusicLinks() {
   const s = saveBtnCtrl('musicLinksSaveBtn', 'Save Links →');
   s.saving();
 
+  const useEmbed = document.getElementById('bandcampEmbedToggle')?.checked;
+  const rawEmbed = document.getElementById('linkBandcampEmbed')?.value.trim() || '';
+  // Sanitize embed: only allow <iframe> tags from bandcamp.com
+  const safeEmbed = (useEmbed && rawEmbed && rawEmbed.includes('bandcamp.com')) ? rawEmbed : null;
+
   const updates = {
     spotify_url:     document.getElementById('linkSpotify').value.trim()    || null,
     youtube_url:     document.getElementById('linkYoutube').value.trim()    || null,
     soundcloud_url:  document.getElementById('linkSoundcloud').value.trim() || null,
     apple_music_url: document.getElementById('linkAppleMusic').value.trim() || null,
     bandcamp_url:    document.getElementById('linkBandcamp').value.trim()   || null,
+    bandcamp_embed:  safeEmbed,
     website:         document.getElementById('linkWebsite').value.trim()    || null,
     instagram_url:   document.getElementById('linkInstagram').value.trim()  || null,
     tiktok_url:      document.getElementById('linkTiktok').value.trim()     || null,
@@ -580,6 +592,10 @@ function updateEpkThemeStatus() {
   el.innerHTML = theme
     ? `Current theme: <strong>${labels[theme] || theme}</strong>`
     : 'No theme selected yet — click <strong>View Your EPK</strong> to choose one';
+}
+
+function toggleBandcampEmbed(checked) {
+  document.getElementById('bandcampEmbedField').style.display = checked ? 'block' : 'none';
 }
 
 function viewEpk() {

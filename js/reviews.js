@@ -181,10 +181,16 @@ async function submitReview() {
   }
 
   // Increment review_count on the band — used for community premium threshold
-  const newCount = (currentBandProfile.review_count || 0) + 1;
+  const prevCount = currentBandProfile.review_count || 0;
+  const newCount  = prevCount + 1;
   await sb.from('bands').update({ review_count: newCount }).eq('email', currentUser.email);
   currentBandProfile.review_count = newCount;
   updateNavAuth();
+
+  // Show unlock celebration when band hits the premium threshold
+  if (prevCount < 3 && newCount >= 3) {
+    setTimeout(() => showUnlockCelebration(currentBandProfile.band_name), 800);
+  }
 
   showToast('Review posted — thanks for helping the community.', 'success');
   document.getElementById('venueReviewForm').classList.remove('visible');
