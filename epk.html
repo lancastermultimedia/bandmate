@@ -140,6 +140,20 @@
   </div>
 </div>
 
+<!-- PRESS PHOTO LIGHTBOX -->
+<div class="epk-lightbox" id="epkLightbox" onclick="closeLightbox()">
+  <button class="epk-lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="epk-lightbox-prev" onclick="lightboxNav(-1);event.stopPropagation()">‹</button>
+  <button class="epk-lightbox-next" onclick="lightboxNav(1);event.stopPropagation()">›</button>
+  <div class="epk-lightbox-inner" onclick="event.stopPropagation()">
+    <img class="epk-lightbox-img" id="epkLightboxImg" src="" alt="">
+    <div class="epk-lightbox-footer">
+      <span class="epk-lightbox-counter" id="epkLightboxCounter"></span>
+      <a class="epk-lightbox-download" id="epkLightboxDownload" href="#" download>Download →</a>
+    </div>
+  </div>
+</div>
+
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contactModal">
   <div class="modal">

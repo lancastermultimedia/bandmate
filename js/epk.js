@@ -389,10 +389,10 @@ function buildVideos(videos) {
 // ── Press Photos ──────────────────────────────────────────────────────────────
 
 function buildPressPhotos(photos, bandName) {
-  const grid = photos.map(p => `
-    <a href="${p.photo_url}" target="_blank" rel="noopener" class="epkt-press-photo-wrap">
+  const grid = photos.map((p, i) => `
+    <button class="epkt-press-photo-wrap" onclick="openLightbox(${i})" aria-label="View photo ${i + 1}">
       <img src="${p.photo_url}" class="epkt-press-photo" alt="${escHtml(bandName)} press photo" loading="lazy">
-    </a>`).join('');
+    </button>`).join('');
 
   return `<div class="epkt-press-grid">${grid}</div>
     <button class="epkt-download-all-btn" onclick="downloadAllPhotos()">Download All Photos →</button>`;
@@ -475,6 +475,50 @@ function renderNotFound(msg) {
         <a href="index.html" style="display:inline-block;margin-top:20px;font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--rust)">← Back to Bandmate</a>
       </div>
     </div>`;
+}
+
+// ── Press photo lightbox ──────────────────────────────────────────────────────
+
+let _lightboxIndex = 0;
+
+function openLightbox(index) {
+  const photos = window._epkPressPhotos || [];
+  if (!photos.length) return;
+  _lightboxIndex = index;
+  _renderLightbox();
+  document.getElementById('epkLightbox').classList.add('open');
+  document.addEventListener('keydown', _lightboxKeyHandler);
+}
+
+function closeLightbox() {
+  document.getElementById('epkLightbox').classList.remove('open');
+  document.removeEventListener('keydown', _lightboxKeyHandler);
+}
+
+function lightboxNav(dir) {
+  const photos = window._epkPressPhotos || [];
+  _lightboxIndex = (_lightboxIndex + dir + photos.length) % photos.length;
+  _renderLightbox();
+}
+
+function _renderLightbox() {
+  const photos = window._epkPressPhotos || [];
+  const photo  = photos[_lightboxIndex];
+  if (!photo) return;
+  document.getElementById('epkLightboxImg').src        = photo.photo_url;
+  document.getElementById('epkLightboxDownload').href  = photo.photo_url;
+  document.getElementById('epkLightboxCounter').textContent =
+    photos.length > 1 ? `${_lightboxIndex + 1} / ${photos.length}` : '';
+  // Show/hide nav arrows based on photo count
+  const showNav = photos.length > 1;
+  document.querySelector('.epk-lightbox-prev').style.display = showNav ? '' : 'none';
+  document.querySelector('.epk-lightbox-next').style.display = showNav ? '' : 'none';
+}
+
+function _lightboxKeyHandler(e) {
+  if (e.key === 'ArrowLeft')  lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+  if (e.key === 'Escape')     closeLightbox();
 }
 
 // ── Download all press photos ─────────────────────────────────────────────────

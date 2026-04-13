@@ -5221,6 +5221,109 @@ body[data-epk-theme="signal"] .epkt-footer a {
 }
 body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 
+/* ── Press photo lightbox ── */
+.epk-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  backdrop-filter: blur(6px);
+}
+.epk-lightbox.open { opacity: 1; pointer-events: all; }
+
+.epk-lightbox-inner {
+  position: relative;
+  max-width: min(90vw, 1100px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.epk-lightbox-img {
+  max-width: 100%;
+  max-height: calc(90vh - 52px);
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 8px 64px rgba(0,0,0,0.6);
+}
+.epk-lightbox-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 4px 0;
+  gap: 16px;
+}
+.epk-lightbox-counter {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
+}
+.epk-lightbox-download {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.epk-lightbox-download:hover { color: #fff; }
+
+.epk-lightbox-close {
+  position: fixed;
+  top: 20px; right: 24px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 8px;
+  transition: color 0.15s;
+  z-index: 2001;
+}
+.epk-lightbox-close:hover { color: #fff; }
+
+.epk-lightbox-prev,
+.epk-lightbox-next {
+  position: fixed;
+  top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 1.8rem;
+  line-height: 1;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  z-index: 2001;
+  border-radius: 2px;
+}
+.epk-lightbox-prev { left: 16px; }
+.epk-lightbox-next { right: 16px; }
+.epk-lightbox-prev:hover,
+.epk-lightbox-next:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+/* Make photo grid items behave as buttons */
+.epkt-press-photo-wrap {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: zoom-in;
+  display: block;
+  width: 100%;
+}
+
 /* Embeds shared */
 .epkt-embed-wrap { margin-bottom: 16px; overflow: hidden; }
 .epkt-embed-video iframe { display: block; }
