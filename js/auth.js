@@ -35,37 +35,6 @@ function isBandPremium(profile) {
   return !!profile.is_premium || (profile.review_count || 0) >= 3;
 }
 
-function updateNavAuth() {
-  const area = document.getElementById('navAuthArea');
-  if (!area) return;
-  if (currentUser && !currentBandProfile) {
-    // Auth succeeded but no bands row found — show minimal logged-in state
-    area.innerHTML = `<div class="nav-user">
-      <span class="nav-review-progress">${currentUser.email}</span>
-      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
-    </div>`;
-    return;
-  }
-  if (currentUser && currentBandProfile) {
-    const isPremium   = isBandPremium(currentBandProfile);
-    const reviewCount = currentBandProfile.review_count || 0;
-    const statusHtml  = isPremium
-      ? `<span class="nav-premium-badge">Community Premium</span>`
-      : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock premium</span>`;
-    const avatarHtml  = currentBandProfile.photo_url
-      ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
-      : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;
-    area.innerHTML = `<div class="nav-user">
-      <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${currentBandProfile.band_name}</span></a>
-      ${statusHtml}
-      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
-    </div>`;
-  } else {
-    area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
-      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
-  }
-}
-
 // Returns true if the given band has premium access.
 // Uses cached currentBandProfile for the current user to avoid an extra query.
 async function checkPremiumAccess(band_id) {
@@ -385,4 +354,304 @@ function showUnlockCelebration(bandName) {
 function closeUnlockCelebration() {
   const el = document.getElementById('unlockCelebration');
   if (el) el.classList.remove('open');
+}
+
+// ── Booking / Contact Form (EPK page) ─────────────────────────────────────────
+
+let _bookingBandId   = null;
+let _bookingBandName = null;
+
+function openBookingForm(bandId, bandName) {
+  _bookingBandId   = bandId;
+  _bookingBandName = bandName;
+
+  const modal = document.getElementById('bookingFormModal');
+  if (!modal) return;
+
+  // Reset form
+  document.getElementById('bookingFormBody').style.display    = 'block';
+  document.getElementById('bookingFormSuccess').style.display = 'none';
+  document.getElementById('bookingFormBandName').textContent  = bandName;
+  document.getElementById('bfName').value  = '';
+  document.getElementById('bfEmail').value = '';
+  document.getElementById('bfOrg').value   = '';
+  document.getElementById('bfDate').value  = '';
+  document.getElementById('bfBody').value  = '';
+  document.getElementById('bfMsg').textContent = '';
+  document.querySelectorAll('input[name="bf_category"]').forEach(r => r.checked = false);
+  document.getElementById('bfOrgRow').style.display  = 'none';
+  document.getElementById('bfDateRow').style.display = 'none';
+
+  const submit = document.getElementById('bfSubmit');
+  if (submit) { submit.disabled = false; submit.textContent = 'Send Message →'; }
+
+  // Category toggle wiring (idempotent — only wire once)
+  document.querySelectorAll('input[name="bf_category"]').forEach(r => {
+    r.onchange = () => {
+      const isBooking = r.value === 'booking';
+      document.getElementById('bfOrgRow').style.display  = isBooking ? 'block' : 'none';
+      document.getElementById('bfDateRow').style.display = isBooking ? 'block' : 'none';
+    };
+  });
+
+  modal.classList.add('open');
+}
+
+function closeBookingForm() {
+  const modal = document.getElementById('bookingFormModal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function submitBookingForm() {
+  const category = (document.querySelector('input[name="bf_category"]:checked') || {}).value;
+  const name     = (document.getElementById('bfName').value  || '').trim();
+  const email    = (document.getElementById('bfEmail').value || '').trim();
+  const org      = (document.getElementById('bfOrg').value   || '').trim();
+  const date     = (document.getElementById('bfDate').value  || '').trim();
+  const body     = (document.getElementById('bfBody').value  || '').trim();
+
+  const msgEl = document.getElementById('bfMsg');
+  const show  = (t) => { msgEl.textContent = t; };
+
+  if (!category)        { show('Please choose a category.'); return; }
+  if (!name)            { show('Your name is required.'); return; }
+  if (!email || !email.includes('@')) { show('A valid email address is required.'); return; }
+  if (body.length < 30) { show('Message must be at least 30 characters.'); return; }
+
+  const submit = document.getElementById('bfSubmit');
+  submit.disabled    = true;
+  submit.textContent = 'Sending…';
+  msgEl.textContent  = '';
+
+  const { data: msgData, error: msgErr } = await sb.from('messages').insert({
+    band_id:       _bookingBandId,
+    category,
+    sender_name:   name,
+    sender_email:  email,
+    sender_org:    org  || null,
+    proposed_date: date || null,
+    body,
+    read: false,
+  }).select('id').single();
+
+  if (msgErr) {
+    show('Could not send — ' + (msgErr.message || 'unknown error'));
+    submit.disabled    = false;
+    submit.textContent = 'Send Message →';
+    return;
+  }
+
+  // Insert notification for the band
+  await sb.from('notifications').insert({
+    band_id: _bookingBandId,
+    type:    'message',
+    payload: { sender_name: name, category, message_id: msgData?.id },
+    read:    false,
+  });
+
+  // Show success
+  document.getElementById('bookingFormBody').style.display    = 'none';
+  document.getElementById('bookingFormSuccess').style.display = 'block';
+  document.getElementById('bfSuccessText').textContent =
+    `${_bookingBandName} will be in touch via ${email}.`;
+}
+
+// ── Notification Bell + Tray ──────────────────────────────────────────────────
+
+let _notifTrayOpen = false;
+let _notifRealtime = null;
+
+function updateNavAuth() {
+  const area = document.getElementById('navAuthArea');
+  if (!area) return;
+  if (currentUser && !currentBandProfile) {
+    area.innerHTML = `<div class="nav-user">
+      <span class="nav-review-progress">${currentUser.email}</span>
+      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
+    </div>`;
+    return;
+  }
+  if (currentUser && currentBandProfile) {
+    const isPremium   = isBandPremium(currentBandProfile);
+    const reviewCount = currentBandProfile.review_count || 0;
+    const statusHtml  = isPremium
+      ? `<span class="nav-premium-badge">Community Premium</span>`
+      : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock premium</span>`;
+    const avatarHtml  = currentBandProfile.photo_url
+      ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
+      : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;
+    area.innerHTML = `<div class="nav-user">
+      <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${currentBandProfile.band_name}</span></a>
+      ${statusHtml}
+      <button class="nav-bell" id="navBell" onclick="toggleNotifTray()" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="nav-bell-badge" id="navBellBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
+    </div>`;
+    loadUnreadCount();
+    _subscribeNotifications();
+  } else {
+    area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
+  }
+}
+
+async function loadUnreadCount() {
+  if (!currentBandProfile) return;
+  const { count } = await sb
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('band_id', currentBandProfile.id)
+    .eq('read', false);
+
+  _setNotifBadge(count || 0);
+}
+
+function _setNotifBadge(n) {
+  const badge = document.getElementById('navBellBadge');
+  if (!badge) return;
+  if (n > 0) {
+    badge.textContent    = n > 99 ? '99+' : String(n);
+    badge.style.display  = 'flex';
+  } else {
+    badge.style.display  = 'none';
+  }
+}
+
+function _subscribeNotifications() {
+  if (_notifRealtime || !currentBandProfile) return;
+  _notifRealtime = sb
+    .channel('notif-' + currentBandProfile.id)
+    .on('postgres_changes', {
+      event:  'INSERT',
+      schema: 'public',
+      table:  'notifications',
+      filter: `band_id=eq.${currentBandProfile.id}`,
+    }, () => { loadUnreadCount(); })
+    .subscribe();
+}
+
+function toggleNotifTray() {
+  let tray = document.getElementById('notifTray');
+  if (!tray) {
+    tray = document.createElement('div');
+    tray.id        = 'notifTray';
+    tray.className = 'notif-tray';
+    document.body.appendChild(tray);
+
+    // Close on outside click
+    document.addEventListener('click', function _ntClose(e) {
+      const bell = document.getElementById('navBell');
+      if (!document.getElementById('notifTray')?.contains(e.target) && !bell?.contains(e.target)) {
+        _closeNotifTray();
+        document.removeEventListener('click', _ntClose);
+      }
+    });
+  }
+
+  if (_notifTrayOpen) {
+    _closeNotifTray();
+  } else {
+    _openNotifTray(tray);
+  }
+}
+
+function _closeNotifTray() {
+  const tray = document.getElementById('notifTray');
+  if (tray) tray.classList.remove('open');
+  _notifTrayOpen = false;
+}
+
+async function _openNotifTray(tray) {
+  _notifTrayOpen = true;
+  tray.innerHTML = '<div class="notif-tray-loading">Loading…</div>';
+  tray.classList.add('open');
+
+  const { data: notifs, error } = await sb
+    .from('notifications')
+    .select('*')
+    .eq('band_id', currentBandProfile.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !notifs) {
+    tray.innerHTML = '<div class="notif-tray-empty">Could not load notifications.</div>';
+    return;
+  }
+
+  const typeIcon  = { message: '✉', review_like: '★', review_reply: '↩', unlock: '◈' };
+  const typeLabel = { message: 'New message', review_like: 'Review liked', review_reply: 'Review reply', unlock: 'Premium unlocked' };
+
+  const itemsHtml = notifs.length
+    ? notifs.map(n => {
+        const icon    = typeIcon[n.type]  || '•';
+        const label   = typeLabel[n.type] || n.type;
+        const payload = n.payload || {};
+        let desc = label;
+        if (n.type === 'message') {
+          const cat = { booking: 'Venue booking inquiry', collab: 'Band collab request', press: 'Press inquiry', general: 'Message' };
+          desc = `${cat[payload.category] || 'Message'} from ${payload.sender_name || 'someone'}`;
+        }
+        const ago = _timeAgo(n.created_at);
+        return `<div class="notif-item${n.read ? '' : ' notif-item--unread'}" onclick="_handleNotifClick('${n.id}','${n.type}')">
+          <div class="notif-icon">${icon}</div>
+          <div class="notif-body">
+            <div class="notif-desc">${escapeHtml(desc)}</div>
+            <div class="notif-time">${ago}</div>
+          </div>
+          ${!n.read ? '<div class="notif-dot"></div>' : ''}
+        </div>`;
+      }).join('')
+    : '';
+
+  const emptyHtml = !notifs.length
+    ? `<div class="notif-tray-empty">Nothing yet — this is where you'll see booking inquiries, replies to your reviews, and more.</div>`
+    : '';
+
+  const markAllBtn = notifs.some(n => !n.read)
+    ? `<button class="notif-mark-all" onclick="_markAllNotifRead()">Mark all read</button>`
+    : '';
+
+  tray.innerHTML = `
+    <div class="notif-tray-header">
+      <span class="notif-tray-title">Notifications</span>
+      ${markAllBtn}
+    </div>
+    <div class="notif-list">${itemsHtml}${emptyHtml}</div>
+    <div class="notif-tray-footer"><a href="profile.html#messages">View all messages →</a></div>
+  `;
+}
+
+async function _handleNotifClick(notifId, type) {
+  await sb.from('notifications').update({ read: true }).eq('id', notifId);
+  loadUnreadCount();
+  if (type === 'message') {
+    window.location.href = 'profile.html#messages';
+  }
+}
+
+async function _markAllNotifRead() {
+  if (!currentBandProfile) return;
+  await sb.from('notifications').update({ read: true })
+    .eq('band_id', currentBandProfile.id)
+    .eq('read', false);
+  _setNotifBadge(0);
+  const tray = document.getElementById('notifTray');
+  if (tray) await _openNotifTray(tray);
+}
+
+function _timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m    = Math.floor(diff / 60000);
+  if (m < 1)   return 'just now';
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

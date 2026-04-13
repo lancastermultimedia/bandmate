@@ -457,7 +457,7 @@ function buildBooking(band, theme) {
   return `<div class="epkt-book">
     <div class="epkt-book-title">Book ${safeSlug}</div>
     <div class="epkt-book-sub">Interested in booking this band for your venue or festival? Get in touch directly.</div>
-    <button class="epkt-book-btn" onclick="openContactModal('',${bandJsonName},${bandJsonCity})">Contact About Booking →</button>
+    <button class="epkt-book-btn" onclick="openBookingForm(${band.id},${bandJsonName})">Contact About Booking →</button>
   </div>`;
 }
 
