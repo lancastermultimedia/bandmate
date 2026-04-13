@@ -62,7 +62,7 @@ function toggleReviewForm() {
 async function loadVenueReviews(placeId, venueName) {
   const { data: reviews, error } = await sb
     .from('reviews')
-    .select('*, bands(band_name, genre, home_city)')
+    .select('*, bands(band_name, genre, home_city, profile_photo_url, epk_theme)')
     .eq('google_place_id', placeId)
     .order('created_at', { ascending: false });
 
@@ -89,11 +89,22 @@ async function loadVenueReviews(placeId, venueName) {
     const initials = (band.band_name || 'B').substring(0, 2).toUpperCase();
     const stars    = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
     const date     = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const slug     = (band.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const epkHref  = band.epk_theme && slug ? `epk.html?band=${slug}` : null;
+    const avatarEl = band.profile_photo_url
+      ? `<img src="${band.profile_photo_url}" class="ri-avatar ri-avatar-img" alt="${band.band_name || ''}">`
+      : `<div class="ri-avatar">${initials}</div>`;
+    const avatarWrapped = epkHref
+      ? `<a href="${epkHref}" class="ri-avatar-link" title="View ${band.band_name}'s EPK">${avatarEl}</a>`
+      : avatarEl;
+    const nameEl = epkHref
+      ? `<a href="${epkHref}" class="ri-band ri-band-link">${band.band_name || 'Anonymous Band'}</a>`
+      : `<div class="ri-band">${band.band_name || 'Anonymous Band'}</div>`;
     return `<div class="review-item">
       <div class="ri-header">
-        <div class="ri-avatar">${initials}</div>
+        ${avatarWrapped}
         <div>
-          <div class="ri-band">${band.band_name || 'Anonymous Band'}</div>
+          ${nameEl}
           <div class="ri-meta">${band.genre || ''} · ${band.home_city || ''} · ${date}</div>
         </div>
         <div class="ri-stars">${stars}</div>

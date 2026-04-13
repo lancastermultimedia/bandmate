@@ -1621,12 +1621,29 @@ footer {
   color: var(--cream);
   flex-shrink: 0;
 }
+.ri-avatar-img {
+  object-fit: cover;
+  background: var(--rule);
+}
+.ri-avatar-link {
+  flex-shrink: 0;
+  display: block;
+  border-radius: 50%;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+.ri-avatar-link:hover { opacity: 0.82; box-shadow: 0 0 0 2px var(--rust); }
 
 .ri-band {
   font-family: 'DM Serif Display', serif;
   font-size: 0.95rem;
   margin-bottom: 1px;
 }
+.ri-band-link {
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.ri-band-link:hover { color: var(--rust); }
 
 .ri-meta {
   font-family: 'Space Mono', monospace;
