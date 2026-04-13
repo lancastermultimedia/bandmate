@@ -319,28 +319,57 @@ async function submitFeedback() {
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
 
+  const category = _fbCategory || 'General Feedback';
   const bandName = (typeof currentBandProfile !== 'undefined' && currentBandProfile?.band_name)
     ? currentBandProfile.band_name
     : null;
+  const pageUrl = window.location.href;
 
   try {
+    // 1. Save to Supabase (source of truth / fallback)
     const { error } = await sb.from('beta_feedback').insert({
-      category:  _fbCategory || 'General Feedback',
+      category,
       message,
       email:     email || null,
-      page_url:  window.location.href,
+      page_url:  pageUrl,
       band_name: bandName,
     });
 
     if (error) throw error;
 
+    // 2. Create GitHub issue via Edge Function (best-effort — won't block success)
+    let issueUrl = null;
+    try {
+      const fnUrl = `${BANDMATE_SUPABASE_URL}/functions/v1/create-github-issue`;
+      const res   = await fetch(fnUrl, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${BANDMATE_SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({ category, message, email: email || null, page_url: pageUrl, band_name: bandName }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        issueUrl   = data.issue_url || null;
+      }
+    } catch (_) { /* non-fatal — feedback already saved */ }
+
     // Show success
     const formArea  = document.getElementById('fbFormArea');
     const successEl = document.getElementById('fbSuccess');
+    const successMsg = document.querySelector('.fb-success-msg');
     if (formArea)  formArea.style.display  = 'none';
     if (successEl) successEl.style.display = '';
+    if (successMsg && issueUrl) {
+      successMsg.innerHTML = `Your thoughts help us build something better for independent bands everywhere.<br><br>
+        <a href="${issueUrl}" target="_blank" rel="noopener"
+           style="font-family:'Space Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--rust,#c94b2a);text-decoration:none;">
+          View on GitHub →
+        </a>`;
+    }
 
-    setTimeout(() => closeFeedbackModal(), 3000);
+    setTimeout(() => closeFeedbackModal(), 6000);
   } catch (err) {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Send Feedback →'; }
     if (typeof showToast === 'function') showToast('Could not send feedback — please try again', 'error');
