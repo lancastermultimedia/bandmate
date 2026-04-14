@@ -690,47 +690,6 @@ body.lp-body { background: var(--cream); }
 </head>
 <body class="lp-body">
 
-<!-- BETA GATE -->
-<div id="betaGate">
-  <div class="bg-eyebrow">You have been invited to the Bandmate beta</div>
-  <div class="bg-logo">Bandmate <span class="bg-logo-dot"></span></div>
-  <div class="bg-tagline">The venue guide and tour planner built for independent bands</div>
-  <div class="bg-form">
-    <div class="bg-input-wrap">
-      <input class="bg-input" type="password" id="betaCodeInput"
-        placeholder="Enter beta access code" autocomplete="off"
-        onkeydown="if(event.key==='Enter')checkBetaCode()">
-    </div>
-    <div class="bg-error" id="betaError">&nbsp;</div>
-    <button class="bg-btn" onclick="checkBetaCode()">Enter Bandmate →</button>
-  </div>
-  <div class="bg-note">Early access. Things will break. Your feedback makes it better.</div>
-</div>
-<script>
-  (function() {
-    if (localStorage.getItem('bm_beta_access') === 'granted') {
-      document.getElementById('betaGate').style.display = 'none';
-    }
-  })();
-  function checkBetaCode() {
-    var input = document.getElementById('betaCodeInput');
-    var error = document.getElementById('betaError');
-    if (!input) return;
-    if (input.value.trim().toUpperCase() === 'BANDMATE2025') {
-      localStorage.setItem('bm_beta_access', 'granted');
-      var gate = document.getElementById('betaGate');
-      gate.classList.add('bg-fade-out');
-      setTimeout(function() { gate.style.display = 'none'; }, 520);
-    } else {
-      input.classList.remove('bg-shake');
-      void input.offsetWidth;
-      input.classList.add('bg-shake');
-      if (error) error.textContent = 'Invalid code';
-      setTimeout(function() { input.classList.remove('bg-shake'); }, 400);
-    }
-  }
-</script>
-
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
