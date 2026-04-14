@@ -349,11 +349,14 @@ async function submitFeedback() {
         },
         body: JSON.stringify({ category, message, email: email || null, page_url: pageUrl, band_name: bandName }),
       });
+      const responseText = await res.text();
+      console.log('[feedback] Edge Function status:', res.status, 'body:', responseText);
       if (res.ok) {
-        const data = await res.json();
-        issueUrl   = data.issue_url || null;
+        try { issueUrl = JSON.parse(responseText).issue_url || null; } catch (_) {}
       }
-    } catch (_) { /* non-fatal — feedback already saved */ }
+    } catch (fnErr) {
+      console.error('[feedback] Edge Function fetch error:', fnErr);
+    }
 
     // Show success
     const formArea  = document.getElementById('fbFormArea');
