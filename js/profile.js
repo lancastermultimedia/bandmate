@@ -162,8 +162,8 @@ async function renderProfile() {
     document.getElementById('upgradeSection').style.display  = 'block';
     document.getElementById('upgradeRemaining').textContent  =
       count >= 3
-        ? 'You\'ve unlocked Community Premium!'
-        : `${3 - count} more review${3 - count !== 1 ? 's' : ''} to unlock free Community Premium`;
+        ? 'You\'ve unlocked full access!'
+        : `${3 - count} more review${3 - count !== 1 ? 's' : ''} to unlock full access`;
   } else {
     document.getElementById('progressSection').style.display = 'none';
     document.getElementById('upgradeSection').style.display  = 'none';

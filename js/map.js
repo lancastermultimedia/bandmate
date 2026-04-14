@@ -195,7 +195,7 @@ function searchVenuesNearby(center) {
   );
 }
 
-function processResults(results) {
+async function processResults(results) {
   const allVenues = results.filter(p => {
     const name  = (p.name || '').toLowerCase();
     const types = p.types || [];
@@ -203,9 +203,37 @@ function processResults(results) {
            VENUE_KEYWORDS.some(kw => name.includes(kw));
   });
   allVenues.forEach(place => addMarker(place));
-  updateVenuesList(allVenues);
+
+  // Fetch Bandmate review genre data for these venues, then rank + render
+  await enrichAndRenderVenues(allVenues);
+
   setStatus('green', `${allVenues.length} venues found nearby`);
   document.getElementById('resultsLabel').textContent = `${allVenues.length} Venues Found`;
+}
+
+// Fetch genre_played data from reviews, attach to venues, sort, render
+async function enrichAndRenderVenues(venues) {
+  const placeIds = venues.map(v => v.place_id);
+
+  // Fetch all reviews for these venues (genre_played + place_id only)
+  let genreByVenue = {}; // placeId -> [genre, genre, ...]
+  try {
+    const { data: reviews } = await sb
+      .from('reviews')
+      .select('google_place_id, genre_played')
+      .in('google_place_id', placeIds);
+
+    (reviews || []).forEach(r => {
+      if (!r.genre_played) return;
+      if (!genreByVenue[r.google_place_id]) genreByVenue[r.google_place_id] = [];
+      genreByVenue[r.google_place_id].push(r.genre_played.toLowerCase().trim());
+    });
+  } catch (_) { /* non-fatal — fall back to rating sort */ }
+
+  // Attach genre data to each venue object for use in rendering
+  venues.forEach(v => { v._genresPlayed = genreByVenue[v.place_id] || []; });
+
+  updateVenuesList(venues, genreByVenue);
 }
 
 // ─── Markers ──────────────────────────────────────────────────────────────────
@@ -270,7 +298,7 @@ function showInfoWindow(place, marker) {
 
 // ─── Venue list panel ─────────────────────────────────────────────────────────
 
-function updateVenuesList(venues) {
+function updateVenuesList(venues, genreByVenue = {}) {
   if (!venues.length) {
     document.getElementById('venuesList').innerHTML = `
       <div class="no-results">
@@ -281,21 +309,57 @@ function updateVenuesList(venues) {
     return;
   }
 
-  const sorted = [...venues].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  document.getElementById('venuesList').innerHTML = sorted.map(place => {
-    const rating = place.rating;
-    const stars  = rating ? '★'.repeat(Math.round(rating)) : '—';
-    const isOpen = place.opening_hours?.isOpen?.();
-    const types  = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
-    return `
-      <div class="venue-result-card" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
+  // Current band's genre for matching (normalised, comma-split for multi-genre)
+  const bandGenres = currentBandProfile?.genre
+    ? currentBandProfile.genre.toLowerCase().split(',').map(g => g.trim()).filter(Boolean)
+    : [];
+
+  // Genre match score: count of how many reviews at this venue match the band's genre(s)
+  function genreMatchScore(place) {
+    if (!bandGenres.length) return 0;
+    const venueGenres = genreByVenue[place.place_id] || [];
+    return venueGenres.filter(g => bandGenres.some(bg => g.includes(bg) || bg.includes(g))).length;
+  }
+
+  const withScores = venues.map(v => ({ place: v, score: genreMatchScore(v) }));
+
+  // Sort: genre matches (desc by match count) first, then unmatched by Google rating
+  const matched   = withScores.filter(v => v.score > 0).sort((a, b) => b.score - a.score || (b.place.rating || 0) - (a.place.rating || 0));
+  const unmatched = withScores.filter(v => v.score === 0).sort((a, b) => (b.place.rating || 0) - (a.place.rating || 0));
+  const sorted    = [...matched, ...unmatched];
+
+  const hasSuggested = matched.length > 0;
+
+  document.getElementById('venuesList').innerHTML = sorted.map(({ place, score }, idx) => {
+    const rating    = place.rating;
+    const stars     = rating ? '★'.repeat(Math.round(rating)) : '—';
+    const isOpen    = place.opening_hours?.isOpen?.();
+    const types     = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
+    const isMatch   = score > 0;
+
+    // Show the genres that have played at this venue (top 3 unique)
+    const venueGenres   = [...new Set(genreByVenue[place.place_id] || [])].slice(0, 3);
+    const genreTagsHtml = venueGenres.map(g =>
+      `<span class="vrc-tag vrc-tag--genre">${g}</span>`
+    ).join('');
+
+    // "Suggested for you" header — show above first matched venue only
+    const sectionHeader = (hasSuggested && idx === 0)
+      ? `<div class="vrc-section-label">Matched to your genre</div>`
+      : (hasSuggested && idx === matched.length)
+        ? `<div class="vrc-section-label vrc-section-label--all">All venues by rating</div>`
+        : '';
+
+    return `${sectionHeader}
+      <div class="venue-result-card${isMatch ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
         <div class="vrc-header">
           <div class="vrc-name">${place.name}</div>
           ${rating ? `<div class="vrc-rating"><span style="color:var(--gold)">${stars}</span> ${rating.toFixed(1)}</div>` : ''}
         </div>
         <div class="vrc-address">${place.vicinity || ''}</div>
         <div class="vrc-tags">
-          ${types.slice(0, 3).map(t => `<span class="vrc-tag">${t.replace(/_/g, ' ')}</span>`).join('')}
+          ${types.slice(0, 2).map(t => `<span class="vrc-tag">${t.replace(/_/g, ' ')}</span>`).join('')}
+          ${genreTagsHtml}
           ${isOpen ? '<span class="vrc-tag open">Open Now</span>' : ''}
         </div>
         <button class="vrc-contact-btn"

@@ -404,6 +404,24 @@ input[type="range"] {
 }
 
 .vrc-tag.open { border-color: var(--sage); color: var(--sage); }
+.vrc-tag--genre { border-color: var(--rust); color: var(--rust); }
+
+.vrc--genre-match { border-left: 3px solid var(--rust); }
+
+.vrc-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rust);
+  padding: 10px 4px 6px;
+}
+.vrc-section-label--all {
+  color: var(--muted);
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
 
 .vrc-contact-btn {
   width: 100%;

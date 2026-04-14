@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load band data and auth session in parallel
   const [bandsRes] = await Promise.all([
     sb.from('bands')
-      .select('id, band_name, genre, home_city, bio, website, spotify_url, youtube_url, soundcloud_url, apple_music_url, bandcamp_url, bandcamp_embed, instagram_url, tiktok_url, facebook_url, profile_photo_url, is_premium, review_count, stage_plot_url, epk_theme')
+      .select('id, band_name, genre, home_city, bio, website, email, spotify_url, youtube_url, soundcloud_url, apple_music_url, bandcamp_url, bandcamp_embed, instagram_url, tiktok_url, facebook_url, profile_photo_url, is_premium, review_count, stage_plot_url, epk_theme')
       .ilike('band_name', nameSearch)
       .limit(1),
     initAuth(),
@@ -448,16 +448,19 @@ function buildStagePlot(band) {
 // ── Booking CTA ───────────────────────────────────────────────────────────────
 
 function buildBooking(band, theme) {
-  const safeSlug     = escHtml(band.band_name);
-  const bandJsonName = JSON.stringify(band.band_name);
-  const bandJsonCity = JSON.stringify(band.home_city || '');
+  const safeSlug = escHtml(band.band_name);
+  const subject  = encodeURIComponent(`Booking Inquiry — ${band.band_name}`);
+  const mailBody = encodeURIComponent(
+    `Hi ${band.band_name},\n\nWe\u2019re interested in booking you for an upcoming show. Please let us know your availability and rates.\n\nThanks!`
+  );
+  const mailHref = band.email
+    ? `mailto:${encodeURIComponent(band.email)}?subject=${subject}&body=${mailBody}`
+    : band.website ? band.website : '#';
 
-  // Bold: full-width rust section — must break out of wrap padding in CSS
-  // Vibrant: gold BG, dark green text — handled in CSS
   return `<div class="epkt-book">
     <div class="epkt-book-title">Book ${safeSlug}</div>
     <div class="epkt-book-sub">Interested in booking this band for your venue or festival? Get in touch directly.</div>
-    <button class="epkt-book-btn" onclick="openBookingForm(${band.id},${bandJsonName})">Contact About Booking →</button>
+    <a class="epkt-book-btn" href="${mailHref}"${!band.email && band.website ? ' target="_blank" rel="noopener"' : ''}>Contact About Booking →</a>
   </div>`;
 }
 

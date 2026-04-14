@@ -475,8 +475,8 @@ function updateNavAuth() {
     const isPremium   = isBandPremium(currentBandProfile);
     const reviewCount = currentBandProfile.review_count || 0;
     const statusHtml  = isPremium
-      ? `<span class="nav-premium-badge">Community Premium</span>`
-      : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock premium</span>`;
+      ? ''
+      : `<span class="nav-review-progress">${reviewCount} of 3 reviews to unlock features</span>`;
     const avatarHtml  = currentBandProfile.photo_url
       ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
       : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;
