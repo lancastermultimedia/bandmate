@@ -3,9 +3,10 @@ const FALLBACK_LOCATION = { lat: 36.1627, lng: -86.7816, name: 'Nashville, TN' }
 const VENUE_KEYWORDS    = ['bar','tavern','pub','club','lounge','music','venue','hall','stage','brewery','taproom'];
 
 let map, placesService, infoWindow, searchCircle;
-let markers       = [];
-let currentCenter = FALLBACK_LOCATION;
-let currentRadius = 10;
+let markers          = [];
+let currentCenter    = FALLBACK_LOCATION;
+let currentRadius    = 10;
+let _accumulatedVenues = [];  // accumulates across pagination pages
 
 // Lazy-init autocomplete for the review venue search modal
 let reviewVenueAutocomplete = null;
@@ -147,6 +148,7 @@ function searchLocation() {
 
 function searchVenuesNearby(center) {
   clearMarkers();
+  _accumulatedVenues = [];
   setStatus('amber', 'Searching for venues...');
   document.getElementById('venuesList').innerHTML = `
     <div class="no-results">
@@ -196,19 +198,23 @@ function searchVenuesNearby(center) {
 }
 
 async function processResults(results) {
-  const allVenues = results.filter(p => {
+  const newVenues = results.filter(p => {
     const name  = (p.name || '').toLowerCase();
     const types = p.types || [];
     return types.includes('bar') || types.includes('night_club') ||
            VENUE_KEYWORDS.some(kw => name.includes(kw));
   });
-  allVenues.forEach(place => addMarker(place));
+  newVenues.forEach(place => addMarker(place));
 
-  // Fetch Bandmate review genre data for these venues, then rank + render
-  await enrichAndRenderVenues(allVenues);
+  // Accumulate across pagination pages so each new page doesn't wipe the list
+  const knownIds = new Set(_accumulatedVenues.map(v => v.place_id));
+  newVenues.forEach(v => { if (!knownIds.has(v.place_id)) _accumulatedVenues.push(v); });
 
-  setStatus('green', `${allVenues.length} venues found nearby`);
-  document.getElementById('resultsLabel').textContent = `${allVenues.length} Venues Found`;
+  // Fetch Bandmate review genre data for ALL accumulated venues, rank + render
+  await enrichAndRenderVenues(_accumulatedVenues);
+
+  setStatus('green', `${_accumulatedVenues.length} venues found nearby`);
+  document.getElementById('resultsLabel').textContent = `${_accumulatedVenues.length} Venues Found`;
 }
 
 // Fetch genre_played data from reviews, attach to venues, sort, render

@@ -183,63 +183,6 @@
   </div>
 </div>
 
-<!-- BOOKING FORM MODAL -->
-<div class="modal-overlay" id="bookingFormModal" onclick="if(event.target===this)closeBookingForm()">
-  <div class="modal booking-form-modal">
-    <button class="modal-close" onclick="closeBookingForm()">✕</button>
-    <div class="modal-eyebrow">Get in Touch</div>
-    <div class="modal-title" id="bookingFormBandName"></div>
-
-    <div id="bookingFormBody">
-      <!-- Category -->
-      <div class="bf-field">
-        <div class="bf-label">What's this about?</div>
-        <div class="bf-category-pills">
-          <label class="bf-pill"><input type="radio" name="bf_category" value="booking"> 🎤 Venue Booking</label>
-          <label class="bf-pill"><input type="radio" name="bf_category" value="collab">  🎸 Band Collab</label>
-          <label class="bf-pill"><input type="radio" name="bf_category" value="press">   📰 Press / Blog</label>
-          <label class="bf-pill"><input type="radio" name="bf_category" value="general"> 📣 General</label>
-        </div>
-      </div>
-      <!-- Sender -->
-      <div class="bf-row">
-        <div class="bf-field">
-          <label class="bf-label">Your Name</label>
-          <input type="text" id="bfName" class="bf-input" placeholder="Full name">
-        </div>
-        <div class="bf-field">
-          <label class="bf-label">Your Email</label>
-          <input type="email" id="bfEmail" class="bf-input" placeholder="so they can reply">
-        </div>
-      </div>
-      <!-- Org (booking only) -->
-      <div class="bf-field" id="bfOrgRow" style="display:none">
-        <label class="bf-label">Venue / Organization</label>
-        <input type="text" id="bfOrg" class="bf-input" placeholder="The venue or festival name">
-      </div>
-      <!-- Date (booking only) -->
-      <div class="bf-field" id="bfDateRow" style="display:none">
-        <label class="bf-label">Proposed Date(s)</label>
-        <input type="text" id="bfDate" class="bf-input" placeholder="e.g. any weekend in June">
-      </div>
-      <!-- Message -->
-      <div class="bf-field">
-        <label class="bf-label">Message</label>
-        <textarea id="bfBody" class="bf-textarea" placeholder="Tell them what you have in mind…"></textarea>
-      </div>
-      <button class="bf-submit" id="bfSubmit" onclick="submitBookingForm()">Send Message →</button>
-      <div class="bf-msg" id="bfMsg"></div>
-    </div>
-
-    <!-- Success state -->
-    <div id="bookingFormSuccess" style="display:none;text-align:center;padding:32px 0">
-      <div style="font-size:2rem;margin-bottom:12px">✓</div>
-      <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:8px">Message sent.</div>
-      <div id="bfSuccessText" style="font-size:0.85rem;color:var(--muted);line-height:1.6"></div>
-    </div>
-  </div>
-</div>
-
 <!-- EPK CONTENT -->
 <div class="epk-page">
   <div id="epkMount">

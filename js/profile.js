@@ -37,14 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
   renderProfile();
 
-  // Scroll to messages section if linked directly from notification tray
-  if (window.location.hash === '#messages') {
-    setTimeout(() => {
-      const el = document.getElementById('messagesSection');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 600);
-  }
-
   sb.auth.onAuthStateChange(async (event) => {
     if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
     if (event === 'SIGNED_OUT') { formPopulated = false; renderProfile(); return; }
@@ -169,101 +161,8 @@ async function renderProfile() {
     document.getElementById('upgradeSection').style.display  = 'none';
   }
 
-  // ── Messages (premium only) ──
-  const msgSection = document.getElementById('messagesSection');
-  if (msgSection) {
-    if (isPremium) {
-      msgSection.style.display = 'block';
-      loadMessages(bp.id);
-    } else {
-      msgSection.style.display = 'none';
-    }
-  }
-
   // ── Review history ──
   loadReviewHistory(bp.id);
-}
-
-// ── Messages Inbox ────────────────────────────────────────────────────────────
-
-async function loadMessages(bandId) {
-  const list = document.getElementById('messagesList');
-  if (!list) return;
-
-  list.innerHTML = '<div class="msg-loading">Loading…</div>';
-
-  const { data: messages, error } = await sb
-    .from('messages')
-    .select('*')
-    .eq('band_id', bandId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    list.innerHTML = '<div class="msg-empty">Could not load messages.</div>';
-    return;
-  }
-
-  if (!messages || !messages.length) {
-    list.innerHTML = `<div class="msg-empty">No messages yet — when someone contacts you through your EPK, it will appear here.</div>`;
-    // Hide unread badge
-    const badge = document.getElementById('msgUnreadBadge');
-    if (badge) badge.style.display = 'none';
-    return;
-  }
-
-  const unread = messages.filter(m => !m.read).length;
-  const badge  = document.getElementById('msgUnreadBadge');
-  if (badge) {
-    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-flex'; }
-    else              { badge.style.display = 'none'; }
-  }
-
-  const catLabel = { booking: 'Venue Booking', collab: 'Band Collab', press: 'Press / Blog', general: 'General' };
-  const catClass = { booking: 'msg-cat--booking', collab: 'msg-cat--collab', press: 'msg-cat--press', general: 'msg-cat--general' };
-
-  list.innerHTML = messages.map(m => {
-    const date    = new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const cat     = catLabel[m.category]  || m.category || 'Message';
-    const cls     = catClass[m.category]  || '';
-    const preview = (m.body || '').substring(0, 160).trim();
-    const subject = encodeURIComponent(`Re: ${cat} — ${currentBandProfile?.band_name || ''}`);
-    const replyHref = `mailto:${encodeURIComponent(m.sender_email)}?subject=${subject}`;
-    const orgLine = m.sender_org ? `<span class="msg-org">${escProfileStr(m.sender_org)}</span>` : '';
-    const dateLine = m.proposed_date ? `<div class="msg-proposed-date">Proposed date: ${escProfileStr(m.proposed_date)}</div>` : '';
-
-    return `<div class="msg-card${m.read ? '' : ' msg-card--unread'}" id="msg-${m.id}">
-      <div class="msg-card-header">
-        <span class="msg-cat ${cls}">${cat}</span>
-        <span class="msg-date">${date}</span>
-        ${!m.read ? '<span class="msg-new-dot"></span>' : ''}
-      </div>
-      <div class="msg-sender">${escProfileStr(m.sender_name)} ${orgLine}</div>
-      <div class="msg-body-preview">${escProfileStr(preview)}${m.body?.length > 160 ? '…' : ''}</div>
-      ${dateLine}
-      <div class="msg-actions">
-        <a href="${replyHref}" class="msg-reply-btn" onclick="_markMessageRead('${m.id}')">Reply via Email →</a>
-        ${!m.read ? `<button class="msg-read-btn" onclick="_markMessageRead('${m.id}')">Mark as read</button>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function _markMessageRead(messageId) {
-  await sb.from('messages').update({ read: true }).eq('id', messageId);
-  const card = document.getElementById(`msg-${messageId}`);
-  if (card) {
-    card.classList.remove('msg-card--unread');
-    card.querySelector('.msg-new-dot')?.remove();
-    card.querySelector('.msg-read-btn')?.remove();
-  }
-  // Decrement badge
-  const badge = document.getElementById('msgUnreadBadge');
-  if (badge && badge.style.display !== 'none') {
-    const cur = parseInt(badge.textContent, 10) || 0;
-    const next = cur - 1;
-    if (next <= 0) { badge.style.display = 'none'; }
-    else           { badge.textContent = next; }
-  }
 }
 
 // ── Profile avatar ────────────────────────────────────────────────────────────
