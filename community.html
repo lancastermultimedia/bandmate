@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
+  <ul class="nav-links">
+    <li><a href="map.html">Find Venues</a></li>
+    <li><a href="map.html#leave-review">Leave a Review</a></li>
+    <li><a href="tour.html">Tour Planner</a></li>
+    <li><a href="community.html" style="color:var(--rust)">Community</a></li>
+    <li><a href="profile.html">Build EPK</a></li>
+    <li id="navAuthArea" style="display:contents">
+      <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
+    </li>
+  </ul>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- PAGE HERO -->
+<section class="comm-hero">
+  <div class="comm-hero-inner">
+    <div class="comm-hero-text">
+      <div class="comm-hero-eyebrow">// Find your next bandmate</div>
+      <h1 class="comm-hero-title">Community</h1>
+      <p class="comm-hero-desc">Connect with bands looking for tour support, local openers, and co-headlining partners. Post your tour and find bands who fit.</p>
+    </div>
+    <button class="comm-post-btn" onclick="openPostModal()">Post an Opportunity</button>
+  </div>
+</section>
+
+<!-- TWO-COLUMN LAYOUT -->
+<div class="comm-layout">
+
+  <!-- SIDEBAR FILTERS -->
+  <aside class="comm-sidebar">
+
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Search</div>
+      <input class="comm-search-input" id="commSearch" type="text" placeholder="Band name, city, or keyword…" oninput="onFilterChange()">
+    </div>
+
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Opportunity Type</div>
+      <div class="comm-chips" id="typeChips">
+        <button class="comm-chip comm-chip--active" data-value="all"    onclick="setTypeFilter(this)">All</button>
+        <button class="comm-chip" data-value="tour_support"             onclick="setTypeFilter(this)">Tour Support</button>
+        <button class="comm-chip" data-value="local_opener"             onclick="setTypeFilter(this)">Local Opener</button>
+        <button class="comm-chip" data-value="co_headlining"            onclick="setTypeFilter(this)">Co-Headlining</button>
+      </div>
+    </div>
+
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Genre</div>
+      <div class="comm-chips comm-chips--wrap" id="genreChips">
+        <button class="comm-chip comm-chip--active" data-value="" onclick="setGenreFilter(this)">All Genres</button>
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Location</div>
+      <input class="comm-search-input" id="commLocation" type="text" placeholder="City or state…" oninput="onFilterChange()">
+    </div>
+
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Tour Length</div>
+      <div class="comm-chips" id="lengthChips">
+        <button class="comm-chip comm-chip--active" data-value="all"     onclick="setLengthFilter(this)">Any</button>
+        <button class="comm-chip" data-value="single"                    onclick="setLengthFilter(this)">Single Show</button>
+        <button class="comm-chip" data-value="weekend"                   onclick="setLengthFilter(this)">Weekend Run</button>
+        <button class="comm-chip" data-value="full"                      onclick="setLengthFilter(this)">Full Tour</button>
+      </div>
+    </div>
+
+    <button class="comm-clear-filters" onclick="clearFilters()">Clear Filters</button>
+
+  </aside>
+
+  <!-- MAIN FEED -->
+  <main class="comm-feed" id="commFeed">
+    <!-- populated by community.js -->
+  </main>
+
+</div>
+
+<!-- ── POST CREATION MODAL ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="postModal" onclick="if(event.target===this)closePostModal()">
+  <div class="modal comm-modal" style="max-width:580px;width:90vw;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closePostModal()">✕</button>
+    <div class="modal-eyebrow">Post an Opportunity</div>
+    <div class="modal-title">Tell bands what you need</div>
+
+    <!-- Section 1: Type -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">What kind of opportunity is this?</div>
+      <div class="comm-type-cards" id="postTypeCards">
+        <div class="comm-type-card" data-type="tour_support" onclick="selectPostType(this)">
+          <div class="comm-type-card-icon">🎤</div>
+          <div class="comm-type-card-name">Tour Support</div>
+          <div class="comm-type-card-desc">I'm touring and need local openers at specific cities</div>
+        </div>
+        <div class="comm-type-card" data-type="local_opener" onclick="selectPostType(this)">
+          <div class="comm-type-card-icon">🎸</div>
+          <div class="comm-type-card-name">Local Opener</div>
+          <div class="comm-type-card-desc">I'm a local band looking for touring acts to open for or support</div>
+        </div>
+        <div class="comm-type-card" data-type="co_headlining" onclick="selectPostType(this)">
+          <div class="comm-type-card-icon">⚡</div>
+          <div class="comm-type-card-name">Co-Headlining</div>
+          <div class="comm-type-card-desc">Looking for a band to share a full tour with</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Info -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">Title</div>
+      <input class="comm-modal-input" id="postTitle" type="text" placeholder="e.g. Need local openers for May midwest run" maxlength="100">
+
+      <div class="comm-modal-label" style="margin-top:14px">Description</div>
+      <textarea class="comm-modal-textarea" id="postDescription" placeholder="Tell bands what you're looking for, what the show situation is, any requirements…" rows="4"></textarea>
+      <div class="comm-char-hint" id="postDescHint"></div>
+
+      <div class="comm-modal-label" style="margin-top:14px">Genres that fit</div>
+      <div class="comm-chips comm-chips--wrap" id="postGenreChips">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Section 3: Dates -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">Dates &amp; Locations</div>
+      <div id="postDateRows"></div>
+      <button class="comm-add-date-btn" onclick="addDateRow()">+ Add a Date</button>
+    </div>
+
+    <!-- Section 4: Contact -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">How should bands reach you?</div>
+      <div class="comm-radio-group">
+        <label class="comm-radio-label">
+          <input type="radio" name="postContact" value="bandmate" checked onchange="toggleContactEmail(this)">
+          Through Bandmate
+        </label>
+        <label class="comm-radio-label">
+          <input type="radio" name="postContact" value="email" onchange="toggleContactEmail(this)">
+          By email
+        </label>
+      </div>
+      <div id="postContactEmailRow" style="display:none;margin-top:10px">
+        <input class="comm-modal-input" id="postContactEmail" type="email" placeholder="your@email.com">
+      </div>
+    </div>
+
+    <div class="comm-modal-err" id="postErr"></div>
+    <button class="comm-submit-btn" id="postSubmitBtn" onclick="submitPosting()">Post to Community →</button>
+  </div>
+</div>
+
+<!-- ── EXPRESS INTEREST MODAL ────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="interestModal" onclick="if(event.target===this)closeInterestModal()">
+  <div class="modal comm-modal" style="max-width:500px;width:90vw;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeInterestModal()">✕</button>
+    <div class="modal-eyebrow">Express Interest</div>
+    <div class="modal-title" id="interestModalTitle"></div>
+
+    <!-- My band summary -->
+    <div class="comm-my-band-summary" id="interestMyBand"></div>
+
+    <!-- Date selection -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">Which date(s) are you available for?</div>
+      <div id="interestDateChecks"></div>
+    </div>
+
+    <!-- Message -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">Introduce yourself <span style="font-weight:300;color:var(--muted)">(optional)</span></div>
+      <textarea class="comm-modal-textarea" id="interestMessage" placeholder="Mention your draw size, experience, similar bands you've played with…" rows="3"></textarea>
+    </div>
+
+    <div class="comm-modal-note">Your EPK will be shared with this band when you express interest.</div>
+    <div class="comm-modal-err" id="interestErr"></div>
+    <button class="comm-submit-btn" id="interestSubmitBtn" onclick="submitInterest()">Send Interest →</button>
+  </div>
+</div>
+
+<!-- ── MANAGE RESPONSES MODAL ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="manageModal" onclick="if(event.target===this)closeManageModal()">
+  <div class="modal comm-modal" style="max-width:560px;width:90vw;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeManageModal()">✕</button>
+    <div class="modal-eyebrow">Manage Responses</div>
+    <div class="modal-title" id="manageModalTitle"></div>
+    <div id="manageModalBody">
+      <div class="comm-modal-loading">Loading responses…</div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL (shared) -->
+<div class="auth-modal-overlay" id="authModal" onclick="if(event.target===this)closeAuth()">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin"  onclick="switchTab('login')">Log In</button>
+      <button class="auth-tab"        id="tabSignup" onclick="switchTab('signup')">Join Free</button>
+    </div>
+    <div id="loginForm">
+      <input  class="auth-input" id="loginEmail"    type="email"    placeholder="Email address">
+      <input  class="auth-input" id="loginPassword" type="password" placeholder="Password">
+      <button class="auth-submit" onclick="handleLogin()">Log In →</button>
+    </div>
+    <div id="signupForm" style="display:none">
+      <input  class="auth-input" id="signupBandName" type="text"     placeholder="Band name">
+      <input  class="auth-input" id="signupEmail"    type="email"    placeholder="Email address">
+      <input  class="auth-input" id="signupPassword" type="password" placeholder="Password (min 6 chars)">
+      <div class="genre-chips-wrap" id="signupGenreChips"></div>
+      <input  class="auth-input" id="signupCity"     type="text"     placeholder="Home city">
+      <button class="auth-submit" onclick="handleSignup()">Create Account →</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- JS -->
+<script src="js/auth.js"></script>
+<script src="js/community.js"></script>
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.async = true; s.defer = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=_mapsReady';
+    document.head.appendChild(s);
+  })();
+</script>
+<script src="js/feedback.js"></script>
+</body>
+</html>

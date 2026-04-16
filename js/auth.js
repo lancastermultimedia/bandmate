@@ -13,7 +13,7 @@ let currentBandProfile = null;
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) { currentUser = session.user; await loadBandProfile(); updateNavAuth(); }
-  sb.auth.onAuthStateChange(async (event, session) => {
+  sb.auth.onAuthStateChange(async (_event, session) => {
     currentUser = session ? session.user : null;
     if (currentUser) await loadBandProfile(); else currentBandProfile = null;
     updateNavAuth();
@@ -380,8 +380,13 @@ function updateNavAuth() {
     area.innerHTML = `<div class="nav-user">
       <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${currentBandProfile.band_name}</span></a>
       ${statusHtml}
+      <button class="nav-bell" id="navBell" onclick="if(typeof toggleNotifTray==='function')toggleNotifTray()" aria-label="Notifications">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="nav-bell-badge" id="navBellBadge" style="display:none"></span>
+      </button>
       <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
     </div>`;
+    if (typeof loadNotifCount === 'function') loadNotifCount();
   } else {
     area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
