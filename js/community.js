@@ -700,7 +700,7 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
     read:       false,
   });
 
-  showToast(status === 'accepted' ? 'Accepted — they've been notified.' : 'Declined.', 'success');
+  showToast(status === 'accepted' ? "Accepted \u2014 they've been notified." : 'Declined.', 'success');
   await _loadManageResponses(_managePostingId);
 }
 
