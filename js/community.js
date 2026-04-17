@@ -8,8 +8,9 @@ let _acceptedByPosting = {};   // { postingId: [band, ...] } — publicly visibl
 let _venueRatings      = {};   // { place_id: { avg, count } }
 let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all' };
 let _postType          = null;
-let _postGenres        = [];
 let _slotsNeeded       = 1;
+let _editingPostingId  = null; // null = new post, number = editing existing
+let _deletePostingId   = null;
 let _interestPostingId = null;
 let _interestDates     = [];
 let _managePostingId   = null;
@@ -24,7 +25,6 @@ const GENRES = ['Rock','Indie','Folk','Alternative','Country','Jazz','Blues','Hi
 document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
   _buildGenreFilters();
-  _buildPostGenreChips();
   renderSkeletons();
   await fetchPostings();
 });
@@ -260,6 +260,9 @@ function renderCard(p) {
   const actionBtn = isOwn
     ? `<button class="comm-card-btn comm-card-btn--manage" onclick="openManageModal(${p.id})">Manage Responses</button>`
     : `<button class="comm-card-btn comm-card-btn--rust" onclick="openInterestModal(${p.id})">Express Interest</button>`;
+  const ownerTools = isOwn ? `
+    <button class="comm-card-btn comm-card-btn--outline" onclick="openEditModal(${p.id})" title="Edit">Edit</button>
+    <button class="comm-card-btn comm-card-btn--delete" onclick="openDeleteModal(${p.id})" title="Delete">Delete</button>` : '';
 
   return `<article class="comm-card" id="comm-card-${p.id}">
     <div class="comm-card-header">
@@ -291,7 +294,7 @@ function renderCard(p) {
 
     <div class="comm-card-footer">
       <span class="comm-posted-ago">${postedAgo}</span>
-      <div class="comm-card-actions">${epkBtn}${actionBtn}</div>
+      <div class="comm-card-actions">${epkBtn}${actionBtn}${ownerTools}</div>
     </div>
   </article>`;
 }
@@ -411,26 +414,62 @@ function openPostModal() {
       </div>`;
     return;
   }
+  _editingPostingId = null;
+  _openPostForm();
+}
+
+function openEditModal(postingId) {
+  const p = _allPostings.find(x => x.id === postingId);
+  if (!p) return;
+  _editingPostingId = postingId;
+  _openPostForm(p);
+}
+
+function _openPostForm(prefill) {
   // Reset state
-  _postType    = null;
-  _postGenres  = [];
-  _slotsNeeded = 1;
-  document.querySelectorAll('.comm-slot-btn').forEach((b, i) => b.classList.toggle('comm-slot-btn--active', i === 0));
-  document.querySelectorAll('#postTypeCards .comm-type-card').forEach(c => c.classList.remove('comm-type-card--active'));
-  document.getElementById('postTitle').value       = '';
-  document.getElementById('postDescription').value = '';
+  _postType    = prefill?.type || null;
+  _slotsNeeded = prefill?.slots_needed || 1;
+
+  document.querySelectorAll('#postTypeCards .comm-type-card').forEach(c => {
+    c.classList.toggle('comm-type-card--active', prefill && c.dataset.type === prefill.type);
+  });
+  document.querySelectorAll('.comm-slot-btn').forEach(b => {
+    b.classList.toggle('comm-slot-btn--active', parseInt(b.dataset.value) === _slotsNeeded);
+  });
+  document.getElementById('postTitle').value       = prefill?.title || '';
+  document.getElementById('postDescription').value = prefill?.description || '';
   document.getElementById('postDescHint').textContent = '';
   document.getElementById('postErr').textContent   = '';
   document.getElementById('postDateRows').innerHTML = '';
-  document.querySelectorAll('#postGenreChips .comm-chip').forEach(b => b.classList.remove('comm-chip--active'));
-  document.querySelector('input[name="postContact"][value="bandmate"]').checked = true;
-  document.getElementById('postContactEmailRow').style.display = 'none';
+
+  const contactPref = prefill?.contact_preference || 'bandmate';
+  document.querySelector(`input[name="postContact"][value="${contactPref}"]`).checked = true;
+  document.getElementById('postContactEmailRow').style.display = contactPref === 'email' ? 'block' : 'none';
+  if (prefill?.contact_email) document.getElementById('postContactEmail').value = prefill.contact_email;
+
   const submitBtn = document.getElementById('postSubmitBtn');
-  submitBtn.disabled = false; submitBtn.textContent = 'Post to Community →';
-  addDateRow(); // start with one date row
+  submitBtn.disabled = false;
+  submitBtn.textContent = _editingPostingId ? 'Save Changes →' : 'Post to Community →';
+
+  // Eyebrow / title
+  document.querySelector('#postModal .modal-eyebrow').textContent = _editingPostingId ? 'Edit Opportunity' : 'Post an Opportunity';
+  document.querySelector('#postModal .modal-title').textContent   = _editingPostingId ? 'Update your posting' : 'Tell bands what you need';
+
+  // Genre chips — use shared system
+  loadGenreChips('postGenreChips').then(() => {
+    if (prefill?.genres?.length) preselectGenres('postGenreChips', prefill.genres.join(','));
+  });
+
+  // Date rows
+  const dates = prefill?.posting_dates || [];
+  if (dates.length) {
+    dates.forEach(d => addDateRow(d));
+  } else {
+    addDateRow();
+  }
+
   document.getElementById('postModal').classList.add('open');
 
-  // Wire description character hint
   document.getElementById('postDescription').oninput = function() {
     const len = this.value.trim().length;
     const hint = document.getElementById('postDescHint');
@@ -455,20 +494,6 @@ function selectPostType(card) {
   _postType = card.dataset.type;
 }
 
-function _buildPostGenreChips() {
-  const wrap = document.getElementById('postGenreChips');
-  GENRES.forEach(g => {
-    const btn = document.createElement('button');
-    btn.className   = 'comm-chip';
-    btn.textContent = g;
-    btn.onclick = () => {
-      const active = btn.classList.toggle('comm-chip--active');
-      if (active) { if (!_postGenres.includes(g)) _postGenres.push(g); }
-      else         { _postGenres = _postGenres.filter(x => x !== g); }
-    };
-    wrap.appendChild(btn);
-  });
-}
 
 function setSlots(btn) {
   document.querySelectorAll('.comm-slot-btn').forEach(b => b.classList.remove('comm-slot-btn--active'));
@@ -476,20 +501,38 @@ function setSlots(btn) {
   _slotsNeeded = parseInt(btn.dataset.value);
 }
 
-function addDateRow() {
+function addDateRow(prefill) {
   const container = document.getElementById('postDateRows');
   if (container.children.length >= 20) return;
 
   const row = document.createElement('div');
   row.className = 'comm-date-entry';
   row.innerHTML = `
-    <input type="date" class="comm-modal-input comm-date-input">
+    <input type="date" class="comm-modal-input comm-date-input" value="${prefill?.date || ''}">
     <div class="comm-venue-search-wrap">
       <input type="text" class="comm-modal-input comm-venue-input" placeholder="Search venue name…">
       <div class="comm-venue-selected" style="display:none"></div>
     </div>
     <button class="comm-remove-date" onclick="removeDateRow(this)" title="Remove">✕</button>`;
   container.appendChild(row);
+
+  // Pre-fill venue data if editing
+  if (prefill?.venue_name) {
+    row.dataset.venueName    = prefill.venue_name;
+    row.dataset.venuePlaceId = prefill.venue_place_id || '';
+    row.dataset.venueAddress = prefill.venue_address || '';
+    row.dataset.venueCity    = prefill.city || '';
+    const chip = row.querySelector('.comm-venue-selected');
+    const inp  = row.querySelector('.comm-venue-input');
+    chip.innerHTML = `<span class="comm-venue-chip">${escapeHtml(prefill.venue_name)}<span class="comm-venue-chip-city">${prefill.city ? ' · ' + escapeHtml(prefill.city) : ''}</span></span>
+      <button class="comm-venue-clear" onclick="clearVenue(this)" title="Change venue">✕</button>`;
+    chip.style.display = 'flex';
+    inp.style.display  = 'none';
+  } else if (prefill?.city) {
+    // No venue name but has city (legacy rows)
+    row.dataset.venueCity = prefill.city;
+    row.querySelector('.comm-venue-input').value = prefill.city;
+  }
 
   if (_mapsLoaded) _attachVenueAC(row.querySelector('.comm-venue-input'));
 }
@@ -593,29 +636,50 @@ async function submitPosting() {
   }
   if (!dates.length) { errEl.textContent = 'Please add at least one date and venue.'; return; }
 
-  const btn = document.getElementById('postSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Posting…';
+  const genres = getSelectedGenres('postGenreChips');
+  const btn    = document.getElementById('postSubmitBtn');
+  btn.disabled = true; btn.textContent = _editingPostingId ? 'Saving…' : 'Posting…';
 
-  const { data: posting, error: postErr } = await sb.from('tour_postings').insert({
-    band_id:            currentBandProfile.id,
+  const postPayload = {
     type:               _postType,
     title,
     description,
-    genres:             _postGenres,
+    genres,
     slots_needed:       _slotsNeeded,
     contact_preference: contactPref,
     contact_email:      contactPref === 'email' ? contactEmail : null,
-  }).select().single();
+  };
 
-  if (postErr) {
-    errEl.textContent = 'Could not post — ' + postErr.message;
-    btn.disabled = false; btn.textContent = 'Post to Community →';
-    return;
+  let postingId;
+
+  if (_editingPostingId) {
+    // Update existing posting
+    const { error: updErr } = await sb.from('tour_postings').update(postPayload).eq('id', _editingPostingId);
+    if (updErr) {
+      errEl.textContent = 'Could not save — ' + updErr.message;
+      btn.disabled = false; btn.textContent = 'Save Changes →';
+      return;
+    }
+    // Replace all dates: delete old, insert new
+    await sb.from('posting_dates').delete().eq('posting_id', _editingPostingId);
+    postingId = _editingPostingId;
+  } else {
+    // Insert new posting
+    const { data: posting, error: postErr } = await sb.from('tour_postings').insert({
+      band_id: currentBandProfile.id,
+      ...postPayload,
+    }).select().single();
+    if (postErr) {
+      errEl.textContent = 'Could not post — ' + postErr.message;
+      btn.disabled = false; btn.textContent = 'Post to Community →';
+      return;
+    }
+    postingId = posting.id;
   }
 
   // Insert dates
   const dateInserts = dates.map(d => ({
-    posting_id:      posting.id,
+    posting_id:      postingId,
     date:            d.date,
     city:            d.city,
     venue_name:      d.venue_name,
@@ -624,13 +688,13 @@ async function submitPosting() {
   }));
   const { error: dateErr } = await sb.from('posting_dates').insert(dateInserts);
   if (dateErr) {
-    errEl.textContent = 'Posting saved but dates failed — ' + dateErr.message;
-    btn.disabled = false; btn.textContent = 'Post to Community →';
+    errEl.textContent = 'Saved but dates failed — ' + dateErr.message;
+    btn.disabled = false;
     return;
   }
 
   closePostModal();
-  showToast('Opportunity posted!', 'success');
+  showToast(_editingPostingId ? 'Posting updated!' : 'Opportunity posted!', 'success');
   await fetchPostings();
 }
 
@@ -930,6 +994,36 @@ function _showAcceptConfirmation(band, posting, city, allFilled, remaining) {
 
   const body = document.getElementById('manageModalBody');
   if (body) body.insertAdjacentElement('afterbegin', panel);
+}
+
+// ── Delete Modal ──────────────────────────────────────────────────────────────
+
+function openDeleteModal(postingId) {
+  _deletePostingId = postingId;
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+  _deletePostingId = null;
+}
+
+async function confirmDeletePosting() {
+  if (!_deletePostingId) return;
+  const btn = document.getElementById('deleteConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+
+  const { error } = await sb.from('tour_postings').update({ is_active: false }).eq('id', _deletePostingId);
+  if (error) {
+    showToast('Could not delete — ' + error.message, 'error');
+    btn.disabled = false; btn.textContent = 'Delete Posting';
+    return;
+  }
+
+  _allPostings = _allPostings.filter(p => p.id !== _deletePostingId);
+  closeDeleteModal();
+  showToast('Posting removed.', 'success');
+  applyFilters();
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────

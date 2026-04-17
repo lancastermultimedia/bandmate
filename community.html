@@ -145,9 +145,11 @@
         <button class="comm-slot-btn" data-value="5" onclick="setSlots(this)">5</button>
       </div>
 
-      <div class="comm-modal-label" style="margin-top:14px">Genres that fit</div>
-      <div class="comm-chips comm-chips--wrap" id="postGenreChips">
-        <!-- populated by JS -->
+      <div class="comm-modal-label" style="margin-top:14px">Genres that fit <span style="font-weight:300;color:var(--muted)">(up to 5)</span></div>
+      <div class="genre-chips-wrap" id="postGenreChips" data-max="5"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input class="comm-modal-input" id="postGenreCustomInput" type="text" placeholder="Add your own genre…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomGenreFromInput('postGenreChips')}">
+        <button class="comm-card-btn comm-card-btn--outline" onclick="addCustomGenreFromInput('postGenreChips')" style="white-space:nowrap;flex-shrink:0">+ Add</button>
       </div>
     </div>
 
@@ -178,6 +180,20 @@
 
     <div class="comm-modal-err" id="postErr"></div>
     <button class="comm-submit-btn" id="postSubmitBtn" onclick="submitPosting()">Post to Community →</button>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="deleteModal" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal comm-modal" style="max-width:420px;width:90vw">
+    <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    <div class="modal-eyebrow">Remove Posting</div>
+    <div class="modal-title">Delete this opportunity?</div>
+    <p style="font-family:'Outfit',sans-serif;font-size:0.88rem;color:var(--muted);line-height:1.6;margin:12px 0 24px">This will permanently remove the posting from the feed. Any bands that expressed interest will no longer see it.</p>
+    <div style="display:flex;gap:10px">
+      <button class="comm-submit-btn" id="deleteConfirmBtn" onclick="confirmDeletePosting()" style="background:#c41010">Delete Posting</button>
+      <button class="comm-card-btn comm-card-btn--outline" onclick="closeDeleteModal()" style="flex:1;padding:14px">Cancel</button>
+    </div>
   </div>
 </div>
 

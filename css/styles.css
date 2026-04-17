@@ -6767,19 +6767,21 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 .comm-manage-btn:hover,
 .comm-card-btn--manage:hover { background: var(--ink); color: var(--cream); }
 
-.comm-delete-btn {
+.comm-delete-btn,
+.comm-card-btn--delete {
   font-family: 'Space Mono', monospace;
   font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 6px 11px;
-  border: 1.5px solid rgba(201,75,42,0.4);
+  border: 1.5px solid rgba(196,16,16,0.35);
   background: transparent;
-  color: var(--rust);
+  color: #c41010;
   cursor: pointer;
   transition: background 0.15s;
 }
-.comm-delete-btn:hover { background: rgba(201,75,42,0.08); }
+.comm-delete-btn:hover,
+.comm-card-btn--delete:hover { background: rgba(196,16,16,0.06); }
 
 /* ── Modal community styles ────────────────────────────── */
 .comm-modal { padding: 32px; }
