@@ -136,6 +136,15 @@
       <textarea class="comm-modal-textarea" id="postDescription" placeholder="Tell bands what you're looking for, what the show situation is, any requirements…" rows="4"></textarea>
       <div class="comm-char-hint" id="postDescHint"></div>
 
+      <div class="comm-modal-label" style="margin-top:14px">How many bands are you looking for?</div>
+      <div class="comm-slots-row">
+        <button class="comm-slot-btn comm-slot-btn--active" data-value="1" onclick="setSlots(this)">1</button>
+        <button class="comm-slot-btn" data-value="2" onclick="setSlots(this)">2</button>
+        <button class="comm-slot-btn" data-value="3" onclick="setSlots(this)">3</button>
+        <button class="comm-slot-btn" data-value="4" onclick="setSlots(this)">4</button>
+        <button class="comm-slot-btn" data-value="5" onclick="setSlots(this)">5</button>
+      </div>
+
       <div class="comm-modal-label" style="margin-top:14px">Genres that fit</div>
       <div class="comm-chips comm-chips--wrap" id="postGenreChips">
         <!-- populated by JS -->

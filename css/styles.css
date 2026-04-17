@@ -7166,6 +7166,173 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   text-align: center;
 }
 
+/* ── Slots selector (post modal) ───────────────────────── */
+.comm-slots-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.comm-slot-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid rgba(14,13,11,0.18);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.comm-slot-btn:hover { border-color: var(--rust); color: var(--rust); }
+.comm-slot-btn--active { border-color: var(--rust); color: var(--rust); background: rgba(201,75,42,0.08); }
+
+/* ── Slots indicator on card ───────────────────────────── */
+.comm-slots-indicator {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #b08a24;
+  margin-bottom: 8px;
+}
+
+/* ── Confirmed bands strip on card ─────────────────────── */
+.comm-confirmed-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(90,140,107,0.07);
+  border: 1px solid rgba(90,140,107,0.25);
+  padding: 10px 14px;
+  margin-bottom: 0;
+  margin-top: 12px;
+}
+.comm-confirmed-avatars { display: flex; gap: -4px; flex-shrink: 0; }
+.comm-confirmed-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  margin-right: -6px;
+  flex-shrink: 0;
+}
+.comm-confirmed-avatar-init {
+  background: #5a8c6b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  font-weight: 700;
+}
+.comm-confirmed-link { display: contents; }
+.comm-confirmed-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+.comm-confirmed-check { color: #5a8c6b; font-weight: 700; margin-right: 4px; }
+.comm-confirmed-slots {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+/* ── Manage modal — slots progress ─────────────────────── */
+.comm-manage-slots {
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(14,13,11,0.08);
+}
+.comm-manage-slots-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.comm-manage-slots-bar {
+  height: 5px;
+  background: rgba(14,13,11,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.comm-manage-slots-fill {
+  height: 100%;
+  background: #5a8c6b;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Accepted response card highlight ──────────────────── */
+.comm-response-card--accepted {
+  border-color: rgba(90,140,107,0.4);
+  background: rgba(90,140,107,0.04);
+}
+
+/* ── Acceptance confirmation panel ─────────────────────── */
+.comm-confirm-panel {
+  background: rgba(90,140,107,0.06);
+  border: 1.5px solid rgba(90,140,107,0.3);
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.comm-confirm-check {
+  font-size: 1.6rem;
+  color: #5a8c6b;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+.comm-confirm-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 14px;
+  line-height: 1.3;
+}
+.comm-confirm-band {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 14px;
+  background: #fff;
+  padding: 10px 14px;
+  border: 1px solid rgba(14,13,11,0.1);
+}
+.comm-confirm-contact-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.comm-confirm-email-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 14px;
+  background: #5a8c6b;
+  color: #fff;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: inline-block;
+}
+.comm-confirm-email-btn:hover { background: #4a7a5a; }
+.comm-confirm-status {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 /* ── Locked state ──────────────────────────────────────── */
 .comm-locked-body { text-align: center; padding: 8px 0 4px; }
 .comm-locked-icon { font-size: 2rem; margin-bottom: 16px; opacity: 0.5; }

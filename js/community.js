@@ -2,16 +2,18 @@
 
 // ── Module state ──────────────────────────────────────────────────────────────
 
-let _allPostings  = [];    // all active postings from Supabase
-let _myInterests  = {};    // { "postingId_dateId": 'pending'|'accepted'|'declined' }
-let _filters      = { search: '', type: 'all', genre: '', location: '', length: 'all' };
-let _postType     = null;  // selected type in post modal
-let _postGenres   = [];    // selected genres in post modal
+let _allPostings       = [];   // all active postings from Supabase
+let _myInterests       = {};   // { "postingId_dateId": 'pending'|'accepted'|'declined' }
+let _acceptedByPosting = {};   // { postingId: [band, ...] } — publicly visible confirmed bands
+let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all' };
+let _postType          = null;
+let _postGenres        = [];
+let _slotsNeeded       = 1;
 let _interestPostingId = null;
 let _interestDates     = [];
 let _managePostingId   = null;
 let _mapsLoaded        = false;
-let _cityAutocompletes = []; // Google Places autocomplete instances
+let _cityAutocompletes = [];
 
 const TYPE_LABELS = { tour_support: 'Tour Support', local_opener: 'Local Opener', co_headlining: 'Co-Headlining' };
 const GENRES = ['Rock','Indie','Folk','Alternative','Country','Jazz','Blues','Hip-Hop','Electronic','Punk','Metal','R&B','Soul','Acoustic','Americana','Pop','Experimental'];
@@ -46,12 +48,21 @@ async function fetchPostings() {
     return;
   }
 
-  // Sort dates within each posting chronologically
   (data || []).forEach(p => {
     if (p.posting_dates) p.posting_dates.sort((a, b) => a.date.localeCompare(b.date));
   });
-
   _allPostings = data || [];
+
+  // Fetch publicly visible accepted bands for all postings
+  const { data: accepted } = await sb
+    .from('posting_interests')
+    .select('posting_id, bands(id, band_name, profile_photo_url, epk_theme)')
+    .eq('status', 'accepted');
+  _acceptedByPosting = {};
+  (accepted || []).forEach(i => {
+    if (!_acceptedByPosting[i.posting_id]) _acceptedByPosting[i.posting_id] = [];
+    if (i.bands) _acceptedByPosting[i.posting_id].push(i.bands);
+  });
 
   // Fetch my own interests if logged in
   if (currentBandProfile) {
@@ -102,6 +113,8 @@ function renderCard(p) {
   const isOwn      = currentBandProfile && currentBandProfile.id === band.id;
   const slug       = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   const hasEpk     = !!band.epk_theme && slug;
+  const slots      = p.slots_needed || 1;
+  const confirmed  = _acceptedByPosting[p.id] || [];
 
   // Avatar
   const initials  = (band.band_name || 'B').substring(0,2).toUpperCase();
@@ -157,7 +170,7 @@ function renderCard(p) {
     const key     = `${p.id}_${d.id}`;
     const status  = _myInterests[key];
     const active  = !!status;
-    const btnText = active ? `Interested ✓` : 'Interested';
+    const btnText = active ? 'Interested ✓' : 'Interested';
     const btnCls  = active ? 'comm-interested-btn comm-interested-btn--active' : 'comm-interested-btn';
     const fmtDate = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const interestClick = isOwn ? '' : `onclick="handleInterested(${p.id},${d.id})"`;
@@ -167,10 +180,40 @@ function renderCard(p) {
     </div>`;
   }).join('');
 
+  // Confirmed bands strip
+  const typeWord = { tour_support: 'opener', local_opener: 'touring support', co_headlining: 'co-headliner' }[p.type] || 'band';
+  const confirmedHtml = confirmed.length ? `
+    <div class="comm-confirmed-strip">
+      <div class="comm-confirmed-avatars">
+        ${confirmed.map(b => {
+          const bInit = (b.band_name || 'B').substring(0,2).toUpperCase();
+          const bSlug = (b.band_name||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+          const av = b.profile_photo_url
+            ? `<img src="${b.profile_photo_url}" class="comm-confirmed-avatar" title="${escapeHtml(b.band_name)}" alt="">`
+            : `<div class="comm-confirmed-avatar comm-confirmed-avatar-init" title="${escapeHtml(b.band_name)}">${bInit}</div>`;
+          return b.epk_theme && bSlug
+            ? `<a href="epk.html?band=${bSlug}" target="_blank" class="comm-confirmed-link">${av}</a>`
+            : av;
+        }).join('')}
+      </div>
+      <div class="comm-confirmed-text">
+        <span class="comm-confirmed-check">✓</span>
+        ${confirmed.length === 1
+          ? `<strong>${escapeHtml(confirmed[0].band_name)}</strong> is confirmed as ${typeWord}`
+          : `<strong>${confirmed.map(b => escapeHtml(b.band_name)).join('</strong> &amp; <strong>')}</strong> are confirmed`}
+        ${slots > 1 ? `<span class="comm-confirmed-slots"> · ${confirmed.length} of ${slots} slots filled</span>` : ''}
+      </div>
+    </div>` : '';
+
   // Posted ago
   const diffMs  = Date.now() - new Date(p.created_at).getTime();
   const diffDay = Math.floor(diffMs / 86400000);
   const postedAgo = diffDay < 1 ? 'Today' : diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
+
+  // Slots indicator (only show if looking for more than 1)
+  const slotsHtml = slots > 1
+    ? `<div class="comm-slots-indicator">Looking for ${slots} band${slots > 1 ? 's' : ''} · ${slots - confirmed.length} spot${slots - confirmed.length !== 1 ? 's' : ''} remaining</div>`
+    : '';
 
   // Footer actions
   const epkBtn = hasEpk
@@ -195,6 +238,7 @@ function renderCard(p) {
 
     ${dates.length ? `<div class="comm-tour-route">${routeHtml}</div>` : ''}
     ${dateRange     ? `<div class="comm-date-range">${dateRange}</div>` : ''}
+    ${slotsHtml}
     ${genreTagsHtml ? `<div class="comm-genre-tags">${genreTagsHtml}</div>` : ''}
 
     <div class="comm-card-title">${escapeHtml(p.title)}</div>
@@ -204,6 +248,8 @@ function renderCard(p) {
       ${datesHtml}
       ${extraDates ? `<div class="comm-view-all-dates" onclick="openInterestModal(${p.id})">View all ${dates.length} dates →</div>` : ''}
     </div>` : ''}
+
+    ${confirmedHtml}
 
     <div class="comm-card-footer">
       <span class="comm-posted-ago">${postedAgo}</span>
@@ -328,8 +374,10 @@ function openPostModal() {
     return;
   }
   // Reset state
-  _postType   = null;
-  _postGenres = [];
+  _postType    = null;
+  _postGenres  = [];
+  _slotsNeeded = 1;
+  document.querySelectorAll('.comm-slot-btn').forEach((b, i) => b.classList.toggle('comm-slot-btn--active', i === 0));
   document.querySelectorAll('#postTypeCards .comm-type-card').forEach(c => c.classList.remove('comm-type-card--active'));
   document.getElementById('postTitle').value       = '';
   document.getElementById('postDescription').value = '';
@@ -382,6 +430,12 @@ function _buildPostGenreChips() {
     };
     wrap.appendChild(btn);
   });
+}
+
+function setSlots(btn) {
+  document.querySelectorAll('.comm-slot-btn').forEach(b => b.classList.remove('comm-slot-btn--active'));
+  btn.classList.add('comm-slot-btn--active');
+  _slotsNeeded = parseInt(btn.dataset.value);
 }
 
 function addDateRow() {
@@ -467,6 +521,7 @@ async function submitPosting() {
     title,
     description,
     genres:             _postGenres,
+    slots_needed:       _slotsNeeded,
     contact_preference: contactPref,
     contact_email:      contactPref === 'email' ? contactEmail : null,
   }).select().single();
@@ -621,14 +676,25 @@ function closeManageModal() {
 async function _loadManageResponses(postingId) {
   const { data: interests, error } = await sb
     .from('posting_interests')
-    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count), posting_dates(date, city)`)
+    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count, email), posting_dates(date, city)`)
     .eq('posting_id', postingId)
+    .order('status', { ascending: true }) // accepted first
     .order('created_at', { ascending: false });
 
   const body = document.getElementById('manageModalBody');
+  const posting = _allPostings.find(p => p.id === postingId);
+  const slots = posting?.slots_needed || 1;
+  const acceptedCount = (interests || []).filter(i => i.status === 'accepted').length;
+
+  // Slots progress header
+  const slotsHeader = slots > 1 ? `
+    <div class="comm-manage-slots">
+      <div class="comm-manage-slots-label">Slots filled: ${acceptedCount} of ${slots}</div>
+      <div class="comm-manage-slots-bar"><div class="comm-manage-slots-fill" style="width:${Math.min(100,(acceptedCount/slots)*100)}%"></div></div>
+    </div>` : '';
 
   if (error || !interests?.length) {
-    body.innerHTML = '<div class="comm-empty" style="padding:24px 0"><div class="comm-empty-title">No responses yet</div><div class="comm-empty-sub">When bands express interest they will appear here.</div></div>';
+    body.innerHTML = slotsHeader + '<div class="comm-empty" style="padding:24px 0"><div class="comm-empty-title">No responses yet</div><div class="comm-empty-sub">When bands express interest they will appear here.</div></div>';
     return;
   }
 
@@ -640,18 +706,18 @@ async function _loadManageResponses(postingId) {
     byDate[key].items.push(i);
   });
 
-  body.innerHTML = Object.entries(byDate).map(([dateId, group]) => {
+  body.innerHTML = slotsHeader + Object.entries(byDate).map(([_dateId, group]) => {
     const d = group.date;
     const fmtDate = d ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-    const dateLabel = fmtDate ? `${fmtDate} · ${d.city}` : 'Date TBD';
+    const dateLabel = fmtDate ? `${fmtDate} · ${d.city}` : 'All Dates';
 
     const itemsHtml = group.items.map(i => {
       const band = i.bands || {};
       const initials = (band.band_name || 'B').substring(0,2).toUpperCase();
       const slug = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
       const avatarEl = band.profile_photo_url
-        ? `<img src="${band.profile_photo_url}" class="comm-avatar comm-avatar-img" style="width:32px;height:32px" alt="">`
-        : `<div class="comm-avatar comm-avatar-init" style="width:32px;height:32px;font-size:0.7rem">${initials}</div>`;
+        ? `<img src="${band.profile_photo_url}" class="comm-avatar comm-avatar-img" style="width:36px;height:36px" alt="">`
+        : `<div class="comm-avatar comm-avatar-init" style="width:36px;height:36px;font-size:0.7rem">${initials}</div>`;
 
       const statusBadge = i.status !== 'pending'
         ? `<span class="comm-status-badge comm-status-${i.status}">${i.status}</span>`
@@ -662,19 +728,24 @@ async function _loadManageResponses(postingId) {
         <button class="comm-accept-btn" onclick="updateInterestStatus(${i.id},'accepted',${band.id},'${cityEsc}')">Accept</button>
         <button class="comm-decline-btn" onclick="updateInterestStatus(${i.id},'declined',${band.id},'${cityEsc}')">Decline</button>` : '';
 
-      return `<div class="comm-response-card">
+      const emailLink = band.email && i.status === 'accepted'
+        ? `<a href="mailto:${escapeHtml(band.email)}" class="comm-confirm-email-btn" style="font-size:0.55rem;padding:6px 11px">Email them →</a>`
+        : '';
+
+      return `<div class="comm-response-card${i.status === 'accepted' ? ' comm-response-card--accepted' : ''}">
         <div class="comm-response-header">
           ${avatarEl}
-          <div style="flex:1">
-            <div class="comm-band-name" style="font-size:0.9rem">${escapeHtml(band.band_name || '—')}</div>
+          <div style="flex:1;min-width:0">
+            <div class="comm-band-name" style="font-size:0.92rem">${escapeHtml(band.band_name || '—')}</div>
             <div class="comm-band-meta">${escapeHtml([band.genre, band.home_city].filter(Boolean).join(' · '))}</div>
             ${band.review_count > 0 ? `<div class="comm-trust" style="font-size:0.6rem">★ ${band.review_count} review${band.review_count!==1?'s':''}</div>` : ''}
           </div>
           ${statusBadge}
         </div>
-        ${i.message ? `<p class="comm-response-msg">${escapeHtml(i.message)}</p>` : ''}
+        ${i.message ? `<p class="comm-response-msg">"${escapeHtml(i.message)}"</p>` : ''}
         <div class="comm-response-actions">
-          ${band.epk_theme && slug ? `<a class="comm-card-btn comm-card-btn--outline" href="epk.html?band=${slug}" target="_blank" style="font-size:0.58rem;padding:6px 12px">View EPK</a>` : ''}
+          ${band.epk_theme && slug ? `<a class="comm-card-btn comm-card-btn--outline" href="epk.html?band=${slug}" target="_blank" style="font-size:0.55rem;padding:6px 11px">View EPK</a>` : ''}
+          ${emailLink}
           ${actions}
         </div>
       </div>`;
@@ -692,17 +763,85 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
   if (error) { showToast('Could not update — ' + error.message, 'error'); return; }
 
   const posting = _allPostings.find(p => p.id === _managePostingId);
-  const notifType = status === 'accepted' ? 'interest_accepted' : 'interest_declined';
+
+  // Notify the interested band
   await sb.from('notifications').insert({
     band_id:    toBandId,
-    type:       notifType,
+    type:       status === 'accepted' ? 'interest_accepted' : 'interest_declined',
     payload:    { posting_title: posting?.title, city },
     posting_id: _managePostingId,
     read:       false,
   });
 
-  showToast(status === 'accepted' ? "Accepted \u2014 they've been notified." : 'Declined.', 'success');
-  await _loadManageResponses(_managePostingId);
+  if (status === 'accepted') {
+    // Count total accepted slots for this posting
+    const { count: acceptedCount } = await sb
+      .from('posting_interests')
+      .select('id', { count: 'exact', head: true })
+      .eq('posting_id', _managePostingId)
+      .eq('status', 'accepted');
+
+    const slotsNeeded = posting?.slots_needed || 1;
+    const slotsFilled = acceptedCount >= slotsNeeded;
+
+    // Get accepted band's full info (including email for contact)
+    const { data: bandData } = await sb
+      .from('bands')
+      .select('id, band_name, genre, home_city, profile_photo_url, epk_theme, email')
+      .eq('id', toBandId)
+      .single();
+
+    // If all slots filled, close the posting
+    if (slotsFilled) {
+      await sb.from('tour_postings').update({ is_active: false }).eq('id', _managePostingId);
+      _allPostings = _allPostings.filter(p => p.id !== _managePostingId);
+      applyFilters();
+    }
+
+    // Reload manage modal with confirmation panel at top
+    await _loadManageResponses(_managePostingId);
+    _showAcceptConfirmation(bandData, posting, city, slotsFilled, slotsNeeded - acceptedCount);
+
+  } else {
+    showToast('Declined — they have been notified.', 'success');
+    await _loadManageResponses(_managePostingId);
+  }
+}
+
+function _showAcceptConfirmation(band, posting, city, allFilled, remaining) {
+  if (!band) return;
+  const slug = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const initials = (band.band_name || 'B').substring(0,2).toUpperCase();
+  const avatarEl = band.profile_photo_url
+    ? `<img src="${band.profile_photo_url}" class="comm-avatar" style="width:52px;height:52px" alt="">`
+    : `<div class="comm-avatar-init" style="width:52px;height:52px;font-size:0.85rem;border-radius:50%;background:var(--ink);color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;flex-shrink:0">${initials}</div>`;
+  const typeWord = { tour_support: 'opener', local_opener: 'touring support', co_headlining: 'co-headliner' }[posting?.type] || 'band';
+  const cityStr  = city ? ` in ${escapeHtml(city)}` : '';
+
+  const statusLine = allFilled
+    ? `All slots filled — this posting has been removed from the feed.`
+    : `${remaining} slot${remaining !== 1 ? 's' : ''} still open — posting remains live.`;
+
+  const panel = document.createElement('div');
+  panel.className = 'comm-confirm-panel';
+  panel.innerHTML = `
+    <div class="comm-confirm-check">✓</div>
+    <div class="comm-confirm-title">${escapeHtml(band.band_name)} confirmed as your ${typeWord}${cityStr}!</div>
+    <div class="comm-confirm-band">
+      ${avatarEl}
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink)">${escapeHtml(band.band_name)}</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:0.78rem;color:var(--muted);margin-top:2px">${escapeHtml([band.genre, band.home_city].filter(Boolean).join(' · '))}</div>
+      </div>
+    </div>
+    <div class="comm-confirm-contact-row">
+      ${band.email ? `<a href="mailto:${escapeHtml(band.email)}" class="comm-confirm-email-btn">Email ${escapeHtml(band.band_name)} →</a>` : ''}
+      ${band.epk_theme && slug ? `<a href="epk.html?band=${slug}" target="_blank" class="comm-card-btn comm-card-btn--outline">View EPK</a>` : ''}
+    </div>
+    <div class="comm-confirm-status">${statusLine}</div>`;
+
+  const body = document.getElementById('manageModalBody');
+  if (body) body.insertAdjacentElement('afterbegin', panel);
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
