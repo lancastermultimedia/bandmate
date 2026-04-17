@@ -657,9 +657,10 @@ async function _loadManageResponses(postingId) {
         ? `<span class="comm-status-badge comm-status-${i.status}">${i.status}</span>`
         : '';
 
+      const cityEsc = (d?.city || '').replace(/'/g, "\\'");
       const actions = i.status === 'pending' ? `
-        <button class="comm-accept-btn" onclick="updateInterestStatus(${i.id},'accepted',${band.id},${JSON.stringify(d?.city||'')})">Accept</button>
-        <button class="comm-decline-btn" onclick="updateInterestStatus(${i.id},'declined',${band.id},${JSON.stringify(d?.city||'')})">Decline</button>` : '';
+        <button class="comm-accept-btn" onclick="updateInterestStatus(${i.id},'accepted',${band.id},'${cityEsc}')">Accept</button>
+        <button class="comm-decline-btn" onclick="updateInterestStatus(${i.id},'declined',${band.id},'${cityEsc}')">Decline</button>` : '';
 
       return `<div class="comm-response-card">
         <div class="comm-response-header">
