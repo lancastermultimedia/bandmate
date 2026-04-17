@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function fetchPostings() {
   const { data, error } = await sb
     .from('tour_postings')
-    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count), posting_dates(id, date, city)`)
+    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count), posting_dates(id, date, city, venue_name, venue_place_id, venue_address)`)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
@@ -828,7 +828,7 @@ function closeManageModal() {
 async function _loadManageResponses(postingId) {
   const { data: interests, error } = await sb
     .from('posting_interests')
-    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count, email), posting_dates(date, city)`)
+    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count, email), posting_dates(id, date, city, venue_name, venue_place_id, venue_address)`)
     .eq('posting_id', postingId)
     .order('status', { ascending: true }) // accepted first
     .order('created_at', { ascending: false });
