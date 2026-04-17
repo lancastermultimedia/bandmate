@@ -71,7 +71,22 @@ function initMap() {
   });
 
   initAuth();
-  locateMe(true); // silent = true, no alert if geolocation denied
+
+  // Deep-link: ?place=PLACE_ID opens a specific venue directly
+  const deepPlaceId = new URLSearchParams(window.location.search).get('place');
+  if (deepPlaceId) {
+    placesService.getDetails({ placeId: deepPlaceId, fields: ['place_id','name','formatted_address','vicinity','geometry'] }, (result, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && result) {
+        map.setCenter(result.geometry.location);
+        map.setZoom(16);
+        openVenuePage(result.place_id, result.name, result.formatted_address || result.vicinity || '');
+      } else {
+        locateMe(true);
+      }
+    });
+  } else {
+    locateMe(true); // silent = true, no alert if geolocation denied
+  }
 }
 
 // ─── Geolocation ─────────────────────────────────────────────────────────────

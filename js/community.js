@@ -5,6 +5,7 @@
 let _allPostings       = [];   // all active postings from Supabase
 let _myInterests       = {};   // { "postingId_dateId": 'pending'|'accepted'|'declined' }
 let _acceptedByPosting = {};   // { postingId: [band, ...] } — publicly visible confirmed bands
+let _venueRatings      = {};   // { place_id: { avg, count } }
 let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all' };
 let _postType          = null;
 let _postGenres        = [];
@@ -27,12 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSkeletons();
   await fetchPostings();
 });
-
-function _mapsReady() {
-  _mapsLoaded = true;
-  // Wire autocomplete on any date rows already in the DOM
-  document.querySelectorAll('.comm-city-input:not([data-ac])').forEach(_attachCityAC);
-}
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -63,6 +58,28 @@ async function fetchPostings() {
     if (!_acceptedByPosting[i.posting_id]) _acceptedByPosting[i.posting_id] = [];
     if (i.bands) _acceptedByPosting[i.posting_id].push(i.bands);
   });
+
+  // Collect all unique place IDs from posting dates and fetch their ratings
+  const placeIds = [...new Set(
+    (data || []).flatMap(p => (p.posting_dates || []).map(d => d.venue_place_id).filter(Boolean))
+  )];
+  _venueRatings = {};
+  if (placeIds.length) {
+    const { data: reviews } = await sb
+      .from('reviews')
+      .select('google_place_id, overall_rating')
+      .in('google_place_id', placeIds);
+    (reviews || []).forEach(r => {
+      if (!_venueRatings[r.google_place_id]) _venueRatings[r.google_place_id] = { sum: 0, count: 0 };
+      _venueRatings[r.google_place_id].sum   += r.overall_rating;
+      _venueRatings[r.google_place_id].count += 1;
+    });
+    // Convert to avg
+    Object.keys(_venueRatings).forEach(pid => {
+      const v = _venueRatings[pid];
+      v.avg = v.sum / v.count;
+    });
+  }
 
   // Fetch my own interests if logged in
   if (currentBandProfile) {
@@ -174,8 +191,29 @@ function renderCard(p) {
     const btnCls  = active ? 'comm-interested-btn comm-interested-btn--active' : 'comm-interested-btn';
     const fmtDate = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const interestClick = isOwn ? '' : `onclick="handleInterested(${p.id},${d.id})"`;
+
+    // Venue info
+    let venueHtml = '';
+    if (d.venue_name) {
+      const rating   = d.venue_place_id ? _venueRatings[d.venue_place_id] : null;
+      const starsHtml = rating
+        ? (() => {
+            const full  = Math.round(rating.avg);
+            const stars = '★'.repeat(full) + '☆'.repeat(5 - full);
+            return `<span class="comm-venue-stars">${stars}</span><span class="comm-venue-count">${rating.avg.toFixed(1)} (${rating.count})</span>`;
+          })()
+        : '<span class="comm-venue-no-reviews">No reviews yet</span>';
+      const venueLink = d.venue_place_id
+        ? `<a class="comm-venue-name" href="map.html?place=${encodeURIComponent(d.venue_place_id)}" target="_blank">${escapeHtml(d.venue_name)}</a>`
+        : `<span class="comm-venue-name">${escapeHtml(d.venue_name)}</span>`;
+      venueHtml = `<div class="comm-venue-row">${venueLink}<div class="comm-venue-rating">${starsHtml}</div></div>`;
+    }
+
     return `<div class="comm-date-row">
-      <span class="comm-date-label">${fmtDate} · ${escapeHtml(d.city)}</span>
+      <div class="comm-date-row-left">
+        <span class="comm-date-label">${fmtDate} · ${escapeHtml(d.city)}</span>
+        ${venueHtml}
+      </div>
       ${!isOwn ? `<button class="${btnCls}" ${interestClick}>${btnText}</button>` : ''}
     </div>`;
   }).join('');
@@ -440,47 +478,85 @@ function setSlots(btn) {
 
 function addDateRow() {
   const container = document.getElementById('postDateRows');
-  const idx       = container.children.length;
-  if (idx >= 20) return;
+  if (container.children.length >= 20) return;
 
   const row = document.createElement('div');
   row.className = 'comm-date-entry';
   row.innerHTML = `
-    <input type="date" class="comm-modal-input comm-date-input" style="flex:1">
-    <input type="text" class="comm-modal-input comm-city-input" placeholder="City, State" style="flex:2">
+    <input type="date" class="comm-modal-input comm-date-input">
+    <div class="comm-venue-search-wrap">
+      <input type="text" class="comm-modal-input comm-venue-input" placeholder="Search venue name…">
+      <div class="comm-venue-selected" style="display:none"></div>
+    </div>
     <button class="comm-remove-date" onclick="removeDateRow(this)" title="Remove">✕</button>`;
   container.appendChild(row);
 
-  const cityInput = row.querySelector('.comm-city-input');
-  if (_mapsLoaded) {
-    _attachCityAC(cityInput);
-  }
-  // else: _mapsReady() will wire it when Maps loads
+  if (_mapsLoaded) _attachVenueAC(row.querySelector('.comm-venue-input'));
 }
 
 function removeDateRow(btn) {
   const row = btn.closest('.comm-date-entry');
-  if (document.querySelectorAll('.comm-date-entry').length <= 1) return; // keep at least 1
+  if (document.querySelectorAll('.comm-date-entry').length <= 1) return;
   row.remove();
 }
 
-function _attachCityAC(input) {
+function _mapsReady() {
+  _mapsLoaded = true;
+  document.querySelectorAll('.comm-venue-input:not([data-ac])').forEach(input => {
+    _attachVenueAC(input);
+  });
+}
+
+function _attachVenueAC(input) {
   if (input.dataset.ac) return;
   input.dataset.ac = '1';
   if (typeof google === 'undefined' || !google.maps?.places) return;
+
   const ac = new google.maps.places.Autocomplete(input, {
-    types:  ['(cities)'],
-    fields: ['name', 'address_components'],
+    types:  ['establishment'],
+    fields: ['place_id', 'name', 'formatted_address', 'address_components'],
   });
+
   ac.addListener('place_changed', () => {
     const place = ac.getPlace();
-    if (place?.address_components) {
-      const city  = place.address_components.find(c => c.types.includes('locality'))?.long_name || '';
-      const state = place.address_components.find(c => c.types.includes('administrative_area_level_1'))?.short_name || '';
-      if (city && state) input.value = `${city}, ${state}`;
-    }
+    if (!place?.place_id) return;
+
+    const comps   = place.address_components || [];
+    const city    = comps.find(c => c.types.includes('locality'))?.long_name || '';
+    const state   = comps.find(c => c.types.includes('administrative_area_level_1'))?.short_name || '';
+    const cityStr = [city, state].filter(Boolean).join(', ');
+
+    // Store data on the row
+    const row = input.closest('.comm-date-entry');
+    row.dataset.venueName    = place.name || '';
+    row.dataset.venuePlaceId = place.place_id || '';
+    row.dataset.venueAddress = place.formatted_address || '';
+    row.dataset.venueCity    = cityStr;
+
+    // Show a confirmation chip
+    const wrap = row.querySelector('.comm-venue-search-wrap');
+    const chip = row.querySelector('.comm-venue-selected');
+    chip.innerHTML = `<span class="comm-venue-chip">${escapeHtml(place.name)}<span class="comm-venue-chip-city">${cityStr ? ' · ' + cityStr : ''}</span></span>
+      <button class="comm-venue-clear" onclick="clearVenue(this)" title="Change venue">✕</button>`;
+    chip.style.display = 'flex';
+    input.style.display = 'none';
   });
+
   _cityAutocompletes.push(ac);
+}
+
+function clearVenue(btn) {
+  const row  = btn.closest('.comm-date-entry');
+  const chip = row.querySelector('.comm-venue-selected');
+  const inp  = row.querySelector('.comm-venue-input');
+  chip.style.display = 'none';
+  inp.style.display  = '';
+  inp.value = '';
+  delete row.dataset.venueName;
+  delete row.dataset.venuePlaceId;
+  delete row.dataset.venueAddress;
+  delete row.dataset.venueCity;
+  inp.focus();
 }
 
 function toggleContactEmail(radio) {
@@ -506,11 +582,16 @@ async function submitPosting() {
   const dateRows = document.querySelectorAll('.comm-date-entry');
   const dates = [];
   for (const row of dateRows) {
-    const dateVal = row.querySelector('.comm-date-input').value;
-    const cityVal = row.querySelector('.comm-city-input').value.trim();
-    if (dateVal && cityVal) dates.push({ date: dateVal, city: cityVal });
+    const dateVal    = row.querySelector('.comm-date-input').value;
+    const venueName  = row.dataset.venueName  || '';
+    const placeId    = row.dataset.venuePlaceId || '';
+    const address    = row.dataset.venueAddress || '';
+    const city       = row.dataset.venueCity   || row.querySelector('.comm-venue-input').value.trim();
+    if (dateVal && (venueName || city)) {
+      dates.push({ date: dateVal, city: city || venueName, venue_name: venueName || null, venue_place_id: placeId || null, venue_address: address || null });
+    }
   }
-  if (!dates.length) { errEl.textContent = 'Please add at least one date and city.'; return; }
+  if (!dates.length) { errEl.textContent = 'Please add at least one date and venue.'; return; }
 
   const btn = document.getElementById('postSubmitBtn');
   btn.disabled = true; btn.textContent = 'Posting…';
@@ -533,7 +614,14 @@ async function submitPosting() {
   }
 
   // Insert dates
-  const dateInserts = dates.map(d => ({ posting_id: posting.id, date: d.date, city: d.city }));
+  const dateInserts = dates.map(d => ({
+    posting_id:      posting.id,
+    date:            d.date,
+    city:            d.city,
+    venue_name:      d.venue_name,
+    venue_place_id:  d.venue_place_id,
+    venue_address:   d.venue_address,
+  }));
   const { error: dateErr } = await sb.from('posting_dates').insert(dateInserts);
   if (dateErr) {
     errEl.textContent = 'Posting saved but dates failed — ' + dateErr.message;

@@ -6896,13 +6896,6 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 }
 
 /* Date entry rows */
-.comm-date-entry {
-  display: grid;
-  grid-template-columns: 140px 1fr auto;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
 .comm-date-entry input[type="date"] {
   border: 1.5px solid rgba(14,13,11,0.18);
   background: #faf9f5;
@@ -6913,18 +6906,6 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   outline: none;
 }
 .comm-date-entry input[type="date"]:focus { border-color: var(--rust); }
-.comm-city-input {
-  border: 1.5px solid rgba(14,13,11,0.18);
-  background: #faf9f5;
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.82rem;
-  padding: 9px 10px;
-  color: var(--ink);
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-}
-.comm-city-input:focus { border-color: var(--rust); }
 .comm-remove-date {
   font-size: 1rem;
   color: var(--muted);
@@ -7164,6 +7145,82 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   font-size: 0.82rem;
   color: var(--muted);
   text-align: center;
+}
+
+/* ── Venue search (post modal date rows) ───────────────── */
+.comm-date-entry {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+.comm-venue-search-wrap { display: flex; flex-direction: column; gap: 4px; }
+.comm-venue-selected {
+  align-items: center;
+  gap: 6px;
+  background: #f5f2ec;
+  border: 1.5px solid rgba(14,13,11,0.15);
+  padding: 7px 10px;
+  min-height: 38px;
+}
+.comm-venue-chip {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  color: var(--ink);
+  flex: 1;
+}
+.comm-venue-chip-city {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.comm-venue-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.comm-venue-clear:hover { color: var(--rust); }
+
+/* ── Venue display on cards ─────────────────────────────── */
+.comm-date-row-left { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.comm-venue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.comm-venue-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-underline-offset: 3px; }
+.comm-venue-rating { display: flex; align-items: center; gap: 4px; }
+.comm-venue-stars {
+  color: #c9973a;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+}
+.comm-venue-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--muted);
+}
+.comm-venue-no-reviews {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(14,13,11,0.3);
 }
 
 /* ── Slots selector (post modal) ───────────────────────── */
