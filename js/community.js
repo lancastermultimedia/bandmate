@@ -64,8 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSkeletons();
   await fetchPostings();
 
-  try { _subscribeToFeed(); } catch (_) {}
-
   // Tour Planner integration — open pre-filled post modal if redirected from tour.html
   if (new URLSearchParams(window.location.search).has('fromtour')) {
     const raw = sessionStorage.getItem('comm_prefill');

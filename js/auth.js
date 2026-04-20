@@ -360,6 +360,36 @@ function closeUnlockCelebration() {
 
 // ── Nav auth ──────────────────────────────────────────────────────────────────
 
+function _updatePremiumGate() {
+  const gate = document.getElementById('premiumGate');
+  if (!gate) return;
+
+  const isLoggedIn = !!currentUser;
+  const isPremium  = isBandPremium(currentBandProfile);
+
+  if (isPremium) {
+    gate.style.display = 'none';
+    return;
+  }
+
+  // Show gate — populate dynamic fields
+  const count     = currentBandProfile?.review_count || 0;
+  const remaining = Math.max(0, 3 - count);
+  const pct       = Math.min(100, (count / 3) * 100);
+
+  const bar   = document.getElementById('gateProgressBar');
+  const label = document.getElementById('gateProgressLabel');
+  const cta   = document.getElementById('gateSigninCta');
+
+  if (bar)   bar.style.width   = pct + '%';
+  if (label) label.textContent = isLoggedIn
+    ? `${count} of 3 reviews · ${remaining} more to unlock`
+    : 'Create a free account to get started';
+  if (cta)   cta.style.display = isLoggedIn ? 'none' : 'inline-block';
+
+  gate.style.display = 'flex';
+}
+
 function updateNavAuth() {
   const area = document.getElementById('navAuthArea');
   if (!area) return;
@@ -393,6 +423,7 @@ function updateNavAuth() {
     area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
   }
+  _updatePremiumGate();
 }
 
 function escapeHtml(s) {

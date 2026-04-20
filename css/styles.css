@@ -7694,3 +7694,109 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
 .prof-interest-status--accepted { background: #e8f5e8; color: #2e6e2e; }
 .prof-interest-status--declined { background: #fce8e8; color: #8b1a1a; }
 
+
+/* ── Premium Gate Overlay ────────────────────────────────────────────────────── */
+.premium-gate {
+  display: none; /* shown via JS when non-premium */
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  backdrop-filter: blur(7px) saturate(0.8);
+  -webkit-backdrop-filter: blur(7px) saturate(0.8);
+  background: rgba(242, 241, 237, 0.72);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.premium-gate-card {
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 44px 40px 36px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+
+.premium-gate-icon {
+  font-size: 2.4rem;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.premium-gate-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.9rem;
+  color: var(--ink);
+  margin: 0 0 14px;
+  line-height: 1.15;
+}
+
+.premium-gate-desc {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+
+.premium-gate-progress-wrap {
+  margin-bottom: 28px;
+}
+
+.premium-gate-progress-track {
+  height: 6px;
+  background: rgba(14,13,11,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.premium-gate-progress-bar {
+  height: 100%;
+  background: var(--rust);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.premium-gate-progress-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.premium-gate-cta {
+  display: block;
+  background: var(--rust);
+  color: var(--cream);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  padding: 14px 24px;
+  border-radius: 2px;
+  margin-bottom: 14px;
+  transition: background 0.18s;
+}
+.premium-gate-cta:hover { background: var(--ink); }
+
+.premium-gate-signin {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-decoration: none;
+}
+.premium-gate-signin:hover { color: var(--ink); }
+
+@media (max-width: 600px) {
+  .premium-gate-card { padding: 32px 24px 28px; }
+  .premium-gate-title { font-size: 1.5rem; }
+}

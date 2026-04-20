@@ -46,24 +46,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderProfile();
   });
 
-  // Press photos drag-and-drop
+  // Press photos drag-and-drop (null-safe)
   const uploadArea = document.getElementById('pressUploadArea');
-  uploadArea.addEventListener('click', () => document.getElementById('pressPhotoInput').click());
-  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
-  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
-  uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-    handlePressPhotoUpload({ files: e.dataTransfer.files });
-  });
+  if (uploadArea) {
+    uploadArea.addEventListener('click', () => document.getElementById('pressPhotoInput').click());
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadArea.classList.remove('drag-over');
+      handlePressPhotoUpload({ files: e.dataTransfer.files });
+    });
+  }
 
-  // Stage plot upload area
   const stagePlotArea = document.getElementById('stagePlotUploadArea');
-  stagePlotArea.addEventListener('click', () => document.getElementById('stagePlotInput').click());
+  if (stagePlotArea) stagePlotArea.addEventListener('click', () => document.getElementById('stagePlotInput').click());
 
-  document.getElementById('authModal').addEventListener('click', function(e) {
-    if (e.target === this) closeAuth();
-  });
+  const authModal = document.getElementById('authModal');
+  if (authModal) authModal.addEventListener('click', function(e) { if (e.target === this) closeAuth(); });
 
   document.body.style.visibility = 'visible';
 });
