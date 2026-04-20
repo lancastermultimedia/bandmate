@@ -163,6 +163,91 @@ async function renderProfile() {
 
   // ── Review history ──
   loadReviewHistory(bp.id);
+
+  // ── Community sections (always shown when logged in) ──
+  loadMyPostings(bp.id);
+  loadCommunityActivity(bp.id);
+}
+
+// ── Community: My Postings ────────────────────────────────────────────────────
+
+async function loadMyPostings(bandId) {
+  const section = document.getElementById('myPostingsSection');
+  const list    = document.getElementById('myPostingsList');
+  if (!section || !list) return;
+
+  const { data, error } = await sb
+    .from('tour_postings')
+    .select('id, title, type, is_active, is_paused, created_at, interest_count, posting_dates(city)')
+    .eq('band_id', bandId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data?.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  const typeLabels = { tour_support: 'Tour Support', local_opener: 'Local Opener', co_headlining: 'Co-Headlining' };
+
+  list.innerHTML = data.map(p => {
+    const cities   = (p.posting_dates || []).map(d => d.city.split(',')[0]).slice(0, 3).join(', ');
+    const label    = typeLabels[p.type] || p.type;
+    const status   = !p.is_active ? 'Closed' : p.is_paused ? 'Paused' : 'Active';
+    const statusCls= !p.is_active ? 'prof-posting-status--closed' : p.is_paused ? 'prof-posting-status--paused' : 'prof-posting-status--active';
+    const interests = p.interest_count || 0;
+    return `<div class="prof-posting-row">
+      <div class="prof-posting-info">
+        <div class="prof-posting-title">${escapeHtml(p.title)}</div>
+        <div class="prof-posting-meta">${label}${cities ? ' · ' + escapeHtml(cities) : ''} · ${interests} interested</div>
+      </div>
+      <div class="prof-posting-right">
+        <span class="prof-posting-status ${statusCls}">${status}</span>
+        <a href="community.html" class="prof-posting-link">View →</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Community: Activity (expressed interests) ─────────────────────────────────
+
+async function loadCommunityActivity(bandId) {
+  const section = document.getElementById('communityActivitySection');
+  const list    = document.getElementById('communityActivityList');
+  if (!section || !list) return;
+
+  const { data, error } = await sb
+    .from('posting_interests')
+    .select('id, status, created_at, posting_dates(city, date), tour_postings(id, title, type, bands(band_name))')
+    .eq('band_id', bandId)
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  if (error || !data?.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  const statusIcon = { pending: '⏳', accepted: '✓', declined: '—' };
+
+  list.innerHTML = data.map(i => {
+    const tp      = i.tour_postings || {};
+    const d       = i.posting_dates || {};
+    const bandName = tp.bands?.band_name || '—';
+    const city     = d.city || '';
+    const fmtDate  = d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    const icon     = statusIcon[i.status] || '';
+    const cls      = `prof-interest-status--${i.status}`;
+    return `<div class="prof-interest-row">
+      <div class="prof-interest-info">
+        <div class="prof-posting-title">${escapeHtml(tp.title || '—')}</div>
+        <div class="prof-posting-meta">${escapeHtml(bandName)}${fmtDate ? ' · ' + fmtDate : ''}${city ? ' · ' + escapeHtml(city) : ''}</div>
+      </div>
+      <span class="prof-interest-status ${cls}">${icon} ${i.status}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── Profile avatar ────────────────────────────────────────────────────────────

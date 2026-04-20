@@ -25,6 +25,8 @@ async function loadBandProfile() {
   const { data } = await sb.from('bands').select('*').ilike('email', currentUser.email).order('created_at', { ascending: false }).limit(1);
   currentBandProfile = (data && data[0]) || null;
   devLog('[auth] loadBandProfile result:', currentBandProfile, 'for email:', currentUser.email);
+  // Update last_seen_at for notification targeting (fire-and-forget)
+  sb.rpc('update_band_last_seen', { band_email: currentUser.email }).catch(() => {});
 }
 
 // Single source of truth for premium logic.

@@ -87,6 +87,14 @@
       </div>
     </div>
 
+    <div class="comm-filter-section">
+      <div class="comm-filter-label">Sort By</div>
+      <div class="comm-chips" id="sortChips">
+        <button class="comm-chip comm-chip--active" data-value="recent"     onclick="setSortFilter(this)">Recent</button>
+        <button class="comm-chip"                   data-value="best_match" onclick="setSortFilter(this)">Best Match</button>
+      </div>
+    </div>
+
     <button class="comm-clear-filters" onclick="clearFilters()">Clear Filters</button>
 
   </aside>
@@ -233,6 +241,20 @@
     <div class="modal-title" id="manageModalTitle"></div>
     <div id="manageModalBody">
       <div class="comm-modal-loading">Loading responses…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DIRECT MESSAGE MODAL ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="chatModal" onclick="if(event.target===this)closeChatModal()">
+  <div class="modal comm-modal" style="max-width:520px;width:90vw;max-height:90vh;display:flex;flex-direction:column">
+    <button class="modal-close" onclick="closeChatModal()">✕</button>
+    <div class="modal-eyebrow">Direct Message</div>
+    <div class="modal-title" id="chatModalTitle"></div>
+    <div class="comm-chat-messages" id="chatMessages"></div>
+    <div class="comm-chat-input-row">
+      <textarea class="comm-modal-textarea" id="chatInput" placeholder="Write a message…" rows="2" style="margin:0;flex:1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+      <button class="comm-submit-btn" onclick="sendChatMessage()" style="margin:0;padding:12px 18px;white-space:nowrap">Send →</button>
     </div>
   </div>
 </div>

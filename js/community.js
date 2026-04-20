@@ -6,7 +6,7 @@ let _allPostings       = [];   // all active postings from Supabase
 let _myInterests       = {};   // { "postingId_dateId": 'pending'|'accepted'|'declined' }
 let _acceptedByPosting = {};   // { postingId: [band, ...] } — publicly visible confirmed bands
 let _venueRatings      = {};   // { place_id: { avg, count } }
-let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all' };
+let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent' };
 let _postType          = null;
 let _slotsNeeded       = 1;
 let _editingPostingId  = null; // null = new post, number = editing existing
@@ -16,9 +16,45 @@ let _interestDates     = [];
 let _managePostingId   = null;
 let _mapsLoaded        = false;
 let _cityAutocompletes = [];
+let _chatPostingId     = null; // for direct messaging
+let _chatChannel       = null; // supabase realtime channel for chat
+let _feedChannel       = null; // supabase realtime channel for feed updates
 
 const TYPE_LABELS = { tour_support: 'Tour Support', local_opener: 'Local Opener', co_headlining: 'Co-Headlining' };
 const GENRES = ['Rock','Indie','Folk','Alternative','Country','Jazz','Blues','Hip-Hop','Electronic','Punk','Metal','R&B','Soul','Acoustic','Americana','Pop','Experimental'];
+
+// ── Best Match scoring ────────────────────────────────────────────────────────
+// Scores a posting for the current user. Max 100 points.
+// genre overlap +40 | city match +30 | review trust +20 | recency +10
+
+function _scorePosting(p) {
+  let score = 0;
+  const bp   = currentBandProfile;
+
+  // Genre overlap (+40)
+  if (bp?.genre && p.genres?.length) {
+    const myGenres = bp.genre.split(',').map(g => g.trim().toLowerCase());
+    const hits     = (p.genres || []).filter(g => myGenres.some(mg => g.toLowerCase().includes(mg) || mg.includes(g.toLowerCase())));
+    score += Math.min(40, hits.length * 20);
+  }
+
+  // City match: any date in user's home city (+30)
+  if (bp?.home_city) {
+    const myCity = bp.home_city.toLowerCase().split(',')[0].trim();
+    const match  = (p.posting_dates || []).some(d => d.city.toLowerCase().includes(myCity));
+    if (match) score += 30;
+  }
+
+  // Review trust: posting band's review count (+20 for ≥3)
+  const rc = p.bands?.review_count || 0;
+  score += rc >= 3 ? 20 : rc >= 1 ? 10 : 0;
+
+  // Recency: posted within 7 days (+10)
+  const ageMs = Date.now() - new Date(p.created_at).getTime();
+  if (ageMs < 7 * 86400000) score += 10;
+
+  return score;
+}
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +63,69 @@ document.addEventListener('DOMContentLoaded', async () => {
   _buildGenreFilters();
   renderSkeletons();
   await fetchPostings();
+  _subscribeToFeed();
+
+  // Tour Planner integration — open pre-filled post modal if redirected from tour.html
+  if (new URLSearchParams(window.location.search).has('fromtour')) {
+    const raw = sessionStorage.getItem('comm_prefill');
+    sessionStorage.removeItem('comm_prefill');
+    if (raw) {
+      try {
+        const prefill = JSON.parse(raw);
+        // Wait a tick for auth to settle, then check premium and open modal
+        setTimeout(() => {
+          if (!currentUser) { openAuth('login'); return; }
+          if (!isBandPremium(currentBandProfile)) { openPostModal(); return; }
+          _editingPostingId = null;
+          _openPostForm(prefill);
+        }, 200);
+      } catch (_) {}
+    }
+  }
 });
+
+// ── Realtime: live feed + notification bell ───────────────────────────────────
+
+function _subscribeToFeed() {
+  if (_feedChannel) { sb.removeChannel(_feedChannel); _feedChannel = null; }
+
+  const myBandId = currentBandProfile?.id;
+  let channel = sb.channel('community_feed')
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'tour_postings' },
+      async payload => {
+        // Skip our own posts (already added via submitPosting → fetchPostings)
+        if (currentBandProfile && payload.new.band_id === currentBandProfile.id) return;
+        // Refresh feed and show toast
+        await fetchPostings();
+        _showFeedToast();
+      }
+    );
+
+  // Only subscribe to personal notification changes when logged in
+  if (myBandId) {
+    channel = channel
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `band_id=eq.${myBandId}` },
+        async () => { await loadNotifCount(); }
+      );
+  }
+
+  _feedChannel = channel.subscribe();
+}
+
+let _feedToastTimer = null;
+function _showFeedToast() {
+  clearTimeout(_feedToastTimer);
+  const existing = document.getElementById('feedNewToast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id        = 'feedNewToast';
+  el.className = 'comm-feed-toast';
+  el.innerHTML = 'New posting added — <button onclick="document.getElementById(\'commFeed\').scrollIntoView({behavior:\'smooth\'});this.parentElement.remove()">View</button>';
+  document.body.appendChild(el);
+  _feedToastTimer = setTimeout(() => el.remove(), 8000);
+}
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -243,10 +341,21 @@ function renderCard(p) {
       </div>
     </div>` : '';
 
-  // Posted ago
+  // Posted ago + New badge
   const diffMs  = Date.now() - new Date(p.created_at).getTime();
   const diffDay = Math.floor(diffMs / 86400000);
   const postedAgo = diffDay < 1 ? 'Today' : diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
+  const isNew     = diffMs < 48 * 3600000; // < 48 hours
+
+  // Best Match badge + Similar tag
+  const matchScore   = currentBandProfile && !isOwn ? _scorePosting(p) : 0;
+  const isBestMatch  = matchScore >= 70;
+  const bp           = currentBandProfile;
+  const isSimilar    = !isOwn && bp?.genre && (p.genres || []).some(g => {
+    const myGenres = bp.genre.split(',').map(x => x.trim().toLowerCase());
+    return myGenres.some(mg => g.toLowerCase().includes(mg) || mg.includes(g.toLowerCase()));
+  });
+  const interestCount = p.interest_count || 0;
 
   // Slots indicator (only show if looking for more than 1)
   const slotsHtml = slots > 1
@@ -264,7 +373,7 @@ function renderCard(p) {
     <button class="comm-card-btn comm-card-btn--outline" onclick="openEditModal(${p.id})" title="Edit">Edit</button>
     <button class="comm-card-btn comm-card-btn--delete" onclick="openDeleteModal(${p.id})" title="Delete">Delete</button>` : '';
 
-  return `<article class="comm-card" id="comm-card-${p.id}">
+  return `<article class="comm-card${isBestMatch ? ' comm-card--best-match' : ''}" id="comm-card-${p.id}">
     <div class="comm-card-header">
       <div class="comm-card-band">
         ${avatarWrapped}
@@ -274,9 +383,14 @@ function renderCard(p) {
           ${trustHtml}
         </div>
       </div>
-      ${badge}
+      <div class="comm-card-badges">
+        ${isBestMatch ? '<span class="comm-best-match-badge">Best Match</span>' : ''}
+        ${isNew       ? '<span class="comm-new-badge">New</span>' : ''}
+        ${badge}
+      </div>
     </div>
 
+    ${isSimilar ? '<div class="comm-similar-tag">Similar to your sound</div>' : ''}
     ${dates.length ? `<div class="comm-tour-route">${routeHtml}</div>` : ''}
     ${dateRange     ? `<div class="comm-date-range">${dateRange}</div>` : ''}
     ${slotsHtml}
@@ -293,7 +407,7 @@ function renderCard(p) {
     ${confirmedHtml}
 
     <div class="comm-card-footer">
-      <span class="comm-posted-ago">${postedAgo}</span>
+      <span class="comm-posted-ago">${postedAgo}${interestCount > 0 ? ` · ${interestCount} interested` : ''}</span>
       <div class="comm-card-actions">${epkBtn}${actionBtn}${ownerTools}</div>
     </div>
   </article>`;
@@ -334,6 +448,14 @@ function applyFilters() {
   if (length === 'weekend') results = results.filter(p => (p.posting_dates || []).length >= 2 && (p.posting_dates || []).length <= 3);
   if (length === 'full')    results = results.filter(p => (p.posting_dates || []).length >= 4);
 
+  // Sorting
+  if (_filters.sort === 'best_match' && currentBandProfile) {
+    results = results.map(p => ({ p, score: _scorePosting(p) }))
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.p);
+  }
+  // 'recent' is already server-sorted by created_at desc
+
   renderFeed(results);
 }
 
@@ -364,13 +486,21 @@ function setLengthFilter(btn) {
   applyFilters();
 }
 
+function setSortFilter(btn) {
+  document.querySelectorAll('#sortChips .comm-chip').forEach(b => b.classList.remove('comm-chip--active'));
+  btn.classList.add('comm-chip--active');
+  _filters.sort = btn.dataset.value;
+  applyFilters();
+}
+
 function clearFilters() {
-  _filters = { search: '', type: 'all', genre: '', location: '', length: 'all' };
+  _filters = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent' };
   document.getElementById('commSearch').value   = '';
   document.getElementById('commLocation').value = '';
   document.querySelectorAll('#typeChips   .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   document.querySelectorAll('#genreChips  .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   document.querySelectorAll('#lengthChips .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
+  document.querySelectorAll('#sortChips   .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   applyFilters();
 }
 
@@ -693,9 +823,63 @@ async function submitPosting() {
     return;
   }
 
+  // City-based notification fanout (new postings only, not edits)
+  if (!_editingPostingId) {
+    _fanoutCityNotifications(postingId, dates, genres).catch(() => {});
+  }
+
   closePostModal();
   showToast(_editingPostingId ? 'Posting updated!' : 'Opportunity posted!', 'success');
   await fetchPostings();
+}
+
+// Notify up to 50 bands whose home_city overlaps with any date city,
+// who share genre overlap, and who have been active in the last 90 days.
+async function _fanoutCityNotifications(postingId, dates, genres) {
+  if (!dates.length) return;
+
+  // Extract unique city terms (first word of each city string for broad matching)
+  const cityTerms = [...new Set(dates.map(d => (d.city || '').split(',')[0].trim().toLowerCase()))].filter(Boolean);
+  if (!cityTerms.length) return;
+
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString();
+
+  // Fetch nearby/genre-matching bands (exclude self)
+  const { data: candidates } = await sb
+    .from('bands')
+    .select('id, home_city, genre, email')
+    .neq('id', currentBandProfile.id)
+    .gte('last_seen_at', ninetyDaysAgo)
+    .limit(200);
+
+  if (!candidates?.length) return;
+
+  // Score each candidate: city match (+2) + genre match (+1)
+  const scored = candidates
+    .map(b => {
+      let s = 0;
+      const bCity = (b.home_city || '').toLowerCase();
+      if (cityTerms.some(t => bCity.includes(t))) s += 2;
+      if (genres?.length && b.genre) {
+        const bGenres = b.genre.toLowerCase();
+        if (genres.some(g => bGenres.includes(g.toLowerCase()))) s += 1;
+      }
+      return { band: b, score: s };
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 50);
+
+  if (!scored.length) return;
+
+  const notifs = scored.map(({ band: b }) => ({
+    band_id:    b.id,
+    type:       'new_posting_nearby',
+    payload:    { from_band: currentBandProfile.band_name, posting_title: '' },
+    posting_id: postingId,
+    read:       false,
+  }));
+  await sb.from('notifications').insert(notifs);
 }
 
 // ── Interest Modal ────────────────────────────────────────────────────────────
@@ -988,6 +1172,7 @@ function _showAcceptConfirmation(band, posting, city, allFilled, remaining) {
     </div>
     <div class="comm-confirm-contact-row">
       ${band.email ? `<a href="mailto:${escapeHtml(band.email)}" class="comm-confirm-email-btn">Email ${escapeHtml(band.band_name)} →</a>` : ''}
+      <button class="comm-card-btn comm-card-btn--rust" onclick="closeManageModal();openChatModal(${band.id},${JSON.stringify(band.band_name)})">Message →</button>
       ${band.epk_theme && slug ? `<a href="epk.html?band=${slug}" target="_blank" class="comm-card-btn comm-card-btn--outline">View EPK</a>` : ''}
     </div>
     <div class="comm-confirm-status">${statusLine}</div>`;
@@ -1024,6 +1209,107 @@ async function confirmDeletePosting() {
   closeDeleteModal();
   showToast('Posting removed.', 'success');
   applyFilters();
+}
+
+// ── Direct Messaging ──────────────────────────────────────────────────────────
+
+async function openChatModal(toBandId, toBandName) {
+  if (!currentUser) { openAuth('login'); return; }
+  if (!currentBandProfile) return;
+
+  _chatPostingId = null; // no posting context for band-to-band DMs
+  const myId = currentBandProfile.id;
+
+  document.getElementById('chatModalTitle').textContent = `Message: ${toBandName}`;
+  document.getElementById('chatMessages').innerHTML = '<div class="comm-modal-loading">Loading messages…</div>';
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatModal').classList.add('open');
+
+  // Subscribe to realtime updates for this conversation
+  if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
+  _chatChannel = sb.channel(`chat_${[myId, toBandId].sort().join('_')}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
+      const msg = payload.new;
+      if ((msg.sender_band_id === myId && msg.recipient_band_id === toBandId) ||
+          (msg.sender_band_id === toBandId && msg.recipient_band_id === myId)) {
+        _appendChatMessage(msg, myId);
+      }
+    })
+    .subscribe();
+
+  // Store context for sendChatMessage
+  document.getElementById('chatModal').dataset.toBandId   = toBandId;
+  document.getElementById('chatModal').dataset.toBandName = toBandName;
+
+  await _loadChatMessages(myId, toBandId);
+}
+
+async function _loadChatMessages(myId, toBandId) {
+  const { data, error } = await sb
+    .from('band_messages')
+    .select('*')
+    .or(`and(sender_band_id.eq.${myId},recipient_band_id.eq.${toBandId}),and(sender_band_id.eq.${toBandId},recipient_band_id.eq.${myId})`)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  const box = document.getElementById('chatMessages');
+  if (error || !data?.length) {
+    box.innerHTML = '<div class="comm-chat-empty">No messages yet — say hello!</div>';
+    return;
+  }
+
+  box.innerHTML = '';
+  data.forEach(msg => _appendChatMessage(msg, myId));
+  box.scrollTop = box.scrollHeight;
+
+  // Mark incoming as read
+  const unread = data.filter(m => m.recipient_band_id === myId && !m.read).map(m => m.id);
+  if (unread.length) {
+    sb.from('band_messages').update({ read: true }).in('id', unread).then(() => {});
+  }
+}
+
+function _appendChatMessage(msg, myId) {
+  const box  = document.getElementById('chatMessages');
+  if (!box) return;
+  const mine = msg.sender_band_id === myId;
+  const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const el   = document.createElement('div');
+  el.className = `comm-chat-msg${mine ? ' comm-chat-msg--mine' : ''}`;
+  el.innerHTML = `<div class="comm-chat-bubble">${escapeHtml(msg.body)}</div><div class="comm-chat-time">${time}</div>`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const modal   = document.getElementById('chatModal');
+  const toBandId = parseInt(modal.dataset.toBandId);
+  const input    = document.getElementById('chatInput');
+  const body     = input.value.trim();
+  if (!body || !toBandId || !currentBandProfile) return;
+
+  input.value = '';
+  const { error } = await sb.from('band_messages').insert({
+    sender_band_id:    currentBandProfile.id,
+    recipient_band_id: toBandId,
+    body,
+    read:              false,
+  });
+  if (error) { input.value = body; showToast('Could not send — ' + error.message, 'error'); return; }
+
+  // Notify recipient
+  sb.from('notifications').insert({
+    band_id:    toBandId,
+    type:       'new_message',
+    payload:    { from_band: currentBandProfile.band_name, posting_title: '' },
+    posting_id: null,
+    read:       false,
+  }).then(() => {});
+}
+
+function closeChatModal() {
+  document.getElementById('chatModal').classList.remove('open');
+  if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -1101,21 +1387,18 @@ async function _openNotifTray() {
 }
 
 function _renderNotifTray(tray, notifs) {
-  const typeLabel = {
-    interest_received: '✉ expressed interest in your',
-    interest_accepted: '✓ accepted your interest for',
-    interest_declined: '— declined your interest for',
-  };
-
   const itemsHtml = notifs.map(n => {
-    const p      = n.payload || {};
-    const label  = typeLabel[n.type] || n.type;
-    const band   = p.from_band   || '';
-    const city   = p.city        || '';
-    const title  = p.posting_title || '';
+    const pl    = n.payload || {};
+    const band  = pl.from_band   || '';
+    const city  = pl.city        || '';
+    const title = pl.posting_title || '';
     let desc;
-    if (n.type === 'interest_received') desc = `${escapeHtml(band)} ${label} posting`;
-    else                                desc = `Your interest ${n.type === 'interest_accepted' ? 'was accepted' : 'was declined'} for ${escapeHtml(city || title)}`;
+    if (n.type === 'interest_received')  desc = `${escapeHtml(band)} expressed interest in your posting`;
+    else if (n.type === 'interest_accepted') desc = `Your interest was accepted${city ? ' for ' + escapeHtml(city) : title ? ' for ' + escapeHtml(title) : ''}`;
+    else if (n.type === 'interest_declined') desc = `Your interest was declined${city ? ' for ' + escapeHtml(city) : title ? ' for ' + escapeHtml(title) : ''}`;
+    else if (n.type === 'new_posting_nearby') desc = `${escapeHtml(band)} posted a new opportunity near you`;
+    else if (n.type === 'new_message') desc = `New message from ${escapeHtml(band)}`;
+    else desc = n.type;
 
     const diffMs  = Date.now() - new Date(n.created_at).getTime();
     const diffMin = Math.floor(diffMs / 60000);

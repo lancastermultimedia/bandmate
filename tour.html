@@ -171,6 +171,22 @@
       <div id="venueSelectionList"></div>
     </div>
 
+    <!-- Find Bandmates CTA — shown after itinerary is built -->
+    <div id="findBandmatesWrap" style="display:none;margin-bottom:4px">
+      <button id="findBandmatesBtn" onclick="postTourToCommunity()" style="
+        width:100%;padding:14px 12px;
+        font-family:'Space Mono',monospace;font-size:0.65rem;font-weight:700;
+        text-transform:uppercase;letter-spacing:0.12em;
+        background:var(--rust);color:var(--cream);
+        border:2px solid var(--rust);border-radius:4px;
+        cursor:pointer;transition:all 0.2s;
+        box-shadow:3px 3px 0 rgba(0,0,0,0.18);
+      " onmouseover="this.style.background='var(--ink)';this.style.borderColor='var(--ink)'"
+         onmouseout="this.style.background='var(--rust)';this.style.borderColor='var(--rust)'">
+        ★ Find Bandmates for This Tour →
+      </button>
+    </div>
+
     <!-- STEP 2: Final itinerary (shown automatically once all venues selected) -->
     <div id="itinArea" style="display:none">
       <div class="itin-header">

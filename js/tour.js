@@ -158,10 +158,11 @@ function restoreTourState() {
     }
 
     if (state.itinVisible && state.itinHtml) {
-      document.getElementById('itinContainer').innerHTML       = state.itinHtml;
-      document.getElementById('itinCount').textContent         = state.itinCount || '';
-      document.getElementById('itinArea').style.display        = 'block';
-      document.getElementById('downloadItinBtn').style.display = 'block';
+      document.getElementById('itinContainer').innerHTML         = state.itinHtml;
+      document.getElementById('itinCount').textContent           = state.itinCount || '';
+      document.getElementById('itinArea').style.display          = 'block';
+      document.getElementById('downloadItinBtn').style.display   = 'block';
+      document.getElementById('findBandmatesWrap').style.display = 'block';
     }
   } catch (e) {
     console.warn('Could not restore tour state:', e);
@@ -298,9 +299,10 @@ function clearRoute() {
 // Hides and empties both Step 1 and Step 2 panels
 function resetSteps() {
   document.getElementById('venueSelectionArea').style.display = 'none';
-  document.getElementById('itinArea').style.display           = 'none';
-  document.getElementById('downloadItinBtn').style.display    = 'none';
-  document.getElementById('venueSelectionList').innerHTML     = '';
+  document.getElementById('itinArea').style.display            = 'none';
+  document.getElementById('downloadItinBtn').style.display     = 'none';
+  document.getElementById('findBandmatesWrap').style.display   = 'none';
+  document.getElementById('venueSelectionList').innerHTML      = '';
   document.getElementById('itinContainer').innerHTML          = '';
   document.getElementById('itinCount').textContent            = '';
 }
@@ -890,11 +892,51 @@ function renderItinerary(days, isPremium) {
 
   document.getElementById('itinContainer').innerHTML          = html;
   document.getElementById('itinCount').textContent            = parts.join(' · ');
-  document.getElementById('itinArea').style.display           = 'block';
-  document.getElementById('downloadItinBtn').style.display    = 'block';
+  document.getElementById('itinArea').style.display            = 'block';
+  document.getElementById('downloadItinBtn').style.display     = 'block';
+  document.getElementById('findBandmatesWrap').style.display   = 'block';
 
   saveTourState();
   document.getElementById('itinArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function postTourToCommunity() {
+  if (!currentUser) { openAuth('login'); return; }
+
+  // Build prefill data from the current itinerary
+  const startDateInput = document.getElementById('tourStartDate');
+  const startDateStr   = startDateInput ? startDateInput.value : '';
+
+  // Parse show days from waypoints — each waypoint with a selected venue is a date
+  const showDates = [];
+  if (typeof tourWaypoints !== 'undefined') {
+    let cursor = startDateStr ? new Date(startDateStr + 'T12:00:00') : null;
+    (tourWaypoints || []).forEach(wp => {
+      const venueIdx   = wp.selectedVenueIndex ?? 0;
+      const venue      = wp.venueResults?.[venueIdx];
+      const cityStr    = wp.city || '';
+      const dateStr    = cursor ? cursor.toISOString().slice(0, 10) : '';
+      showDates.push({
+        date:            dateStr,
+        city:            cityStr,
+        venue_name:      venue?.name       || null,
+        venue_place_id:  venue?.place_id   || null,
+        venue_address:   venue?.vicinity   || null,
+      });
+      if (cursor) cursor.setDate(cursor.getDate() + 1);
+    });
+  }
+
+  // Store as sessionStorage so community.js can pick it up
+  const prefill = {
+    type:        'tour_support',
+    title:       '',
+    description: '',
+    genres:      currentBandProfile?.genre ? [currentBandProfile.genre] : [],
+    posting_dates: showDates,
+  };
+  sessionStorage.setItem('comm_prefill', JSON.stringify(prefill));
+  window.location.href = 'community.html?fromtour=1';
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
