@@ -928,11 +928,15 @@ function postTourToCommunity() {
   }
 
   // Store as sessionStorage so community.js can pick it up
+  // Split genre string into array (e.g. "Rock, Indie" → ['Rock', 'Indie'])
+  const genreList = (currentBandProfile?.genre || '')
+    .split(',').map(g => g.trim()).filter(Boolean);
+
   const prefill = {
-    type:        'tour_support',
-    title:       '',
-    description: '',
-    genres:      currentBandProfile?.genre ? [currentBandProfile.genre] : [],
+    type:          'tour_support',
+    title:         '',
+    description:   '',
+    genres:        genreList,
     posting_dates: showDates,
   };
   sessionStorage.setItem('comm_prefill', JSON.stringify(prefill));

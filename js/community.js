@@ -63,23 +63,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   _buildGenreFilters();
   renderSkeletons();
   await fetchPostings();
-  _subscribeToFeed();
+
+  try { _subscribeToFeed(); } catch (_) {}
 
   // Tour Planner integration — open pre-filled post modal if redirected from tour.html
   if (new URLSearchParams(window.location.search).has('fromtour')) {
     const raw = sessionStorage.getItem('comm_prefill');
     sessionStorage.removeItem('comm_prefill');
     if (raw) {
-      try {
-        const prefill = JSON.parse(raw);
-        // Wait a tick for auth to settle, then check premium and open modal
-        setTimeout(() => {
-          if (!currentUser) { openAuth('login'); return; }
-          if (!isBandPremium(currentBandProfile)) { openPostModal(); return; }
+      let prefill;
+      try { prefill = JSON.parse(raw); } catch (_) {}
+      if (prefill) {
+        if (!currentUser) {
+          openAuth('login');
+        } else if (!isBandPremium(currentBandProfile)) {
+          openPostModal(); // shows locked-state modal
+        } else {
           _editingPostingId = null;
           _openPostForm(prefill);
-        }, 200);
-      } catch (_) {}
+        }
+      }
     }
   }
 });
