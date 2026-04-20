@@ -897,7 +897,7 @@ function renderItinerary(days, isPremium) {
   document.getElementById('findBandmatesWrap').style.display   = 'block';
 
   saveTourState();
-  document.getElementById('itinArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('findBandmatesWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function postTourToCommunity() {
