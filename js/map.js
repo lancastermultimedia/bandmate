@@ -4,6 +4,7 @@ const VENUE_KEYWORDS    = ['bar','tavern','pub','club','lounge','music','venue',
 
 let map, placesService, infoWindow, searchCircle;
 let markers          = [];
+let _svMarkers       = [];    // submitted venue markers (separate from Google)
 let currentCenter    = FALLBACK_LOCATION;
 let currentRadius    = 10;
 let _accumulatedVenues = [];  // accumulates across pagination pages
@@ -161,6 +162,111 @@ function searchLocation() {
 
 // ─── Venue search ─────────────────────────────────────────────────────────────
 
+async function loadSubmittedVenuesNear(center) {
+  clearSubmittedMarkers();
+  // Remove any existing submitted venue section in the list
+  const existingSection = document.getElementById('svVenueSection');
+  if (existingSection) existingSection.remove();
+
+  try {
+    const { data: svs } = await sb
+      .from('submitted_venues')
+      .select('*')
+      .not('lat', 'is', null);
+    if (!svs?.length) return;
+
+    const radiusDeg = (currentRadius * 1.609) / 111;
+    const nearby = svs.filter(sv =>
+      Math.abs(sv.lat - center.lat) < radiusDeg &&
+      Math.abs(sv.lng - center.lng) < radiusDeg
+    );
+    if (!nearby.length) return;
+
+    nearby.forEach(sv => addSubmittedVenueMarker(sv));
+    _appendSubmittedVenuesSection(nearby);
+  } catch (_) {}
+}
+
+function _appendSubmittedVenuesSection(svs) {
+  const list = document.getElementById('venuesList');
+  if (!list) return;
+
+  const section = document.createElement('div');
+  section.id = 'svVenueSection';
+  section.innerHTML = `
+    <div class="vrc-section-label" style="color:var(--sage);border-color:var(--sage)">DIY &amp; House Shows Nearby</div>
+    ${svs.map(sv => {
+      const typeLabel = sv.venue_type === 'house_show' ? 'House Show' : 'DIY Venue';
+      const details = [];
+      if (sv.capacity_max) details.push(`Cap. ${sv.capacity_max}`);
+      if (sv.has_pa) details.push('PA');
+      if (sv.all_ages) details.push('All Ages');
+      return `
+        <div class="venue-result-card" id="card-${sv.synthetic_place_id}" onclick="openVenuePage('${sv.synthetic_place_id}','${escapeStr(sv.name)}','${escapeStr(sv.city)}')">
+          <div class="vrc-header">
+            <div class="vrc-name">${sv.name}</div>
+          </div>
+          <div class="vrc-address">${sv.city}</div>
+          <div class="vrc-tags">
+            <span class="vrc-tag vrc-tag--diy">${typeLabel}</span>
+            ${details.map(d => `<span class="vrc-tag">${d}</span>`).join('')}
+          </div>
+          <button class="vrc-contact-btn" style="border-color:var(--sage);color:var(--sage);margin-top:4px"
+            onclick="event.stopPropagation(); openVenuePage('${sv.synthetic_place_id}','${escapeStr(sv.name)}','${escapeStr(sv.city)}')">
+            Reviews + Full Page
+          </button>
+        </div>`;
+    }).join('')}`;
+  list.appendChild(section);
+}
+
+function addSubmittedVenueMarker(sv) {
+  const label = sv.venue_type === 'house_show' ? 'HSV' : 'DIY';
+  const color  = '#5a7a6a'; // sage
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${color}"/>
+    <circle cx="18" cy="18" r="10" fill="white" opacity="0.9"/>
+    <text x="18" y="22" text-anchor="middle" font-size="8" font-family="Space Mono,monospace" font-weight="700" fill="${color}">${label}</text>
+  </svg>`;
+
+  const marker = new google.maps.Marker({
+    position: { lat: sv.lat, lng: sv.lng },
+    map,
+    title: sv.name,
+    icon: {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+      scaledSize: new google.maps.Size(36, 44),
+      anchor:     new google.maps.Point(18, 44),
+    },
+    placeId: sv.synthetic_place_id,
+  });
+  marker.placeData = sv;
+  marker._isSubmitted = true;
+
+  marker.addListener('click', () => {
+    const typeLabel = sv.venue_type === 'house_show' ? 'House Show' : 'DIY Venue';
+    infoWindow.setContent(`
+      <div class="info-window">
+        <div class="iw-name">${sv.name}</div>
+        <div class="iw-address">${sv.city}</div>
+        <div class="iw-tags">
+          <span class="iw-tag" style="background:var(--sage);color:white;border-color:var(--sage)">${typeLabel}</span>
+        </div>
+        <button class="iw-btn" style="background:var(--sage)" onclick="openVenuePage('${sv.synthetic_place_id}','${escapeStr(sv.name)}','${escapeStr(sv.city)}')">
+          Reviews + Full Page
+        </button>
+      </div>`);
+    infoWindow.open(map, marker);
+  });
+
+  _svMarkers.push(marker);
+}
+
+function clearSubmittedMarkers() {
+  _svMarkers.forEach(m => m.setMap(null));
+  _svMarkers = [];
+}
+
 function searchVenuesNearby(center) {
   clearMarkers();
   _accumulatedVenues = [];
@@ -173,6 +279,8 @@ function searchVenuesNearby(center) {
     </div>`;
 
   const radiusMeters = currentRadius * 1609.34;
+
+  loadSubmittedVenuesNear(center);
 
   if (searchCircle) searchCircle.setMap(null);
   searchCircle = new google.maps.Circle({
@@ -490,6 +598,109 @@ document.getElementById('reviewSearchModal').addEventListener('click', function(
 document.getElementById('locationInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') searchLocation();
 });
+
+// ─── Add Venue Modal ──────────────────────────────────────────────────────────
+
+function openAddVenueModal() {
+  const modal = document.getElementById('addVenueModal');
+  if (!modal) return;
+
+  if (!currentUser || !currentBandProfile) {
+    document.getElementById('avLoginPrompt').style.display = 'block';
+    document.getElementById('avFormBody').style.display    = 'none';
+  } else {
+    document.getElementById('avLoginPrompt').style.display = 'none';
+    document.getElementById('avFormBody').style.display    = 'block';
+  }
+  document.getElementById('avMsg').style.display = 'none';
+  modal.classList.add('open');
+}
+window.openAddVenueModal = openAddVenueModal;
+
+function closeAddVenueModal() {
+  document.getElementById('addVenueModal').classList.remove('open');
+}
+window.closeAddVenueModal = closeAddVenueModal;
+
+async function submitNewVenue() {
+  const name    = document.getElementById('avName').value.trim();
+  const city    = document.getElementById('avCity').value.trim();
+  const privacy = document.getElementById('avPrivacy').checked;
+  const avMsg   = document.getElementById('avMsg');
+  const type    = document.querySelector('input[name="avType"]:checked')?.value || 'house_show';
+
+  avMsg.style.display = 'none';
+  if (!name)    { avMsg.textContent = 'Please enter a venue name.'; avMsg.style.display = 'block'; return; }
+  if (!city)    { avMsg.textContent = 'Please enter a city.'; avMsg.style.display = 'block'; return; }
+  if (!privacy) { avMsg.textContent = 'Please confirm you have permission to list this space.'; avMsg.style.display = 'block'; return; }
+
+  const btn = document.getElementById('avSubmitBtn');
+  btn.textContent = 'Adding...';
+  btn.disabled    = true;
+
+  // Geocode the city to get lat/lng for map placement
+  let lat = null, lng = null;
+  try {
+    await new Promise(resolve => {
+      new google.maps.Geocoder().geocode({ address: city }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          lat = results[0].geometry.location.lat();
+          lng = results[0].geometry.location.lng();
+        }
+        resolve();
+      });
+    });
+  } catch (_) {}
+
+  const syntheticId = 'sv_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+
+  const capMin = parseInt(document.getElementById('avCapMin').value) || null;
+  const capMax = parseInt(document.getElementById('avCapMax').value) || null;
+  const instagramRaw = document.getElementById('avInstagram').value.trim();
+  const instagram = instagramRaw && !instagramRaw.startsWith('http')
+    ? 'https://instagram.com/' + instagramRaw.replace(/^@/, '')
+    : instagramRaw || null;
+
+  const payload = {
+    synthetic_place_id:   syntheticId,
+    name,
+    city,
+    lat,
+    lng,
+    venue_type:           type,
+    contact_email:        document.getElementById('avEmail').value.trim() || null,
+    contact_instagram:    instagram,
+    contact_website:      document.getElementById('avWebsite').value.trim() || null,
+    capacity_min:         capMin,
+    capacity_max:         capMax,
+    has_pa:               document.getElementById('avHasPa').checked,
+    has_backline:         document.getElementById('avHasBackline').checked,
+    overnight_stay:       document.getElementById('avOvernight').checked,
+    all_ages:             document.getElementById('avAllAges').checked,
+    genre_lean:           document.getElementById('avGenreLean').value.trim() || null,
+    door_type:            document.getElementById('avDoorType').value || null,
+    description:          document.getElementById('avDescription').value.trim() || null,
+    privacy_acknowledged: true,
+    submitted_by_band_id: currentBandProfile.id,
+  };
+
+  const { error } = await sb.from('submitted_venues').insert(payload);
+  if (error) {
+    avMsg.textContent = 'Error: ' + error.message;
+    avMsg.style.display = 'block';
+    btn.textContent = 'Add Venue →';
+    btn.disabled = false;
+    return;
+  }
+
+  closeAddVenueModal();
+  showToast('Venue added — thank you!', 'success');
+
+  // Add marker and open its page
+  if (lat && lng) addSubmittedVenueMarker({ ...payload, id: 0 });
+  openVenuePage(syntheticId, name, city);
+}
+window.submitNewVenue = submitNewVenue;
 
 // ─── Map style ────────────────────────────────────────────────────────────────
 

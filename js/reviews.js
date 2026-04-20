@@ -1,16 +1,28 @@
 // Review / venue-page state
-let currentVenuePlaceId = null;
-let currentVenueName    = null;
-let vrfStarRating       = 0;
+let currentVenuePlaceId    = null;
+let currentVenueName       = null;
+let vrfStarRating          = 0;
+let _currentSubmittedVenue = null;
 
 async function openVenuePage(placeId, name, address) {
-  currentVenuePlaceId = placeId;
-  currentVenueName    = name;
+  currentVenuePlaceId    = placeId;
+  currentVenueName       = name;
+  _currentSubmittedVenue = null;
 
-  document.getElementById('vpEyebrow').textContent  = address;
+  const isSubmitted = placeId.startsWith('sv_');
+
+  document.getElementById('vpEyebrow').textContent  = isSubmitted ? 'DIY Venue' : address;
   document.getElementById('vpName').textContent     = name;
-  document.getElementById('vpAddress').textContent  = address;
+  document.getElementById('vpAddress').textContent  = isSubmitted ? address + ' · Contact for exact address' : address;
   document.getElementById('vrfVenueName').textContent = name;
+
+  // Type tag
+  const typeTagEl = document.getElementById('vpTypeTag');
+  if (typeTagEl) typeTagEl.style.display = 'none';
+
+  // Hide DIY info section initially
+  const diyInfo = document.getElementById('vpDiyInfo');
+  if (diyInfo) diyInfo.style.display = 'none';
 
   ['vpOverall','vpSound','vpComms','vpMerch','vpParking'].forEach(id =>
     document.getElementById(id).textContent = '—'
@@ -22,15 +34,96 @@ async function openVenuePage(placeId, name, address) {
       <div class="no-reviews-title">Loading reviews...</div>
     </div>`;
 
-  // Wire up contact button (openContactModal is defined in auth.js)
-  document.getElementById('vpContactBtn').onclick = () =>
-    openContactModal(placeId, name, address);
+  if (isSubmitted) {
+    // Load submitted venue data for extra info
+    try {
+      const { data: sv } = await sb
+        .from('submitted_venues')
+        .select('*')
+        .eq('synthetic_place_id', placeId)
+        .single();
+      if (sv) {
+        _currentSubmittedVenue = sv;
+        _renderSubmittedVenueExtras(sv);
+      }
+    } catch (_) {}
+
+    document.getElementById('vpContactBtn').onclick = () => {
+      const diy = document.getElementById('vpDiyInfo');
+      if (diy) diy.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+  } else {
+    // Wire up contact button (openContactModal is defined in auth.js)
+    document.getElementById('vpContactBtn').onclick = () =>
+      openContactModal(placeId, name, address);
+  }
 
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('venuePage').classList.add('open');
   document.body.style.overflow = 'hidden';
 
   await loadVenueReviews(placeId, name);
+}
+
+function _renderSubmittedVenueExtras(sv) {
+  const typeTagEl = document.getElementById('vpTypeTag');
+  if (typeTagEl) {
+    const label = sv.venue_type === 'house_show' ? 'House Show' : 'DIY Venue';
+    const color = sv.venue_type === 'house_show' ? 'var(--sage)' : 'var(--rust)';
+    typeTagEl.innerHTML = `<span class="sv-type-tag" style="background:${color}">${label}</span>`;
+    typeTagEl.style.display = 'block';
+  }
+
+  const diyInfo = document.getElementById('vpDiyInfo');
+  if (!diyInfo) return;
+
+  const grid = document.getElementById('vpDiyGrid');
+  const items = [];
+
+  if (sv.capacity_min || sv.capacity_max) {
+    const cap = sv.capacity_min && sv.capacity_max
+      ? `${sv.capacity_min}–${sv.capacity_max}`
+      : sv.capacity_max || sv.capacity_min;
+    items.push({ icon: '👥', label: 'Capacity', val: cap });
+  }
+  if (sv.has_pa)       items.push({ icon: '🎙', label: 'PA / Sound', val: 'Available' });
+  if (sv.has_backline)  items.push({ icon: '🎸', label: 'Backline', val: 'Available' });
+  if (sv.all_ages)      items.push({ icon: '✓', label: 'All Ages', val: 'Yes' });
+  if (sv.overnight_stay) items.push({ icon: '🛏', label: 'Overnight Stay', val: 'Offered' });
+  if (sv.genre_lean)    items.push({ icon: '♪', label: 'Genre Lean', val: sv.genre_lean });
+  if (sv.door_type) {
+    const doorLabels = {
+      pass_the_hat: 'Pass the Hat', door_split: 'Door Split',
+      flat_guarantee: 'Flat Guarantee', donation_only: 'Donation Only'
+    };
+    items.push({ icon: '💰', label: 'Door Deal', val: doorLabels[sv.door_type] || sv.door_type });
+  }
+  if (sv.booking_status === 'dormant') items.push({ icon: '⏸', label: 'Booking', val: 'Currently Dormant' });
+
+  grid.innerHTML = items.map(it =>
+    `<div class="sv-info-item"><span class="sv-info-icon">${it.icon}</span><div><div class="sv-info-item-label">${it.label}</div><div class="sv-info-item-val">${it.val}</div></div></div>`
+  ).join('') || '<div style="color:var(--muted);font-size:0.82rem">No details added yet.</div>';
+
+  if (sv.description) {
+    grid.innerHTML += `<div class="sv-description">${sv.description}</div>`;
+  }
+
+  // Contact links
+  const contactArea = document.getElementById('vpDiyContact');
+  const contactLinks = document.getElementById('vpDiyContactLinks');
+  const links = [];
+  if (sv.contact_email)    links.push(`<a href="mailto:${sv.contact_email}" class="sv-contact-link">✉ Email →</a>`);
+  if (sv.contact_instagram) links.push(`<a href="${sv.contact_instagram}" target="_blank" rel="noopener" class="sv-contact-link">📷 Instagram →</a>`);
+  if (sv.contact_website)  links.push(`<a href="${sv.contact_website}" target="_blank" rel="noopener" class="sv-contact-link">🌐 Website →</a>`);
+
+  if (links.length) {
+    contactLinks.innerHTML = `<div class="sv-contact-links">${links.join('')}</div>`;
+    contactArea.style.display = 'block';
+  } else {
+    contactArea.style.display = 'none';
+  }
+
+  diyInfo.style.display = 'block';
 }
 
 function closevenuePage() {

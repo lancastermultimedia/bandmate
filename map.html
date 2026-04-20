@@ -108,6 +108,7 @@
       <div class="venue-page-eyebrow" id="vpEyebrow">Venue</div>
       <div class="venue-page-name" id="vpName">Venue Name</div>
       <div class="venue-page-address" id="vpAddress">Address</div>
+      <div id="vpTypeTag" style="display:none;margin-bottom:12px"></div>
 
       <div class="venue-page-scores" id="vpScores">
         <div class="score-card">
@@ -135,6 +136,16 @@
       <div class="venue-page-actions">
         <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
         <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
+      </div>
+    </div>
+
+    <!-- DIY VENUE EXTRA INFO (shown for submitted venues only) -->
+    <div class="sv-info-section" id="vpDiyInfo" style="display:none">
+      <div class="sv-info-label">DIY Venue Info</div>
+      <div class="sv-info-grid" id="vpDiyGrid"></div>
+      <div class="sv-contact-area" id="vpDiyContact" style="display:none">
+        <div class="sv-info-label" style="margin-top:16px">Contact</div>
+        <div id="vpDiyContactLinks"></div>
       </div>
     </div>
 
@@ -260,6 +271,12 @@
       <span id="statusText">Locating you...</span>
     </div>
 
+    <!-- ADD DIY VENUE CTA -->
+    <div class="add-venue-cta">
+      <div class="add-venue-cta-text">Know a house show or DIY space?</div>
+      <button class="add-venue-cta-btn" onclick="openAddVenueModal()">Add a Venue →</button>
+    </div>
+
     <!-- RESULTS -->
     <div class="filter-label" id="resultsLabel">Venues Found</div>
     <div class="venues-list" id="venuesList">
@@ -269,6 +286,7 @@
         <div class="no-results-sub">Venues will appear here once the map loads.</div>
       </div>
     </div>
+
   </div>
 
   <!-- MAP -->
@@ -426,6 +444,114 @@
       autocomplete="off"
     />
     <div class="review-search-hint">Powered by Google Places — pick a result from the dropdown to continue</div>
+    <div class="review-search-hint" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      No Google listing? <a href="#" style="color:var(--rust);text-decoration:underline" onclick="closeReviewSearchModal();openAddVenueModal();return false">Add a house show or DIY venue →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ADD VENUE MODAL -->
+<div class="modal-overlay" id="addVenueModal" onclick="if(event.target===this)closeAddVenueModal()">
+  <div class="modal av-modal">
+    <button class="modal-close" onclick="closeAddVenueModal()">✕</button>
+    <div class="modal-eyebrow">Bandmate Community</div>
+    <div class="modal-title">Add a DIY / House Show Venue</div>
+    <div class="av-modal-sub">Help other bands find the spaces that matter. City only — no street address required.</div>
+
+    <div id="avLoginPrompt" style="display:none;padding:16px;background:#fff8f6;border:1px solid var(--rust);border-radius:4px;font-size:0.85rem;margin-bottom:20px">
+      <a onclick="closeAddVenueModal();openAuth('login')" style="color:var(--rust);cursor:pointer;font-weight:500">Sign in</a> to add a venue.
+    </div>
+
+    <div id="avFormBody">
+      <!-- Type -->
+      <div class="av-section-label">Venue Type</div>
+      <div class="av-type-row">
+        <label class="av-type-opt">
+          <input type="radio" name="avType" value="house_show" checked> House Show
+        </label>
+        <label class="av-type-opt">
+          <input type="radio" name="avType" value="diy_venue"> DIY Venue
+        </label>
+      </div>
+
+      <!-- Name + City -->
+      <div class="av-field-row">
+        <div class="auth-field" style="flex:1">
+          <label>Venue / House Name</label>
+          <input type="text" id="avName" placeholder="e.g. The Purple House, DIY Collective">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label>City</label>
+        <input type="text" id="avCity" placeholder="e.g. Louisville, KY">
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">City only — exact address stays private</div>
+      </div>
+
+      <!-- Contact Info -->
+      <div class="av-section-label" style="margin-top:20px">Contact Info <span style="font-weight:400;color:var(--muted)">(optional — at least one helps)</span></div>
+      <div class="auth-field">
+        <label>Booking Email</label>
+        <input type="email" id="avEmail" placeholder="booking@example.com">
+      </div>
+      <div class="auth-field">
+        <label>Instagram</label>
+        <input type="text" id="avInstagram" placeholder="@handle or full URL">
+      </div>
+      <div class="auth-field">
+        <label>Website</label>
+        <input type="url" id="avWebsite" placeholder="https://...">
+      </div>
+
+      <!-- Venue Details -->
+      <div class="av-section-label" style="margin-top:20px">Venue Details <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
+      <div class="av-field-row">
+        <div class="auth-field" style="flex:1">
+          <label>Capacity (min)</label>
+          <input type="number" id="avCapMin" placeholder="e.g. 30" min="1" max="10000">
+        </div>
+        <div class="auth-field" style="flex:1">
+          <label>Capacity (max)</label>
+          <input type="number" id="avCapMax" placeholder="e.g. 75" min="1" max="10000">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label>Genre Lean</label>
+        <input type="text" id="avGenreLean" placeholder="e.g. Indie, Folk, Punk, All genres welcome">
+      </div>
+      <div class="auth-field">
+        <label>Door Deal</label>
+        <select id="avDoorType" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;font-family:'Outfit',sans-serif;font-size:0.88rem;background:white">
+          <option value="">— Select —</option>
+          <option value="pass_the_hat">Pass the Hat</option>
+          <option value="door_split">Door Split</option>
+          <option value="flat_guarantee">Flat Guarantee</option>
+          <option value="donation_only">Donation Only</option>
+        </select>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="av-checks">
+        <label class="av-check-item"><input type="checkbox" id="avHasPa"> PA / Sound System Available</label>
+        <label class="av-check-item"><input type="checkbox" id="avHasBackline"> Backline Available</label>
+        <label class="av-check-item"><input type="checkbox" id="avAllAges"> All Ages</label>
+        <label class="av-check-item"><input type="checkbox" id="avOvernight"> Overnight Stay Offered</label>
+      </div>
+
+      <!-- Description -->
+      <div class="auth-field" style="margin-top:16px">
+        <label>About This Space</label>
+        <textarea id="avDescription" rows="4" placeholder="Tell bands what to expect — the vibe, load-in, what makes it special..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;font-family:'Outfit',sans-serif;font-size:0.88rem;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+
+      <!-- Privacy ack -->
+      <label class="av-check-item av-privacy">
+        <input type="checkbox" id="avPrivacy">
+        I confirm I have permission to list this space and that sharing the city location is acceptable to the host.
+      </label>
+      <div id="avMsg" style="display:none;font-size:0.8rem;color:var(--rust);margin-top:8px"></div>
+
+      <button class="vrf-submit" id="avSubmitBtn" onclick="submitNewVenue()" style="margin-top:20px">Add Venue →</button>
+    </div>
   </div>
 </div>
 

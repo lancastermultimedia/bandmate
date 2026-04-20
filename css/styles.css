@@ -7800,3 +7800,233 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   .premium-gate-card { padding: 32px 24px 28px; }
   .premium-gate-title { font-size: 1.5rem; }
 }
+
+/* ─── DIY / Submitted Venue Styles ──────────────────────────────────────────── */
+
+.sv-type-tag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.sv-info-section {
+  margin: 20px 0 24px;
+  padding: 20px;
+  background: #f5f5f0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  border-left: 3px solid var(--sage);
+}
+
+.sv-info-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sage);
+  margin-bottom: 14px;
+}
+
+.sv-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+
+.sv-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sv-info-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sv-info-item-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.sv-info-item-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.sv-description {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.87rem;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.sv-contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sv-contact-link {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sage);
+  text-decoration: none;
+  padding: 8px 14px;
+  border: 1.5px solid var(--sage);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.sv-contact-link:hover {
+  background: var(--sage);
+  color: white;
+}
+
+/* ─── Add DIY Venue CTA (left panel) ─────────────────────────────────────────── */
+
+.add-venue-cta {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.add-venue-cta-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  color: var(--muted);
+  flex: 1;
+}
+
+.add-venue-cta-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sage);
+  background: transparent;
+  border: 1.5px solid var(--sage);
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.add-venue-cta-btn:hover {
+  background: var(--sage);
+  color: white;
+}
+
+/* ─── Add Venue Modal ─────────────────────────────────────────────────────────── */
+
+.av-modal {
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.av-modal-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.av-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.av-type-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.av-type-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.av-field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.av-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.av-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.av-check-item input[type=checkbox] {
+  margin-top: 2px;
+  accent-color: var(--sage);
+  flex-shrink: 0;
+}
+
+.av-privacy {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f0f5f0;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+/* Venue card DIY tag in left panel list */
+.vrc-tag--diy {
+  border-color: var(--sage);
+  color: var(--sage);
+  background: rgba(90, 122, 106, 0.08);
+}
