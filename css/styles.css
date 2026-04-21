@@ -8030,3 +8030,511 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   color: var(--sage);
   background: rgba(90, 122, 106, 0.08);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — added 2026-04
+   All rules are additive. Desktop (1280px+) is unchanged.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Mobile Navigation ────────────────────────────────────────────────────── */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mobile-menu-btn svg { display: block; }
+
+.mobile-nav-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--ink);
+  z-index: 2000;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+.mobile-nav-overlay.open {
+  display: flex;
+  transform: translateX(0);
+}
+.mobile-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(245,240,232,0.1);
+}
+.mobile-nav-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--cream);
+  text-decoration: none;
+}
+.mobile-nav-close {
+  background: none;
+  border: none;
+  color: var(--cream);
+  font-size: 1.4rem;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mobile-nav-links {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 24px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem;
+  color: var(--cream);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(245,240,232,0.08);
+  transition: color 0.2s;
+}
+.mobile-nav-link:hover, .mobile-nav-link.active { color: var(--rust); }
+.mobile-nav-footer {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(245,240,232,0.1);
+}
+.mobile-nav-login {
+  display: block;
+  text-align: center;
+  padding: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(245,240,232,0.6);
+  text-decoration: none;
+  border: 1px solid rgba(245,240,232,0.2);
+  border-radius: 4px;
+}
+.mobile-nav-signup {
+  display: block;
+  text-align: center;
+  padding: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream);
+  background: var(--rust);
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* ─── Bottom Navigation Bar (mobile only) ────────────────────────────────── */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+  z-index: 900;
+  align-items: stretch;
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 4px;
+  min-height: 44px;
+}
+.bottom-nav-item svg { color: var(--ink); }
+.bottom-nav-item.active { color: var(--rust); }
+.bottom-nav-item.active svg { color: var(--rust); }
+.bottom-nav-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ─── Community Filters Bottom Sheet (mobile) ────────────────────────────── */
+.comm-filters-btn {
+  display: none;
+}
+.comm-sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1500;
+}
+.comm-sheet-overlay.open { display: block; }
+.comm-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80vh;
+  background: var(--cream);
+  border-radius: 16px 16px 0 0;
+  z-index: 1501;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.comm-sheet-overlay.open .comm-sheet { transform: translateY(0); }
+.comm-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.comm-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.comm-sheet-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem;
+}
+.comm-sheet-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.comm-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* ─── Main Mobile Media Query (max-width: 767px) ─────────────────────────── */
+@media (max-width: 767px) {
+
+  /* Nav */
+  nav .nav-links { display: none !important; }
+  .mobile-menu-btn { display: flex; }
+  nav { padding: 0 16px; }
+
+  /* LP nav specific */
+  .lp-nav .lp-nav-links { display: none !important; }
+
+  /* Bottom nav */
+  .bottom-nav { display: flex; }
+  body { padding-bottom: 70px; }
+
+  /* Feedback button above bottom nav */
+  .feedback-btn {
+    bottom: 72px !important;
+    right: 16px !important;
+  }
+
+  /* Typography */
+  * { word-break: break-word; }
+
+  /* Touch targets */
+  .star-btn {
+    font-size: 1.8rem !important;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Forms — prevent iOS zoom */
+  input[type=text], input[type=email], input[type=password],
+  input[type=url], input[type=number], textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Range sliders */
+  input[type=range] { height: 24px; }
+  input[type=range]::-webkit-slider-thumb { width: 24px; height: 24px; }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; }
+
+  /* Modals — full screen */
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important;
+  }
+  .modal-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+  }
+
+  /* Auth modal */
+  .auth-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    min-height: 100vh;
+    padding: 80px 24px 40px;
+  }
+  .auth-modal-overlay {
+    align-items: flex-start;
+  }
+
+  /* Hero map layout — panel below, map first */
+  .hero {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 50vh auto !important;
+  }
+  .hero > div:last-child { order: -1; }
+  .hero #map { height: 50vh !important; }
+
+  .hero-panel {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  .venues-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    flex: none !important;
+  }
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    gap: 6px;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+
+  /* Info windows */
+  .info-window { max-width: 280px; }
+  .iw-btn { width: 100%; margin-top: 6px; }
+
+  /* Add venue CTA */
+  .add-venue-cta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .add-venue-cta-btn { width: 100%; }
+
+  /* Tour layout */
+  .tour-layout {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 60vh auto !important;
+  }
+  .tour-map-wrap { order: -1; height: 60vh; }
+  .tour-map-wrap #tourMap { height: 100% !important; }
+
+  .tour-panel {
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  .tour-city-search {
+    position: sticky;
+    top: 0;
+    background: var(--cream);
+    z-index: 50;
+    padding: 10px 0;
+  }
+  .tour-add-btn, #findVenuesBtn, .tour-btn { width: 100%; }
+  .tour-fields { grid-template-columns: 1fr !important; }
+
+  .ct-grid { grid-template-columns: 1fr !important; }
+
+  .ct-detail-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh;
+    border-radius: 0;
+  }
+  .ct-detail-overlay { padding: 0; }
+  .ct-banner-btn { width: 100%; }
+
+  /* Venue selection cards */
+  .vim-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .vim-overlay { padding: 0; align-items: flex-start; }
+
+  /* Community layout */
+  .comm-layout {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+  .comm-sidebar { display: none; }
+  .comm-filters-btn { display: flex; }
+
+  .comm-card { padding: 16px; }
+  .comm-card-footer { flex-direction: column; gap: 8px; }
+  .comm-card-footer .comm-epk-btn,
+  .comm-card-footer .comm-manage-btn,
+  .comm-card-footer .comm-express-btn {
+    width: 100%;
+    display: block;
+    text-align: center;
+    padding: 12px;
+  }
+  .comm-date-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .comm-interested-btn { width: 100%; }
+
+  /* Post modal */
+  .comm-post-type-grid { grid-template-columns: 1fr !important; }
+  .posting-date-row {
+    flex-direction: column !important;
+    gap: 8px;
+  }
+  .posting-date-row > * { width: 100% !important; }
+
+  /* Profile */
+  .profile-layout,
+  .prof-layout,
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .prof-save-btn, .profile-save-btn { width: 100%; }
+  .press-photos-grid { grid-template-columns: 1fr 1fr !important; }
+  .music-links-list { grid-template-columns: 1fr !important; }
+
+  /* EPK clean theme */
+  .epk-clean-photo { width: 120px !important; height: 120px !important; }
+  .epk-clean-press-grid { grid-template-columns: 1fr 1fr !important; }
+  .epk-clean-embed { width: 100% !important; }
+
+  /* EPK bold theme */
+  .epk-bold-name { font-size: clamp(2.5rem, 10vw, 6rem) !important; }
+  .epk-bold-photo { position: static !important; float: none !important; width: 100% !important; margin: 0 0 20px 0 !important; }
+
+  /* EPK vibrant theme */
+  .epk-vibrant-photo { border-width: 2px !important; }
+
+  /* EPK all themes */
+  .epk-book-btn, .epk-cta-btn { width: 100% !important; }
+  .epk-owner-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    z-index: 800 !important;
+  }
+
+  /* Video embeds */
+  iframe {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  /* Cards general */
+  .venue-result-card { box-shadow: 1px 1px 0 var(--border); }
+  .comm-card { box-shadow: 2px 2px 0 rgba(0,0,0,0.08); }
+
+  /* Reduce heavy animations */
+  .animated-pin { animation-duration: 4s !important; }
+
+  /* Curated tours */
+  .ct-modal { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; height: 100vh !important; }
+  .ct-modal-overlay { padding: 0 !important; }
+
+  /* Add venue modal */
+  .av-modal { max-height: 100vh !important; border-radius: 0 !important; }
+  .av-field-row { flex-direction: column; }
+
+  /* Community filters btn */
+  .comm-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    margin: 12px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    width: calc(100% - 32px);
+    justify-content: center;
+  }
+}
+
+/* ─── Tablet ─────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .comm-layout { grid-template-columns: 260px 1fr !important; }
+  .ct-grid { grid-template-columns: 1fr 1fr !important; }
+  .hero { grid-template-columns: 360px 1fr !important; }
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Index hero: reduce pin count on mobile ────────────────────────────── */
+@media (max-width: 767px) {
+  .hero-pin:nth-child(n+7) { display: none; }
+  .lp-headline { font-size: clamp(2.4rem, 9vw, 4rem); }
+}

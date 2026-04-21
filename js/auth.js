@@ -398,6 +398,13 @@ function updateNavAuth() {
       <span class="nav-review-progress">${currentUser.email}</span>
       <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
     </div>`;
+    const mobileFooter = document.getElementById('mobileNavFooter');
+    if (mobileFooter) {
+      mobileFooter.innerHTML = `
+        <div style="font-family:'Outfit',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentUser.email}</div>
+        <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();handleSignout()">Sign Out</a>
+      `;
+    }
     return;
   }
   if (currentUser && currentBandProfile) {
@@ -419,9 +426,26 @@ function updateNavAuth() {
       <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
     </div>`;
     if (typeof loadNotifCount === 'function') loadNotifCount();
+    // Update mobile nav footer — logged in with profile
+    const mobileFooter = document.getElementById('mobileNavFooter');
+    if (mobileFooter && currentBandProfile) {
+      mobileFooter.innerHTML = `
+        <div style="font-family:'Outfit',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentBandProfile.band_name || ''}</div>
+        <a href="profile.html" class="mobile-nav-login" onclick="closeMobileMenu()">My Profile</a>
+        <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();handleSignout()">Sign Out</a>
+      `;
+    }
   } else {
     area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
+    // Reset mobile nav footer — logged out
+    const mobileFooter = document.getElementById('mobileNavFooter');
+    if (mobileFooter) {
+      mobileFooter.innerHTML = `
+        <a href="#" class="mobile-nav-login" onclick="closeMobileMenu();openAuth('login');return false">Log In</a>
+        <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();openAuth('signup');return false">Join Free</a>
+      `;
+    }
   }
   _updatePremiumGate();
 }
@@ -429,3 +453,23 @@ function updateNavAuth() {
 function escapeHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ─── Mobile Menu ─────────────────────────────────────────────────────────────
+function openMobileMenu() {
+  const overlay = document.getElementById('mobileNavOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeMobileMenu() {
+  const overlay = document.getElementById('mobileNavOverlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    setTimeout(() => { overlay.style.display = ''; }, 320);
+    document.body.style.overflow = '';
+  }
+}
+window.openMobileMenu  = openMobileMenu;
+window.closeMobileMenu = closeMobileMenu;

@@ -1419,3 +1419,40 @@ function _renderNotifTray(tray, notifs) {
     </div>
     <div class="notif-list">${itemsHtml || '<div class="notif-tray-empty">No notifications yet — this is where you\'ll see interest in your postings.</div>'}</div>`;
 }
+
+// ─── Mobile Filters Sheet ─────────────────────────────────────────────────────
+function openFiltersSheet() {
+  const sheet = document.getElementById('commFiltersSheet');
+  if (!sheet) return;
+  // Clone sidebar content into sheet
+  const sidebar = document.querySelector('.comm-sidebar');
+  const body = document.getElementById('commSheetBody');
+  if (sidebar && body) {
+    body.innerHTML = sidebar.innerHTML;
+    // Re-wire filter events on cloned elements
+    body.querySelectorAll('[data-filter-type]').forEach(el => {
+      el.addEventListener('click', function() {
+        const orig = document.querySelector(`.comm-sidebar [data-filter-type="${this.dataset.filterType}"][data-value="${this.dataset.value}"]`);
+        if (orig) orig.click();
+        closeFiltersSheet();
+      });
+    });
+    const sheetSearch = body.querySelector('#commSearch');
+    if (sheetSearch) {
+      sheetSearch.id = 'commSearchSheet';
+      sheetSearch.addEventListener('input', function() {
+        const orig = document.getElementById('commSearch');
+        if (orig) { orig.value = this.value; orig.dispatchEvent(new Event('input')); }
+      });
+    }
+  }
+  sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeFiltersSheet() {
+  const sheet = document.getElementById('commFiltersSheet');
+  if (sheet) sheet.classList.remove('open');
+  document.body.style.overflow = '';
+}
+window.openFiltersSheet = openFiltersSheet;
+window.closeFiltersSheet = closeFiltersSheet;
