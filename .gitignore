@@ -1,6 +1,9 @@
 # Local credentials — generated at deploy time, never commit
 config.js
 
+# FTP credentials — never commit
+.vscode/sftp.json
+
 # macOS
 .DS_Store
 
