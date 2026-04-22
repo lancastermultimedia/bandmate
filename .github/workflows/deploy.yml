@@ -1,22 +1,20 @@
-# Bandmate — GitHub Pages Deployment
+# Bandmate — Deploy to GitHub Pages + FTP
 #
-# Credentials are stored as GitHub Actions Secrets (never in source code).
 # On every push to main this workflow:
 #   1. Generates config.js from secrets at runtime
-#   2. Deploys the full site via the official GitHub Pages Actions
+#   2. Deploys to GitHub Pages
+#   3. Deploys to your FTP server
 #
-# REQUIRED SETUP (one-time):
-#   1. Go to repo Settings → Secrets and variables → Actions → New repository secret
-#      Add each of these three secrets:
-#        BANDMATE_SUPABASE_URL   — e.g. https://xxxx.supabase.co
-#        BANDMATE_SUPABASE_KEY   — your Supabase anon/public key
-#        BANDMATE_MAPS_KEY       — your Google Maps API key (restrict to your domain!)
-#   2. Go to repo Settings → Pages → Source → select "GitHub Actions"
-#      (NOT "Deploy from a branch" — this workflow handles deployment directly)
-#   3. In Google Cloud Console, restrict your Maps API key to your domain
-#      so it cannot be abused even if someone reads it from browser DevTools.
+# REQUIRED SECRETS (repo Settings → Secrets and variables → Actions):
+#   BANDMATE_SUPABASE_URL   — e.g. https://xxxx.supabase.co
+#   BANDMATE_SUPABASE_KEY   — your Supabase anon/public key
+#   BANDMATE_MAPS_KEY       — your Google Maps API key
+#   FTP_SERVER              — your domain or FTP host (e.g. ftp.yourdomain.com)
+#   FTP_USERNAME            — your FTP username
+#   FTP_PASSWORD            — your FTP password
+#   FTP_SERVER_DIR          — remote path, e.g. /public_html/ (include trailing slash)
 
-name: Deploy to GitHub Pages
+name: Deploy Bandmate
 
 on:
   push:
@@ -33,12 +31,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -58,7 +52,6 @@ jobs:
               f.write(
                   "// Auto-generated at deploy time by GitHub Actions.\n"
                   "// Do NOT commit credentials — add them to repo Secrets instead.\n"
-                  "// See .github/workflows/deploy.yml for setup instructions.\n"
                   f"const BANDMATE_SUPABASE_URL = '{url}';\n"
                   f"const BANDMATE_SUPABASE_KEY = '{key}';\n"
                   f"const BANDMATE_MAPS_KEY     = '{maps}';\n"
@@ -67,13 +60,33 @@ jobs:
           print('config.js written successfully.')
           PYEOF
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site artifact
+      - name: Upload site artifact (for GitHub Pages)
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .vscode/**
+            supabase/.temp/**
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Deploy to GitHub Pages
         id: deploy
