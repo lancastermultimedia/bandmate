@@ -971,13 +971,18 @@ async function submitInterest() {
   }
 
   // Insert notification for the posting band
-  await sb.from('notifications').insert({
-    band_id:    posting?.bands?.id,
-    type:       'interest_received',
-    payload:    { from_band: currentBandProfile.band_name, posting_title: posting?.title },
-    posting_id: _interestPostingId,
-    read:       false,
-  });
+  if (posting?.bands?.id) {
+    const { error: notifErr } = await sb.from('notifications').insert({
+      band_id:    posting.bands.id,
+      type:       'interest_received',
+      payload:    { from_band: currentBandProfile.band_name, posting_title: posting?.title },
+      posting_id: _interestPostingId,
+      read:       false,
+    });
+    if (notifErr) console.error('Notification insert failed:', notifErr);
+  } else {
+    console.warn('Could not send notification — posting bands.id missing', posting);
+  }
 
   // Update local state
   selectedDateIds.forEach(dateId => {
@@ -1227,16 +1232,18 @@ async function openChatModal(toBandId, toBandName) {
   document.getElementById('chatModal').classList.add('open');
 
   // Subscribe to realtime updates for this conversation
-  if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
-  _chatChannel = sb.channel(`chat_${[myId, toBandId].sort().join('_')}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
-      const msg = payload.new;
-      if ((msg.sender_band_id === myId && msg.recipient_band_id === toBandId) ||
-          (msg.sender_band_id === toBandId && msg.recipient_band_id === myId)) {
-        _appendChatMessage(msg, myId);
-      }
-    })
-    .subscribe();
+  try {
+    if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
+    _chatChannel = sb.channel(`chat_${[myId, toBandId].sort().join('_')}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
+        const msg = payload.new;
+        if ((msg.sender_band_id === myId && msg.recipient_band_id === toBandId) ||
+            (msg.sender_band_id === toBandId && msg.recipient_band_id === myId)) {
+          _appendChatMessage(msg, myId);
+        }
+      })
+      .subscribe();
+  } catch (_) { /* realtime unavailable — polling not needed for MVP */ }
 
   // Store context for sendChatMessage
   document.getElementById('chatModal').dataset.toBandId   = toBandId;
@@ -1363,6 +1370,16 @@ async function _openNotifTray() {
         document.removeEventListener('click', _ntClose);
       }
     });
+  }
+
+  // Position the tray relative to the bell button
+  const bell = document.getElementById('navBell');
+  if (bell) {
+    const rect = bell.getBoundingClientRect();
+    tray.style.position = 'fixed';
+    tray.style.top      = (rect.bottom + 8) + 'px';
+    tray.style.right    = (window.innerWidth - rect.right) + 'px';
+    tray.style.left     = 'auto';
   }
 
   _notifTrayOpen = true;
