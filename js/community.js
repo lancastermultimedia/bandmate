@@ -1237,8 +1237,8 @@ async function openChatModal(toBandId, toBandName) {
     _chatChannel = sb.channel(`chat_${[myId, toBandId].sort().join('_')}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
         const msg = payload.new;
-        if ((msg.sender_band_id === myId && msg.recipient_band_id === toBandId) ||
-            (msg.sender_band_id === toBandId && msg.recipient_band_id === myId)) {
+        if ((msg.sender_band_id === myId && msg.receiver_band_id === toBandId) ||
+            (msg.sender_band_id === toBandId && msg.receiver_band_id === myId)) {
           _appendChatMessage(msg, myId);
         }
       })
@@ -1256,7 +1256,7 @@ async function _loadChatMessages(myId, toBandId) {
   const { data, error } = await sb
     .from('band_messages')
     .select('*')
-    .or(`and(sender_band_id.eq.${myId},recipient_band_id.eq.${toBandId}),and(sender_band_id.eq.${toBandId},recipient_band_id.eq.${myId})`)
+    .or(`and(sender_band_id.eq.${myId},receiver_band_id.eq.${toBandId}),and(sender_band_id.eq.${toBandId},receiver_band_id.eq.${myId})`)
     .order('created_at', { ascending: true })
     .limit(100);
 
@@ -1271,9 +1271,9 @@ async function _loadChatMessages(myId, toBandId) {
   box.scrollTop = box.scrollHeight;
 
   // Mark incoming as read
-  const unread = data.filter(m => m.recipient_band_id === myId && !m.read).map(m => m.id);
+  const unread = data.filter(m => m.receiver_band_id === myId && !m.is_read).map(m => m.id);
   if (unread.length) {
-    sb.from('band_messages').update({ read: true }).in('id', unread).then(() => {});
+    sb.from('band_messages').update({ is_read: true }).in('id', unread).then(() => {});
   }
 }
 
@@ -1284,7 +1284,7 @@ function _appendChatMessage(msg, myId) {
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const el   = document.createElement('div');
   el.className = `comm-chat-msg${mine ? ' comm-chat-msg--mine' : ''}`;
-  el.innerHTML = `<div class="comm-chat-bubble">${escapeHtml(msg.body)}</div><div class="comm-chat-time">${time}</div>`;
+  el.innerHTML = `<div class="comm-chat-bubble">${escapeHtml(msg.message_text)}</div><div class="comm-chat-time">${time}</div>`;
   box.appendChild(el);
   box.scrollTop = box.scrollHeight;
 }
@@ -1298,10 +1298,10 @@ async function sendChatMessage() {
 
   input.value = '';
   const { error } = await sb.from('band_messages').insert({
-    sender_band_id:    currentBandProfile.id,
-    recipient_band_id: toBandId,
-    body,
-    read:              false,
+    sender_band_id:   currentBandProfile.id,
+    receiver_band_id: toBandId,
+    message_text:     body,
+    is_read:          false,
   });
   if (error) { input.value = body; showToast('Could not send — ' + error.message, 'error'); return; }
 
