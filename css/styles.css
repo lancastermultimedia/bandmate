@@ -7571,6 +7571,15 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   padding-top: 14px;
   margin-top: auto;
 }
+.comm-chat-input-row .comm-modal-textarea {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+}
+.comm-chat-input-row .comm-submit-btn {
+  width: auto;
+  flex-shrink: 0;
+}
 
 /* ── Phase 2: Realtime feed toast ───────────────────────────────────────────── */
 .comm-feed-toast {
