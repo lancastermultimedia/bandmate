@@ -970,20 +970,22 @@ async function submitInterest() {
     return;
   }
 
-  // Insert notification for the posting band
-  const _postingBand = Array.isArray(posting?.bands) ? posting.bands[0] : posting?.bands;
-  const _notifBandId = _postingBand?.id;
-  if (_notifBandId) {
+  // Fetch the posting owner's band_id directly — don't rely on the nested join cache
+  const { data: postingRow } = await sb
+    .from('tour_postings')
+    .select('band_id, title')
+    .eq('id', _interestPostingId)
+    .single();
+
+  if (postingRow?.band_id) {
     const { error: notifErr } = await sb.from('notifications').insert({
-      band_id:    _notifBandId,
+      band_id:    postingRow.band_id,
       type:       'interest_received',
-      payload:    { from_band: currentBandProfile.band_name, posting_title: posting?.title },
+      payload:    { from_band: currentBandProfile.band_name, posting_title: postingRow.title },
       posting_id: _interestPostingId,
       read:       false,
     });
     if (notifErr) showToast('Notification error: ' + notifErr.message, 'error');
-  } else {
-    showToast('Debug: could not find posting band ID. posting=' + JSON.stringify({ id: posting?.id, bands: posting?.bands }), 'error');
   }
 
   // Update local state
@@ -1106,13 +1108,18 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
   const { error } = await sb.from('posting_interests').update({ status }).eq('id', interestId);
   if (error) { showToast('Could not update — ' + error.message, 'error'); return; }
 
-  const posting = _allPostings.find(p => p.id === _managePostingId);
+  // Fetch posting title directly — don't rely on cached join
+  const { data: postingRow2 } = await sb
+    .from('tour_postings')
+    .select('title')
+    .eq('id', _managePostingId)
+    .single();
 
   // Notify the interested band
   const { error: notifErr2 } = await sb.from('notifications').insert({
     band_id:    toBandId,
     type:       status === 'accepted' ? 'interest_accepted' : 'interest_declined',
-    payload:    { posting_title: posting?.title, city },
+    payload:    { posting_title: postingRow2?.title || '', city },
     posting_id: _managePostingId,
     read:       false,
   });
