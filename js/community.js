@@ -979,7 +979,7 @@ async function submitInterest() {
       posting_id: _interestPostingId,
       read:       false,
     });
-    if (notifErr) console.error('Notification insert failed:', notifErr);
+    if (notifErr) showToast('Notification error: ' + notifErr.message, 'error');
   } else {
     console.warn('Could not send notification — posting bands.id missing', posting);
   }
@@ -1107,13 +1107,14 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
   const posting = _allPostings.find(p => p.id === _managePostingId);
 
   // Notify the interested band
-  await sb.from('notifications').insert({
+  const { error: notifErr2 } = await sb.from('notifications').insert({
     band_id:    toBandId,
     type:       status === 'accepted' ? 'interest_accepted' : 'interest_declined',
     payload:    { posting_title: posting?.title, city },
     posting_id: _managePostingId,
     read:       false,
   });
+  if (notifErr2) showToast('Notification error: ' + notifErr2.message, 'error');
 
   if (status === 'accepted') {
     // Count total accepted slots for this posting
@@ -1152,7 +1153,8 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
 
 function _showAcceptConfirmation(band, posting, city, allFilled, remaining) {
   if (!band) return;
-  const slug = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const slug       = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const nameForAttr = (band.band_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const initials = (band.band_name || 'B').substring(0,2).toUpperCase();
   const avatarEl = band.profile_photo_url
     ? `<img src="${band.profile_photo_url}" class="comm-avatar" style="width:52px;height:52px" alt="">`
@@ -1178,7 +1180,7 @@ function _showAcceptConfirmation(band, posting, city, allFilled, remaining) {
     </div>
     <div class="comm-confirm-contact-row">
       ${band.email ? `<a href="mailto:${escapeHtml(band.email)}" class="comm-confirm-email-btn">Email ${escapeHtml(band.band_name)} →</a>` : ''}
-      <button class="comm-card-btn comm-card-btn--rust" onclick="closeManageModal();openChatModal(${band.id},${JSON.stringify(band.band_name)})">Message →</button>
+      <button class="comm-card-btn comm-card-btn--rust" onclick="closeManageModal();openChatModal(${band.id},'${nameForAttr}')">Message →</button>
       ${band.epk_theme && slug ? `<a href="epk.html?band=${slug}" target="_blank" class="comm-card-btn comm-card-btn--outline">View EPK</a>` : ''}
     </div>
     <div class="comm-confirm-status">${statusLine}</div>`;
