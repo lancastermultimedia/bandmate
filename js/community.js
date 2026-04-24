@@ -874,11 +874,10 @@ async function _fanoutCityNotifications(postingId, dates, genres) {
   if (!scored.length) return;
 
   const notifs = scored.map(({ band: b }) => ({
-    band_id:    b.id,
-    type:       'new_posting_nearby',
-    payload:    { from_band: currentBandProfile.band_name, posting_title: '' },
-    posting_id: postingId,
-    read:       false,
+    band_id: b.id,
+    type:    'new_posting_nearby',
+    payload: { from_band: currentBandProfile.band_name },
+    read:    false,
   }));
   await sb.from('notifications').insert(notifs);
 }
@@ -979,11 +978,10 @@ async function submitInterest() {
 
   if (postingRow?.band_id) {
     const { error: notifErr } = await sb.from('notifications').insert({
-      band_id:    postingRow.band_id,
-      type:       'interest_received',
-      payload:    { from_band: currentBandProfile.band_name, posting_title: postingRow.title },
-      posting_id: _interestPostingId,
-      read:       false,
+      band_id: postingRow.band_id,
+      type:    'interest_received',
+      payload: { from_band: currentBandProfile.band_name, posting_title: postingRow.title },
+      read:    false,
     });
     if (notifErr) showToast('Notification error: ' + notifErr.message, 'error');
   }
@@ -1117,11 +1115,10 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
 
   // Notify the interested band
   const { error: notifErr2 } = await sb.from('notifications').insert({
-    band_id:    toBandId,
-    type:       status === 'accepted' ? 'interest_accepted' : 'interest_declined',
-    payload:    { posting_title: postingRow2?.title || '', city },
-    posting_id: _managePostingId,
-    read:       false,
+    band_id: toBandId,
+    type:    status === 'accepted' ? 'interest_accepted' : 'interest_declined',
+    payload: { posting_title: postingRow2?.title || '', city },
+    read:    false,
   });
   if (notifErr2) showToast('Notification error: ' + notifErr2.message, 'error');
 
@@ -1318,11 +1315,10 @@ async function sendChatMessage() {
 
   // Notify recipient
   sb.from('notifications').insert({
-    band_id:    toBandId,
-    type:       'new_message',
-    payload:    { from_band: currentBandProfile.band_name, posting_title: '' },
-    posting_id: null,
-    read:       false,
+    band_id: toBandId,
+    type:    'new_message',
+    payload: { from_band: currentBandProfile.band_name },
+    read:    false,
   }).then(() => {});
 }
 
