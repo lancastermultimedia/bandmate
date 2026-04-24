@@ -631,7 +631,7 @@ input[type="range"] {
   position: fixed;
   inset: 0;
   background: rgba(14,13,11,0.6);
-  z-index: 600;
+  z-index: 1001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1178,7 +1178,7 @@ footer {
   position: fixed;
   inset: 0;
   background: rgba(14,13,11,0.7);
-  z-index: 800;
+  z-index: 1001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5688,7 +5688,7 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 .ct-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 800;
+  z-index: 1001;
   background: rgba(14,13,11,0.6);
   backdrop-filter: blur(6px);
   display: flex;
