@@ -1791,6 +1791,7 @@ footer {
   box-shadow: 3px 3px 0 rgba(14,13,11,0.15);
   margin-top: 4px;
   background: white;
+  z-index: 1200 !important;
 }
 .pac-item {
   font-family: 'Outfit', sans-serif;
