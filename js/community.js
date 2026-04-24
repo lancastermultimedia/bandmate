@@ -971,9 +971,11 @@ async function submitInterest() {
   }
 
   // Insert notification for the posting band
-  if (posting?.bands?.id) {
+  const _postingBand = Array.isArray(posting?.bands) ? posting.bands[0] : posting?.bands;
+  const _notifBandId = _postingBand?.id;
+  if (_notifBandId) {
     const { error: notifErr } = await sb.from('notifications').insert({
-      band_id:    posting.bands.id,
+      band_id:    _notifBandId,
       type:       'interest_received',
       payload:    { from_band: currentBandProfile.band_name, posting_title: posting?.title },
       posting_id: _interestPostingId,
@@ -981,7 +983,7 @@ async function submitInterest() {
     });
     if (notifErr) showToast('Notification error: ' + notifErr.message, 'error');
   } else {
-    console.warn('Could not send notification — posting bands.id missing', posting);
+    showToast('Debug: could not find posting band ID. posting=' + JSON.stringify({ id: posting?.id, bands: posting?.bands }), 'error');
   }
 
   // Update local state
