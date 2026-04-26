@@ -401,7 +401,7 @@ function updateNavAuth() {
     const mobileFooter = document.getElementById('mobileNavFooter');
     if (mobileFooter) {
       mobileFooter.innerHTML = `
-        <div style="font-family:'Outfit',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentUser.email}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentUser.email}</div>
         <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();handleSignout()">Sign Out</a>
       `;
     }
@@ -430,13 +430,13 @@ function updateNavAuth() {
     const mobileFooter = document.getElementById('mobileNavFooter');
     if (mobileFooter && currentBandProfile) {
       mobileFooter.innerHTML = `
-        <div style="font-family:'Outfit',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentBandProfile.band_name || ''}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.9rem;color:rgba(245,240,232,0.7);padding:0 4px 8px">${currentBandProfile.band_name || ''}</div>
         <a href="profile.html" class="mobile-nav-login" onclick="closeMobileMenu()">My Profile</a>
         <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();handleSignout()">Sign Out</a>
       `;
     }
   } else {
-    area.innerHTML = `<a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+    area.innerHTML = `<a href="#" style="font-family:'DM Sans',sans-serif;font-weight:300;font-size:8px;text-transform:uppercase;letter-spacing:0.2em;color:var(--grey);text-decoration:none;padding:0 18px;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>`;
     // Reset mobile nav footer — logged out
     const mobileFooter = document.getElementById('mobileNavFooter');

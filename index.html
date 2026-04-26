@@ -5,16 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bandmate — Play Further. Play Smarter.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/design-system.css">
 <link rel="stylesheet" href="css/styles.css">
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-
 html { scroll-behavior: smooth; }
-body.lp-body { background: var(--cream); }
+body.lp-body { background: var(--paper); }
 
-/* ── Nav — always cream background, always readable ── */
+/* ── Globe spin ── */
+@keyframes globeSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.lp-meridians {
+  animation: globeSpin 12s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ── LP Nav ── */
 .lp-nav {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -23,669 +34,518 @@ body.lp-body { background: var(--cream); }
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  height: 60px;
-  background: rgba(245,240,232,0.97);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 1px 0 var(--border);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  height: 56px;
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .lp-nav .nav-logo {
-  color: var(--ink);
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.15rem;
-  text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
 }
+.lp-nav .nav-logo .wordmark {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  font-size: 11px;
+  letter-spacing: 0.48em;
+  text-transform: uppercase;
+  color: var(--ink);
+  transition: color 0.2s ease;
+}
+.lp-nav .nav-logo:hover .wordmark { color: var(--teal); }
+.lp-nav .nav-logo svg { transition: transform 0.4s ease; }
+.lp-nav .nav-logo:hover svg { transform: rotate(20deg); }
 .lp-nav .lp-nav-links {
   display: flex;
-  align-items: center;
-  gap: 28px;
+  align-items: stretch;
   list-style: none;
   margin: 0; padding: 0;
+  height: 100%;
 }
+.lp-nav .lp-nav-links li {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(15,15,12,0.08);
+}
+.lp-nav .lp-nav-links li:first-child { border-left: 1px solid rgba(15,15,12,0.08); }
 .lp-nav .lp-nav-links a {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 8px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--muted);
+  color: var(--grey);
   text-decoration: none;
-  transition: color 0.2s;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  transition: color 0.2s ease, letter-spacing 0.3s ease;
 }
-.lp-nav .lp-nav-links a:hover { color: var(--ink); }
+.lp-nav .lp-nav-links a:hover { color: var(--ink); letter-spacing: 0.28em; }
 .lp-nav .lp-nav-cta {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: var(--rust);
-  color: var(--cream) !important;
-  padding: 7px 16px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+  padding: 0 18px !important;
   text-decoration: none;
-  transition: background 0.2s !important;
+  transition: background 0.2s ease, letter-spacing 0.3s ease !important;
 }
-.lp-nav .lp-nav-cta:hover { background: var(--rust-light); }
-.lp-nav .nav-logo-dot { background: var(--rust); }
-
-/* Nav auth area */
-#navAuthArea a:not(.lp-nav-cta) { color: var(--muted) !important; }
-
-/* Logged-in user nav components — always readable on cream background */
-.lp-nav .nav-user { display: flex; align-items: center; gap: 12px; }
+.lp-nav .lp-nav-cta:hover { background: var(--teal) !important; letter-spacing: 0.28em !important; }
+.lp-nav .beta-badge {
+  border: 1px solid var(--teal-pale);
+  color: var(--teal);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: transparent;
+  padding: 2px 5px;
+}
+.nav-logo-dot { display: none; }
+#navAuthArea a:not(.lp-nav-cta):not(.nav-cta) {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 300 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  color: var(--grey) !important;
+  text-decoration: none;
+}
+.lp-nav .nav-user {
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'DM Sans', sans-serif;
+}
 .lp-nav .nav-user-link {
   display: flex; align-items: center; gap: 8px;
   text-decoration: none;
-  color: var(--muted);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: color 0.2s;
+  color: var(--grey);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 8px; font-weight: 300;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  transition: color 0.2s ease;
 }
 .lp-nav .nav-user-link:hover { color: var(--ink); }
-.lp-nav .nav-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.lp-nav .nav-avatar { width: 26px; height: 26px; object-fit: cover; }
 .lp-nav .nav-avatar-init {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--rust); color: var(--cream);
-  font-family: 'DM Serif Display', serif; font-size: 0.75rem;
+  width: 26px; height: 26px;
+  background: var(--teal); color: var(--paper);
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 400;
   display: flex; align-items: center; justify-content: center;
-}
-.lp-nav .nav-premium-badge {
-  font-family: 'Space Mono', monospace; font-size: 0.5rem;
-  text-transform: uppercase; letter-spacing: 0.1em;
-  background: var(--rust); color: var(--cream); padding: 3px 8px;
 }
 .lp-nav .nav-review-progress {
-  font-family: 'Space Mono', monospace; font-size: 0.5rem;
-  color: var(--muted); letter-spacing: 0.06em;
+  font-family: 'DM Sans', sans-serif; font-size: 7px; font-weight: 300;
+  color: var(--grey); letter-spacing: 0.1em;
 }
 .lp-nav .nav-signout {
-  font-family: 'Space Mono', monospace; font-size: 0.55rem;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  background: none; border: none; color: var(--muted);
-  cursor: pointer; padding: 0; transition: color 0.2s;
+  font-family: 'DM Sans', sans-serif; font-size: 7px; font-weight: 300;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  background: none; border: none; color: var(--grey);
+  cursor: pointer; padding: 0; transition: color 0.2s ease;
 }
-.lp-nav .nav-signout:hover { color: var(--ink); }
+.lp-nav .nav-signout:hover { color: var(--red); }
 
-/* ── Hero section ────────────────────────────────────────────────────────── */
+/* ── Hero Poster ── */
 .lp-hero {
-  position: relative;
-  min-height: 100vh;
-  background: #0e0d0b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 100px 24px 60px;
+  margin-top: 56px;
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
   overflow: hidden;
 }
-
-/* Map grid lines */
-.lp-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-  pointer-events: none;
-  z-index: 0;
+.poster-top {
+  padding: 24px 40px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(15,15,12,0.08);
 }
-
-/* Radial focus glow */
-.lp-hero-glow {
-  position: absolute;
-  top: 40%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 65vw; height: 55vh;
-  background: radial-gradient(ellipse at center, rgba(245,240,232,0.025) 0%, transparent 68%);
-  pointer-events: none;
-  z-index: 0;
+.poster-wordmark {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  line-height: 1;
 }
-
-/* Hero content */
-.lp-hero-content {
+.stripe-band { width: 100%; overflow: hidden; line-height: 0; }
+.globe-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: hidden;
+  background: var(--paper);
+}
+.red-base {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 340px; height: 80px;
+  background: var(--red);
+  clip-path: ellipse(170px 80px at 50% 100%);
+}
+.teal-arc {
+  position: absolute;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  width: 460px; height: 160px;
+  border: 2.5px solid var(--teal);
+  clip-path: ellipse(230px 160px at 50% 100%);
+  border-bottom: none;
+}
+.globe-svg-wrap {
   position: relative;
   z-index: 2;
-  max-width: 1000px;
-  width: 100%;
-}
-
-/* Animated map pins */
-.hero-pin {
-  position: absolute;
-  z-index: 1;
-  width: 14px;
-  height: 20px;
-  pointer-events: none;
-  will-change: transform, opacity;
-  opacity: 0;
-  animation: pinDrop 9s ease-out infinite;
-}
-.hero-pin::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 1px;
-  width: 12px; height: 12px;
-  background: var(--rust);
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-}
-.hero-pin::after {
-  content: '';
-  position: absolute;
-  top: 3px; left: 4px;
-  width: 5px; height: 5px;
-  background: rgba(14,13,11,0.5);
-  border-radius: 50%;
-}
-
-@keyframes pinDrop {
-  0%   { transform: translateY(-60px); opacity: 0; }
-  8%   { transform: translateY(4px);   opacity: 0.18; }
-  10%  { transform: translateY(-2px);  opacity: 0.15; }
-  13%  { transform: translateY(0);     opacity: 0.12; }
-  87%  { transform: translateY(0);     opacity: 0.12; }
-  94%  { transform: translateY(0);     opacity: 0; }
-  100% { transform: translateY(-60px); opacity: 0; }
-}
-
-.hero-pin:nth-child(1)  { top: 12%; left: 7%;  animation-delay: 0s; }
-.hero-pin:nth-child(2)  { top: 20%; left: 22%; animation-delay: 0.6s; }
-.hero-pin:nth-child(3)  { top: 9%;  left: 41%; animation-delay: 1.4s; }
-.hero-pin:nth-child(4)  { top: 17%; left: 63%; animation-delay: 2.2s; }
-.hero-pin:nth-child(5)  { top: 13%; left: 83%; animation-delay: 0.9s; }
-.hero-pin:nth-child(6)  { top: 43%; left: 5%;  animation-delay: 3.5s; }
-.hero-pin:nth-child(7)  { top: 37%; left: 31%; animation-delay: 4.1s; }
-.hero-pin:nth-child(8)  { top: 35%; left: 55%; animation-delay: 1.8s; }
-.hero-pin:nth-child(9)  { top: 46%; left: 79%; animation-delay: 5.0s; }
-.hero-pin:nth-child(10) { top: 58%; left: 13%; animation-delay: 2.7s; }
-.hero-pin:nth-child(11) { top: 64%; left: 37%; animation-delay: 6.3s; }
-.hero-pin:nth-child(12) { top: 61%; left: 69%; animation-delay: 1.1s; }
-.hero-pin:nth-child(13) { top: 74%; left: 89%; animation-delay: 3.8s; }
-.hero-pin:nth-child(14) { top: 79%; left: 50%; animation-delay: 5.6s; }
-.hero-pin:nth-child(15) { top: 71%; left: 26%; animation-delay: 7.2s; }
-
-/* Hero logo mark */
-.hero-logo {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 8px;
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.2rem;
-  color: rgba(245,240,232,0.55);
-  margin-bottom: 16px;
-  letter-spacing: 0.02em;
-  opacity: 0;
-  animation: lp-fade-up 0.45s ease forwards;
-  animation-delay: 0s;
+  padding-bottom: 12px;
 }
-
-.lp-eyebrow {
+.poster-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(15,15,12,0.1);
+}
+.pi-block {
+  padding: 14px 20px;
+  border-right: 1px solid rgba(15,15,12,0.08);
+}
+.pi-block:last-child { border-right: none; }
+.pi-label {
   font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--rust);
-  margin-bottom: 22px;
-  opacity: 0;
-  animation: lp-fade-up 0.5s ease forwards;
-  animation-delay: 0.1s;
+  font-size: 6px; text-transform: uppercase; letter-spacing: 0.22em;
+  color: var(--grey); margin-bottom: 5px;
 }
-
-.lp-headline {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(3rem, 6vw, 7rem);
-  line-height: 1.05;
-  color: var(--cream);
-  margin: 0 0 22px;
-  letter-spacing: -0.01em;
+.pi-value {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 11px; color: var(--ink); line-height: 1.5;
 }
-.lp-h-line1 {
-  display: block;
-  opacity: 0;
-  animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.22s;
-}
-.lp-h-line2 {
-  display: block;
-  font-style: italic;
-  color: var(--rust);
-  opacity: 0;
-  animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.38s;
-}
-
-.lp-sub {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 300;
-  font-size: 1.1rem;
-  color: rgba(245,240,232,0.55);
-  line-height: 1.7;
-  max-width: 520px;
-  margin: 0 auto 44px;
-  opacity: 0;
-  animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.52s;
-}
-
-@keyframes lp-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Hero feature cards ──────────────────────────────────────────────────── */
-.hc-cards {
+.poster-dates {
   display: flex;
-  gap: 18px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 44px;
-  opacity: 0;
-  animation: lp-fade-up 0.55s ease forwards;
-  animation-delay: 0.66s;
+  justify-content: space-between; align-items: center;
+  padding: 10px 40px;
+  border-top: 1px solid rgba(15,15,12,0.1);
+  background: var(--ink);
 }
-
-.hc-card {
-  flex: 1;
-  min-width: 240px;
-  max-width: 294px;
-  background: rgba(14,13,11,0.72);
-  border: 1.5px solid rgba(201,75,42,0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: 26px 22px 22px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.2s, background 0.2s;
-}
-.hc-card:hover {
-  border-color: rgba(201,75,42,0.65);
-  background: rgba(14,13,11,0.85);
-}
-
-.hc-icon-wrap {
-  width: 44px; height: 44px;
-  margin-bottom: 18px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.hc-card-name {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.3rem;
-  color: var(--cream);
-  margin-bottom: 10px;
-  line-height: 1.2;
-}
-
-.hc-card-desc {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 300;
-  font-size: 0.85rem;
-  color: rgba(245,240,232,0.55);
-  line-height: 1.65;
-  flex: 1;
-  margin-bottom: 20px;
-}
-
-/* Unlocked buttons */
-.hc-btn {
+.pd-left {
+  display: flex; align-items: center; gap: 14px;
   font-family: 'Space Mono', monospace;
-  font-size: 0.57rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 10px 18px;
-  text-decoration: none;
-  display: inline-block;
-  border: none;
-  cursor: pointer;
-  align-self: flex-start;
-  transition: background 0.18s, transform 0.12s;
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--paper);
 }
-.hc-btn:hover { transform: translateY(-1px); }
-.hc-btn-rust  { background: var(--rust);  color: var(--cream); }
-.hc-btn-rust:hover { background: var(--rust-light); }
-.hc-btn-ink   { background: var(--ink);   color: var(--cream); }
-.hc-btn-ink:hover  { background: #2a2824; }
-.hc-btn-sage  { background: var(--sage);  color: var(--cream); }
-.hc-btn-sage:hover { background: var(--sage-light); }
-
-/* Locked state */
-.hc-locked-wrap { position: relative; align-self: flex-start; }
-.hc-locked-wrap:hover .hc-locked-tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.hc-locked-tip {
-  position: absolute;
-  bottom: calc(100% + 8px); left: 0;
-  background: var(--cream); color: var(--ink);
-  font-family: 'Outfit', sans-serif; font-size: 0.75rem;
-  white-space: nowrap; padding: 6px 11px;
-  opacity: 0; transform: translateY(4px);
-  pointer-events: none; transition: opacity 0.15s, transform 0.15s;
-  z-index: 10;
-}
-.hc-locked-tip::after {
-  content: ''; position: absolute;
-  top: 100%; left: 14px;
-  border: 5px solid transparent;
-  border-top-color: var(--cream);
-}
-.hc-btn-locked {
-  display: flex; align-items: center; gap: 7px;
-  background: rgba(245,240,232,0.07);
-  color: rgba(245,240,232,0.35);
+.pd-right {
   font-family: 'Space Mono', monospace;
-  font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em;
-  padding: 10px 16px;
-  border: 1.5px solid rgba(245,240,232,0.1);
-  cursor: default; pointer-events: none;
-}
-.hc-btn-locked .hc-lock { width: 10px; height: 10px; opacity: 0.5; flex-shrink: 0; }
-
-/* Progress bar (shown for logged-in locked users) */
-.hc-progress { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(245,240,232,0.1); }
-.hc-progress-label {
-  font-family: 'Space Mono', monospace; font-size: 0.5rem;
-  text-transform: uppercase; letter-spacing: 0.1em;
-  color: rgba(245,240,232,0.35); margin-bottom: 6px;
-}
-.hc-progress-track { height: 2px; background: rgba(245,240,232,0.1); width: 100%; }
-.hc-progress-fill  { height: 100%; background: var(--rust); transition: width 0.5s ease; }
-
-/* ── Hero card icon animations ───────────────────────────────────────────── */
-
-/* Card 1: map pin drop */
-.hc-pin-icon { animation: hcPinDrop 3s cubic-bezier(0.34, 1.4, 0.64, 1) infinite; will-change: transform; }
-@keyframes hcPinDrop {
-  0%, 15% { transform: translateY(-10px); opacity: 0; }
-  35%     { transform: translateY(2px);   opacity: 1; }
-  45%     { transform: translateY(-1px);  opacity: 1; }
-  55%, 80%{ transform: translateY(0);    opacity: 1; }
-  95%, 100%{ transform: translateY(-10px); opacity: 0; }
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.22em;
+  color: rgba(242,239,230,0.35);
 }
 
-/* Card 2: route line drawing */
-.hc-route-path {
-  stroke-dasharray: 110;
-  stroke-dashoffset: 110;
-  animation: hcRouteDraw 3s ease-in-out infinite;
-  will-change: stroke-dashoffset;
+/* ── Colour band ── */
+.colour-band { display: flex; height: 5px; }
+.cb1 { flex: 3; background: var(--teal); }
+.cb2 { flex: 2; background: var(--olive); }
+.cb3 { flex: 1; background: var(--red); }
+.cb4 { flex: 2; background: var(--paper); border-top: 1px solid rgba(15,15,12,0.1); }
+
+/* ── Stats ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1.5px solid var(--ink);
 }
-@keyframes hcRouteDraw {
-  0%, 8%   { stroke-dashoffset: 110; opacity: 0; }
-  12%      { opacity: 1; }
-  60%      { stroke-dashoffset: 0;   opacity: 1; }
-  82%      { stroke-dashoffset: 0;   opacity: 1; }
-  95%, 100%{ stroke-dashoffset: 0;   opacity: 0; }
+.stat {
+  padding: 28px 24px;
+  border-right: 1px solid rgba(15,15,12,0.1);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: background 0.2s ease;
+  cursor: default;
+}
+.stat:last-child { border-right: none; }
+.stat:hover { background: rgba(58,122,138,0.05); }
+.stat-icon { opacity: 0.25; margin-bottom: 2px; }
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.8rem; letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+}
+.stat-label {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.22em; color: var(--grey);
 }
 
-/* Card 3: doc lines fade in */
-@keyframes hcDocLine {
-  0%, 100% { opacity: 0; }
-  25%, 65% { opacity: 0.85; }
+/* ── Ticker ── */
+.ticker {
+  background: var(--teal-pale);
+  border-top: 1px solid rgba(58,122,138,0.15);
+  border-bottom: 1px solid rgba(58,122,138,0.15);
+  padding: 6px 28px;
+  display: flex; gap: 16px; align-items: center; overflow: hidden;
 }
-.hc-doc-l1 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0s; }
-.hc-doc-l2 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0.32s; }
-.hc-doc-l3 { animation: hcDocLine 2.4s ease infinite; animation-delay: 0.64s; }
-
-/* ── Hero stats row ──────────────────────────────────────────────────────── */
-.hero-stats {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-  opacity: 0;
-  animation: lp-fade-up 0.5s ease forwards;
-  animation-delay: 0.78s;
-}
-.hero-stat {
+.ticker-label {
   font-family: 'Space Mono', monospace;
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(245,240,232,0.38);
+  font-size: 7px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.24em;
+  color: var(--teal); flex-shrink: 0;
+  border-right: 1px solid rgba(58,122,138,0.2); padding-right: 16px;
 }
-.hero-stat-sep {
-  color: rgba(245,240,232,0.18);
-  font-size: 0.7rem;
-}
-
-/* ── Down arrow ──────────────────────────────────────────────────────────── */
-.hero-arrow {
-  opacity: 0;
-  animation: lp-fade-up 0.5s ease forwards, heroArrowPulse 2.2s ease-in-out 1.2s infinite;
-  animation-delay: 0.9s, 1.2s;
-}
-@keyframes heroArrowPulse {
-  0%, 100% { transform: translateY(0); opacity: 0.35; }
-  50%      { transform: translateY(5px); opacity: 0.7; }
-}
-
-/* ── Live ticker ─────────────────────────────────────────────────────────── */
-.ticker-wrap {
-  width: 100%;
-  background: rgba(201,75,42,0.12);
-  border-top: 1px solid rgba(201,75,42,0.28);
-  border-bottom: 1px solid rgba(201,75,42,0.28);
-  overflow: hidden;
-  position: relative;
-  height: 38px;
-  display: flex;
-  align-items: center;
-}
-.ticker-wrap:hover .ticker-track { animation-play-state: paused; }
-.ticker-live {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  z-index: 2;
-  background: var(--rust);
-  display: flex; align-items: center;
-  padding: 0 12px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--cream);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.ticker-fade-l {
-  position: absolute;
-  left: 52px; top: 0; bottom: 0;
-  width: 28px;
-  background: linear-gradient(to right, #f5f0e8, transparent);
-  z-index: 1;
-  pointer-events: none;
-}
-.ticker-inner {
-  overflow: hidden;
-  padding-left: 58px;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-}
+.ticker-inner { overflow: hidden; flex: 1; }
 .ticker-track {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  animation: tickerScroll 60s linear infinite;
-  will-change: transform;
+  display: flex; white-space: nowrap;
+  animation: tickerScroll 36s linear infinite;
 }
 @keyframes tickerScroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .ticker-item {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink);
-  padding: 0 24px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.14em; color: var(--teal); opacity: 0.75;
+  padding: 0 28px 0 0; display: inline-block;
 }
-.ticker-dot {
-  color: var(--rust);
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
+.ticker-dot { color: var(--teal); opacity: 0.3; padding-right: 28px; font-size: 8px; }
 
-/* ── Hero → map gradient transition ─────────────────────────────────────── */
-.hero-to-map {
-  background: linear-gradient(to bottom, #0e0d0b 0%, #f5f0e8 100%);
-  height: 80px;
-  flex-shrink: 0;
-}
-
-/* ── Map section overrides for index.html ───────────────────────────────── */
-/* Fixed-height map section — panel scrolls internally, nothing grows. */
-#find-venues {
-  display: block;
-  position: relative;
-  z-index: 1;
-}
-#find-venues .hero {
-  height: 100vh;
-  overflow: hidden;
-}
-#find-venues .hero-panel {
-  height: 100%;
-  overflow: hidden;  /* panel itself does NOT scroll — only venues-list does */
-  display: flex;
-  flex-direction: column;
-}
-#find-venues #venuesList {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;     /* critical: lets flexbox shrink this child so it scrolls */
-}
-#find-venues .hero > div:last-child {
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-}
-#find-venues #map {
-  width: 100%;
-  height: 100%;
-}
-
-/* ── Map → testimonials separator ────────────────────────────────────────── */
-.map-to-testi {
-  background: var(--cream);
-  padding-top: 72px;
-  border-top: 1px solid var(--border);
-}
-
-/* ── Testimonials ────────────────────────────────────────────────────────── */
-.lp-testimonials {
-  padding: 80px 24px 100px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-.lp-testimonials-heading {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  color: var(--ink);
-  text-align: center;
-  margin-bottom: 48px;
-}
-.lp-testi-cards {
+/* ── Feature table ── */
+.features { border-bottom: 1.5px solid var(--ink); }
+.feat-header {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-.lp-testi-card {
-  background: #fff;
-  border: 1.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  padding: 28px 24px 24px;
-}
-.lp-testi-quote {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.05rem;
-  color: var(--ink);
-  line-height: 1.55;
-  margin-bottom: 20px;
-}
-.lp-testi-band {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink);
-  margin-bottom: 3px;
-}
-.lp-testi-meta {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
-  color: var(--muted);
-  letter-spacing: 0.06em;
-}
-
-/* ── Footer ──────────────────────────────────────────────────────────────── */
-.lp-footer {
+  grid-template-columns: 36px 1fr 200px 150px;
+  padding: 8px 28px;
+  border-bottom: 1px solid rgba(15,15,12,0.1);
   background: var(--ink);
-  padding: 52px 40px;
-  display: flex;
+}
+.fh {
+  font-family: 'Space Mono', monospace;
+  font-size: 6px; text-transform: uppercase; letter-spacing: 0.22em;
+  color: rgba(242,239,230,0.4);
+}
+.feat-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 200px 150px;
+  padding: 16px 28px;
+  border-bottom: 1px solid rgba(15,15,12,0.06);
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 28px;
+  transition: background 0.2s ease;
 }
-.lp-footer-logo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.3rem; color: var(--cream); margin-bottom: 6px;
-  display: flex; align-items: center; gap: 6px;
+.feat-row:last-child { border-bottom: none; }
+.feat-row:hover { background: rgba(58,122,138,0.04); }
+.fi {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; color: var(--grey); opacity: 0.45;
 }
-.lp-footer-tagline {
-  font-family: 'Outfit', sans-serif; font-weight: 300;
-  font-size: 0.85rem; color: rgba(245,240,232,0.45);
+.fn { display: flex; flex-direction: column; gap: 4px; }
+.fn-row { display: flex; align-items: center; gap: 8px; }
+.fn-dot { width: 5px; height: 5px; background: var(--teal); flex-shrink: 0; }
+.fn-name {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400; font-size: 14px; color: var(--ink);
 }
-.lp-footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
-.lp-footer-links a {
-  font-family: 'Space Mono', monospace; font-size: 0.58rem;
-  text-transform: uppercase; letter-spacing: 0.1em;
-  color: rgba(245,240,232,0.45); text-decoration: none; transition: color 0.2s;
+.fn-tags { display: flex; gap: 6px; }
+.fn-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 6px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--grey); border: 1px solid rgba(15,15,12,0.1); padding: 2px 6px;
 }
-.lp-footer-links a:hover { color: var(--cream); }
-.lp-footer-right { text-align: right; }
-.lp-footer-right p {
-  font-family: 'Space Mono', monospace; font-size: 0.55rem;
-  color: rgba(245,240,232,0.25); letter-spacing: 0.08em; margin: 0 0 4px;
+.fd {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 11px; color: var(--grey); line-height: 1.55;
 }
-.lp-footer-right p:last-child { margin-bottom: 0; }
+.fa { display: flex; align-items: center; }
+.fa-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.16em;
+  padding: 8px 14px; text-decoration: none; display: inline-block;
+  border: none; cursor: pointer;
+  transition: transform 0.18s ease, background 0.2s ease, color 0.2s ease;
+}
+.fa-btn:hover { transform: translateY(-1px); }
+.fab-t { background: var(--ink); color: var(--paper); }
+.fab-t:hover { background: var(--teal); }
+.fab-o { background: transparent; color: var(--teal); border: 1px solid var(--teal); }
+.fab-o:hover { background: var(--teal); color: var(--paper); }
+.fab-lk {
+  background: transparent; color: var(--grey);
+  border: 1px solid rgba(15,15,12,0.1); cursor: default;
+}
+.fab-lk:hover { transform: none; }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .lp-testi-cards { grid-template-columns: 1fr; }
-  .lp-nav { padding: 0 20px; }
-  .lp-nav .lp-nav-links { gap: 16px; }
-  .lp-footer { padding: 40px 24px; flex-direction: column; }
-  .lp-footer-right { text-align: left; }
-  .lp-hero { padding: 90px 20px 40px; }
-  .hc-cards { gap: 14px; }
-  .hc-card { max-width: 100%; }
+/* ── Venue highlights ── */
+.vs {
+  padding: 28px; background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
 }
-@media (max-width: 600px) {
-  .lp-nav .lp-nav-links li:not(:last-child):not(:nth-last-child(2)) { display: none; }
-  .lp-h-line1, .lp-h-line2 { font-size: clamp(2.4rem, 10vw, 3.5rem); }
+.vs-hd {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 1px solid rgba(15,15,12,0.08);
+}
+.vs-t {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.28em; color: var(--ink);
+}
+.vs-l {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 8px; font-weight: 300; text-transform: uppercase;
+  letter-spacing: 0.18em; color: var(--teal); cursor: pointer;
+  transition: letter-spacing 0.3s ease, color 0.2s ease;
+  text-decoration: none;
+}
+.vs-l:hover { letter-spacing: 0.26em; color: var(--teal-dark); }
+.vs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.vs-empty {
+  grid-column: 1/-1;
+  font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 11px;
+  color: var(--grey); padding: 20px 0; text-align: center;
+  letter-spacing: 0.1em;
+}
+
+/* ── Community section ── */
+.comm {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border-bottom: 1.5px solid var(--ink);
+  min-height: 260px;
+}
+.comm-l {
+  padding: 36px 40px; border-right: 1px solid rgba(15,15,12,0.1);
+  position: relative; display: flex; flex-direction: column; gap: 12px;
+}
+.comm-c1 {
+  position: absolute; top: 24px; right: 40px;
+  width: 60px; height: 60px; border: 1px solid rgba(15,15,12,0.08);
+}
+.comm-c2 {
+  position: absolute; top: 36px; right: 52px;
+  width: 36px; height: 36px; border: 1px solid var(--teal); opacity: 0.3;
+}
+.comm-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.24em; color: var(--grey);
+}
+.comm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem; letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+}
+.comm-title em { font-style: normal; color: var(--teal); }
+.comm-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 12px; color: var(--grey); line-height: 1.6; max-width: 300px;
+}
+.comm-btn {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  background: var(--ink); color: var(--paper);
+  padding: 10px 20px; text-decoration: none;
+  display: inline-block; width: fit-content; margin-top: 8px;
+  transition: transform 0.18s ease, background 0.2s ease;
+}
+.comm-btn:hover { background: var(--teal); transform: translateY(-1px); }
+.comm-r {
+  padding: 20px 28px; display: flex; flex-direction: column; gap: 8px;
+  overflow: hidden; background: rgba(58,122,138,0.02);
+}
+.cp {
+  display: flex; gap: 10px; padding: 10px 12px;
+  border: 1px solid rgba(15,15,12,0.08);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cp:hover { border-color: var(--teal); background: rgba(58,122,138,0.03); }
+.cp-av {
+  width: 28px; height: 28px; background: var(--teal-pale); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; color: var(--teal-dark);
+}
+.cp-nm {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; color: var(--ink);
+}
+.cp-mt {
+  font-family: 'Space Mono', monospace; font-size: 6px; text-transform: uppercase;
+  letter-spacing: 0.14em; color: var(--grey); display: inline-block;
+  padding: 1px 5px; border: 1px solid rgba(15,15,12,0.1);
+}
+.cp-ds {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 300;
+  color: var(--grey); line-height: 1.4;
+}
+.cp-bd { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.14em; }
+
+/* ── LP Footer ── */
+.lp-footer {
+  border-top: 1.5px solid var(--ink); background: var(--paper);
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; padding: 14px 28px;
+}
+.fl {
+  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 200;
+  letter-spacing: 0.38em; text-transform: uppercase; color: var(--ink);
+  display: flex; align-items: center; gap: 8px;
+}
+.fc {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  text-transform: uppercase; letter-spacing: 0.18em; color: var(--grey); text-align: center;
+}
+.fr {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  text-transform: uppercase; letter-spacing: 0.16em; color: var(--grey); text-align: right;
+}
+
+/* ── Map section (below fold) ── */
+.hero-to-map { display: none; }
+
+/* ── Loading overlay ── */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9000;
+}
+.loading-logo {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+  letter-spacing: 0.08em; color: var(--ink); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.loading-text {
+  font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.2em; color: var(--grey); margin-bottom: 20px;
+}
+.loading-bar-wrap { width: 180px; height: 1.5px; background: rgba(15,15,12,0.1); }
+.loading-bar { height: 100%; background: var(--teal); animation: loadBar 1.8s ease-in-out infinite; }
+@keyframes loadBar {
+  0%   { width: 0; margin-left: 0; }
+  50%  { width: 60%; margin-left: 0; }
+  100% { width: 0; margin-left: 100%; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .lp-nav { padding: 0 20px; }
+  .lp-nav .lp-nav-links { display: none; }
+  .poster-top { padding: 16px 20px 8px; }
+  .poster-wordmark { font-size: clamp(2.5rem, 12vw, 4rem); }
+  .globe-stage { height: 200px !important; }
+  .globe-svg-wrap svg { width: 260px !important; }
+  .poster-info { grid-template-columns: repeat(2, 1fr); }
+  .poster-dates { padding: 8px 20px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .feat-header { display: none; }
+  .feat-row { grid-template-columns: 30px 1fr; }
+  .fd, .fa { display: none; }
+  .vs-grid { grid-template-columns: 1fr; }
+  .comm { grid-template-columns: 1fr; }
+  .comm-r { display: none; }
+  .lp-footer { grid-template-columns: 1fr; gap: 6px; }
+  .fc, .fr { text-align: left; }
 }
 @media (max-width: 480px) {
-  .hc-cards { flex-direction: column; align-items: stretch; }
-  .hc-card { min-width: 0; max-width: 100%; }
+  .poster-info { grid-template-columns: 1fr; }
+  .pi-block { border-right: none; border-bottom: 1px solid rgba(15,15,12,0.06); }
+  .pi-block:last-child { border-bottom: none; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat { padding: 20px 16px; }
 }
-
 </style>
 </head>
 <body class="lp-body">
@@ -695,24 +555,49 @@ body.lp-body { background: var(--cream); }
 
 <!-- NAV -->
 <nav class="lp-nav" id="lpNav">
-  <a href="index.html" class="nav-logo">Bandmate <span class="nav-logo-dot"></span><span class="beta-badge">Beta</span></a>
+  <a href="index.html" class="nav-logo">
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none">
+      <circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/>
+      <ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+      <ellipse cx="13" cy="9" rx="9.5" ry="2.8" stroke="currentColor" stroke-width="0.5" opacity="0.22"/>
+      <ellipse cx="13" cy="17" rx="9.5" ry="2.8" stroke="currentColor" stroke-width="0.5" opacity="0.22"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.5" opacity="0.22" transform="rotate(60 13 13)"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.5" opacity="0.22" transform="rotate(-60 13 13)"/>
+    </svg>
+    <span class="wordmark">Bandmate</span>
+    <span class="beta-badge">Beta</span>
+  </a>
   <ul class="lp-nav-links">
     <li><a href="#find-venues" onclick="smoothScrollTo('find-venues'); return false;">Find Venues</a></li>
     <li><a href="tour.html">Tour Planner</a></li>
     <li><a href="community.html">Community</a></li>
     <li><a href="profile.html">Build EPK</a></li>
     <li id="navAuthArea" style="display:contents">
-      <a href="#" style="font-family:'Space Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,240,232,0.6);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" style="font-family:'DM Sans',sans-serif;font-weight:300;font-size:8px;text-transform:uppercase;letter-spacing:0.2em;color:var(--grey);text-decoration:none;padding:0 18px;" onclick="openAuth('login')">Log In</a>
       <a href="#" class="lp-nav-cta" onclick="openAuth('signup')">Join Free</a>
     </li>
   </ul>
-  <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="2" rx="1" fill="var(--rust)"/><rect x="2" y="10" width="18" height="2" rx="1" fill="var(--rust)"/><rect x="2" y="15" width="18" height="2" rx="1" fill="var(--rust)"/></svg></button>
+  <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="2" y="5" width="18" height="2" fill="var(--ink)"/>
+      <rect x="2" y="10" width="18" height="2" fill="var(--ink)"/>
+      <rect x="2" y="15" width="18" height="2" fill="var(--ink)"/>
+    </svg>
+  </button>
 </nav>
 
 <!-- MOBILE NAV OVERLAY -->
 <div class="mobile-nav-overlay" id="mobileNavOverlay">
   <div class="mobile-nav-header">
-    <a href="index.html" class="mobile-nav-logo">Bandmate</a>
+    <a href="index.html" class="mobile-nav-logo">
+      <svg viewBox="0 0 26 26" width="20" height="20" fill="none" style="opacity:0.7">
+        <circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/>
+        <ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+        <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+      </svg>
+      Bandmate
+    </a>
     <button class="mobile-nav-close" onclick="closeMobileMenu()">✕</button>
   </div>
   <nav class="mobile-nav-links">
@@ -731,8 +616,8 @@ body.lp-body { background: var(--cream); }
 <div class="auth-modal-overlay" id="authModal">
   <div class="auth-modal">
     <button class="auth-close" onclick="closeAuth()">✕</button>
-    <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;margin-bottom:6px">Join Bandmate</div>
-    <div style="font-family:'Space Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px">The venue guide built for bands</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.06em;margin-bottom:4px;color:var(--ink)">Join Bandmate</div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--grey);margin-bottom:24px">The venue guide built for bands</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('signup')">Sign Up</button>
       <button class="auth-tab" onclick="switchAuthTab('login')">Log In</button>
@@ -763,267 +648,391 @@ body.lp-body { background: var(--cream); }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
-     SECTION 1 — HERO
+     HERO — POSTER LAYOUT
      ═══════════════════════════════════════════════════════════════════════ -->
 <section class="lp-hero" id="lp-hero">
 
-  <!-- Background glow -->
-  <div class="lp-hero-glow"></div>
+  <!-- Wordmark -->
+  <div class="poster-top">
+    <div class="poster-wordmark">Bandmate</div>
+  </div>
 
-  <!-- Animated map pins -->
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
-  <div class="hero-pin"></div>
+  <!-- Stripe band -->
+  <div class="stripe-band">
+    <svg width="100%" height="48" preserveAspectRatio="none" viewBox="0 0 680 48">
+      <defs>
+        <pattern id="stripes" x="0" y="0" width="16" height="48" patternUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="7" height="48" fill="#0f0f0c"/>
+          <rect x="7" y="0" width="9" height="48" fill="#f2efe6"/>
+        </pattern>
+        <linearGradient id="fadeL" x1="0%" x2="100%">
+          <stop offset="0%" stop-color="#f2efe6"/>
+          <stop offset="100%" stop-color="#f2efe6" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="fadeR" x1="0%" x2="100%">
+          <stop offset="0%" stop-color="#f2efe6" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#f2efe6"/>
+        </linearGradient>
+      </defs>
+      <rect width="680" height="48" fill="url(#stripes)"/>
+      <rect width="70" height="48" fill="url(#fadeL)"/>
+      <rect x="610" width="70" height="48" fill="url(#fadeR)"/>
+    </svg>
+  </div>
 
-  <!-- Hero content -->
-  <div class="lp-hero-content">
-
-    <!-- Logo mark -->
-    <div class="hero-logo">
-      Bandmate <span class="nav-logo-dot" style="width:7px;height:7px;display:inline-block;background:var(--rust);border-radius:50%;animation:pulse 1.8s ease-in-out infinite;flex-shrink:0;"></span>
-    </div>
-
-    <!-- Eyebrow -->
-    <div class="lp-eyebrow">For independent bands everywhere</div>
-
-    <!-- Main headline -->
-    <h1 class="lp-headline">
-      <span class="lp-h-line1">Play further.</span>
-      <span class="lp-h-line2">Play smarter.</span>
-    </h1>
-
-    <!-- Subtitle -->
-    <p class="lp-sub">Discover venues, plan your tour, share your music — everything you need to take your sound on the road.</p>
-
-    <!-- Three feature cards -->
-    <div class="hc-cards">
-
-      <!-- Card 1: Venue Reviews — always unlocked -->
-      <div class="hc-card">
-        <div class="hc-icon-wrap">
-          <svg class="hc-pin-icon" width="28" height="36" viewBox="0 0 28 36" fill="none">
-            <path d="M14 1C7.92 1 3 5.92 3 12C3 21.5 14 35 14 35C14 35 25 21.5 25 12C25 5.92 20.08 1 14 1Z"
-              fill="rgba(201,75,42,0.2)" stroke="#c94b2a" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="14" cy="12" r="4.5" fill="#c94b2a"/>
-          </svg>
-        </div>
-        <div class="hc-card-name">Venue Reviews</div>
-        <div class="hc-card-desc">Real scores on sound, hospitality, merch, and parking — from bands who've actually played there.</div>
-        <a href="#find-venues" class="hc-btn hc-btn-rust" onclick="smoothScrollTo('find-venues'); return false;">Find Venues →</a>
-      </div>
-
-      <!-- Card 2: Tour Planner — locked/unlocked -->
-      <div class="hc-card">
-        <div class="hc-icon-wrap">
-          <svg width="70" height="36" viewBox="0 0 70 36" fill="none">
-            <path class="hc-route-path" d="M6,28 C14,28 14,8 26,14 C38,20 36,8 48,8 C58,8 62,18 64,22"
-              stroke="#c94b2a" stroke-width="2" stroke-linecap="round" fill="none"
-              stroke-dasharray="5 4"/>
-            <circle cx="6"  cy="28" r="3.5" fill="#c94b2a" opacity="0.85"/>
-            <circle cx="26" cy="14" r="2.5" fill="#c94b2a" opacity="0.6"/>
-            <circle cx="48" cy="8"  r="2.5" fill="#c94b2a" opacity="0.6"/>
-            <circle cx="64" cy="22" r="3.5" fill="#c94b2a" opacity="0.85"/>
-          </svg>
-        </div>
-        <div class="hc-card-name">Tour Planner</div>
-        <div class="hc-card-desc">Draw your route, pick your cities, get a smart itinerary with venues matched to your sound.</div>
-
-        <a href="tour.html" class="hc-btn hc-btn-ink" id="tourCardBtn" style="display:none">Plan Your Tour →</a>
-
-        <div class="hc-locked-wrap" id="tourCardLocked">
-          <div class="hc-locked-tip">Leave 3 venue reviews to unlock the Tour Planner free</div>
-          <button class="hc-btn-locked" disabled>
-            <svg class="hc-lock" viewBox="0 0 12 14" fill="none">
-              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            </svg>
-            Review 3 venues to unlock
-          </button>
-        </div>
-
-        <div class="hc-progress" id="tourCardProgress">
-          <div class="hc-progress-label" id="tourCardProgressLabel">0 of 3 reviews</div>
-          <div class="hc-progress-track"><div class="hc-progress-fill" id="tourCardProgressFill" style="width:0%"></div></div>
-        </div>
-      </div>
-
-      <!-- Card 3: EPK Builder — locked/unlocked -->
-      <div class="hc-card">
-        <div class="hc-icon-wrap">
-          <svg width="36" height="44" viewBox="0 0 36 44" fill="none">
-            <rect x="2" y="2" width="32" height="40" rx="2" stroke="rgba(245,240,232,0.4)" stroke-width="1.5" fill="none"/>
-            <line class="hc-doc-l1" x1="8" y1="13" x2="28" y2="13" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
-            <line class="hc-doc-l2" x1="8" y1="20" x2="24" y2="20" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
-            <line class="hc-doc-l3" x1="8" y1="27" x2="28" y2="27" stroke="rgba(245,240,232,0.75)" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="hc-card-name">EPK Builder</div>
-        <div class="hc-card-desc">One link sends venues your music, photos, bio, and reviews — everything they need to book you.</div>
-
-        <a href="profile.html" class="hc-btn hc-btn-sage" id="epkCardBtn" style="display:none">Build Your EPK →</a>
-
-        <div class="hc-locked-wrap" id="epkCardLocked">
-          <div class="hc-locked-tip">Leave 3 venue reviews to unlock the EPK Builder free</div>
-          <button class="hc-btn-locked" disabled>
-            <svg class="hc-lock" viewBox="0 0 12 14" fill="none">
-              <rect x="1" y="6" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M3.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            </svg>
-            Review 3 venues to unlock
-          </button>
-        </div>
-
-        <div class="hc-progress" id="epkCardProgress">
-          <div class="hc-progress-label" id="epkCardProgressLabel">0 of 3 reviews</div>
-          <div class="hc-progress-track"><div class="hc-progress-fill" id="epkCardProgressFill" style="width:0%"></div></div>
-        </div>
-      </div>
-
-    </div><!-- /hc-cards -->
-
-    <!-- Inline stats -->
-    <div class="hero-stats">
-      <span class="hero-stat">2,400+ Venues</span>
-      <span class="hero-stat-sep">·</span>
-      <span class="hero-stat">47 States</span>
-      <span class="hero-stat-sep">·</span>
-      <span class="hero-stat">Free to Start</span>
-    </div>
-
-    <!-- Down arrow -->
-    <div class="hero-arrow">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(245,240,232,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"/>
+  <!-- Globe stage -->
+  <div class="globe-stage" style="height:280px">
+    <div class="red-base"></div>
+    <div class="teal-arc"></div>
+    <div class="globe-svg-wrap">
+      <svg viewBox="0 0 340 250" width="480" xmlns="http://www.w3.org/2000/svg" style="display:block">
+        <defs>
+          <clipPath id="globeClip">
+            <circle cx="170" cy="125" r="110"/>
+          </clipPath>
+        </defs>
+        <!-- Globe fill -->
+        <circle cx="170" cy="125" r="110" fill="#f2efe6"/>
+        <!-- Static latitude lines -->
+        <g clip-path="url(#globeClip)">
+          <ellipse cx="170" cy="125" rx="110" ry="38" fill="none" stroke="#0f0f0c" stroke-width="0.7" opacity="0.3"/>
+          <line x1="60" y1="125" x2="280" y2="125" stroke="#0f0f0c" stroke-width="0.9" opacity="0.4"/>
+          <line x1="66" y1="90" x2="274" y2="90" stroke="#0f0f0c" stroke-width="0.5" opacity="0.18"/>
+          <line x1="66" y1="160" x2="274" y2="160" stroke="#0f0f0c" stroke-width="0.5" opacity="0.18"/>
+          <line x1="80" y1="62" x2="260" y2="62" stroke="#0f0f0c" stroke-width="0.4" opacity="0.11"/>
+          <line x1="80" y1="188" x2="260" y2="188" stroke="#0f0f0c" stroke-width="0.4" opacity="0.11"/>
+        </g>
+        <!-- Animated longitude lines -->
+        <g class="lp-meridians" clip-path="url(#globeClip)">
+          <line x1="170" y1="15" x2="170" y2="235" stroke="#0f0f0c" stroke-width="0.8" opacity="0.3"/>
+          <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.6" opacity="0.22"/>
+          <ellipse cx="170" cy="125" rx="100" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.5" opacity="0.14"/>
+          <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.5" opacity="0.15" transform="rotate(45 170 125)"/>
+          <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.5" opacity="0.15" transform="rotate(-45 170 125)"/>
+          <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.4" opacity="0.1" transform="rotate(90 170 125)"/>
+        </g>
+        <!-- Globe outer ring (on top) -->
+        <circle cx="170" cy="125" r="110" fill="none" stroke="#0f0f0c" stroke-width="1.5"/>
       </svg>
     </div>
+  </div>
 
-  </div><!-- /lp-hero-content -->
+  <!-- Info strip -->
+  <div class="poster-info">
+    <div class="pi-block">
+      <div class="pi-label">What it is</div>
+      <div class="pi-value">Venue reviews, tour planning, and EPK tools for independent bands</div>
+    </div>
+    <div class="pi-block">
+      <div class="pi-label">How it works</div>
+      <div class="pi-value">Review 3 venues to unlock the Tour Planner and EPK Builder free</div>
+    </div>
+    <div class="pi-block">
+      <div class="pi-label">Who it's for</div>
+      <div class="pi-value">Independent bands ready to play beyond their hometown</div>
+    </div>
+    <div class="pi-block">
+      <div class="pi-label">Where to start</div>
+      <div class="pi-value">Search any city. Find venues. Read real band reviews.</div>
+    </div>
+  </div>
+
+  <!-- Flow strip -->
+  <div class="poster-dates">
+    <div class="pd-left">
+      <span>Find Venues</span>
+      <svg width="32" height="10" viewBox="0 0 32 10">
+        <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" stroke-width="1"/>
+        <polygon points="24,1 32,5 24,9" fill="currentColor"/>
+      </svg>
+      <span>Plan Your Tour</span>
+      <svg width="32" height="10" viewBox="0 0 32 10">
+        <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" stroke-width="1"/>
+        <polygon points="24,1 32,5 24,9" fill="currentColor"/>
+      </svg>
+      <span>Share Your EPK</span>
+    </div>
+    <div class="pd-right">@bandmateapp</div>
+  </div>
+
 </section>
 
-<!-- LIVE TICKER -->
-<div class="ticker-wrap" id="tickerWrap">
-  <div class="ticker-live">Live</div>
-  <div class="ticker-fade-l"></div>
+<!-- COLOUR BAND -->
+<div class="colour-band"><div class="cb1"></div><div class="cb2"></div><div class="cb3"></div><div class="cb4"></div></div>
+
+<!-- STATS -->
+<div class="stats" id="find-venues">
+  <div class="stat">
+    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="8" stroke="#0f0f0c" stroke-width="1"/>
+      <circle cx="10" cy="10" r="3" stroke="#0f0f0c" stroke-width="1"/>
+      <line x1="10" y1="0" x2="10" y2="5" stroke="#0f0f0c" stroke-width="1"/>
+      <line x1="10" y1="15" x2="10" y2="20" stroke="#0f0f0c" stroke-width="1"/>
+      <line x1="0" y1="10" x2="5" y2="10" stroke="#0f0f0c" stroke-width="1"/>
+      <line x1="15" y1="10" x2="20" y2="10" stroke="#0f0f0c" stroke-width="1"/>
+    </svg>
+    <div class="stat-num">2,400+</div>
+    <div class="stat-label">Venues Indexed</div>
+  </div>
+  <div class="stat">
+    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="7" cy="6" r="3" stroke="#0f0f0c" stroke-width="1"/>
+      <circle cx="14" cy="6" r="3" stroke="#0f0f0c" stroke-width="1"/>
+      <path d="M2 18v-1a5 5 0 0 1 10 0v1" stroke="#0f0f0c" stroke-width="1"/>
+      <path d="M12 17v-0.5a5 5 0 0 1 6 0V17" stroke="#0f0f0c" stroke-width="1"/>
+    </svg>
+    <div class="stat-num">47</div>
+    <div class="stat-label">States Covered</div>
+  </div>
+  <div class="stat">
+    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="2" y="2" width="16" height="16" stroke="#0f0f0c" stroke-width="1"/>
+      <line x1="2" y1="8" x2="18" y2="8" stroke="#0f0f0c" stroke-width="0.7"/>
+      <line x1="2" y1="14" x2="18" y2="14" stroke="#0f0f0c" stroke-width="0.7"/>
+      <line x1="8" y1="2" x2="8" y2="18" stroke="#0f0f0c" stroke-width="0.7"/>
+      <line x1="14" y1="2" x2="14" y2="18" stroke="#0f0f0c" stroke-width="0.7"/>
+    </svg>
+    <div class="stat-num">Free</div>
+    <div class="stat-label">To Start</div>
+  </div>
+  <div class="stat">
+    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <polygon points="10,2 12.5,7.5 18.5,7.5 13.8,11.2 15.6,17.2 10,13.8 4.4,17.2 6.2,11.2 1.5,7.5 7.5,7.5" stroke="#0f0f0c" stroke-width="1" fill="none"/>
+    </svg>
+    <div class="stat-num">Real</div>
+    <div class="stat-label">Band Reviews</div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker" id="tickerWrap">
+  <div class="ticker-label">Activity</div>
   <div class="ticker-inner">
     <div class="ticker-track" id="tickerTrack">
-      <!-- populated by JS, two identical copies for seamless loop -->
       <span class="ticker-item">Loading community activity…</span>
     </div>
   </div>
 </div>
 
-<!-- GRADIENT TRANSITION -->
-<div class="hero-to-map"></div>
+<!-- FEATURE TABLE -->
+<div class="features">
+  <div class="feat-header">
+    <div class="fh">#</div>
+    <div class="fh">Feature</div>
+    <div class="fh">Description</div>
+    <div class="fh">Access</div>
+  </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════
-     SECTION 2 — VENUE MAP (id="find-venues")
-     ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="feat-row">
+    <div class="fi">01</div>
+    <div class="fn">
+      <div class="fn-row">
+        <div class="fn-dot"></div>
+        <div class="fn-name">Venue Reviews</div>
+      </div>
+      <div class="fn-tags">
+        <span class="fn-tag">Search</span>
+        <span class="fn-tag">Map</span>
+      </div>
+    </div>
+    <div class="fd">Real band scores on sound, hospitality, merch, and parking — from bands who've actually played there.</div>
+    <div class="fa">
+      <a href="#find-venues" onclick="smoothScrollTo('find-venues');return false" class="fa-btn fab-t">Find Venues →</a>
+    </div>
+  </div>
 
-<!-- Loading overlay (starts hidden — hero is visible on load) -->
+  <div class="feat-row">
+    <div class="fi">02</div>
+    <div class="fn">
+      <div class="fn-row">
+        <div class="fn-dot" style="background:var(--olive)"></div>
+        <div class="fn-name">Tour Planner</div>
+      </div>
+      <div class="fn-tags">
+        <span class="fn-tag">Route</span>
+        <span class="fn-tag">Itinerary</span>
+      </div>
+    </div>
+    <div class="fd">Draw your route, pick your cities, get a smart itinerary with venues matched to your sound.</div>
+    <div class="fa" id="tourTableAccess">
+      <div class="fa-btn fab-lk">3 Reviews → Unlock</div>
+    </div>
+  </div>
+
+  <div class="feat-row">
+    <div class="fi">03</div>
+    <div class="fn">
+      <div class="fn-row">
+        <div class="fn-dot" style="background:var(--red)"></div>
+        <div class="fn-name">EPK Builder</div>
+      </div>
+      <div class="fn-tags">
+        <span class="fn-tag">Press Kit</span>
+        <span class="fn-tag">Share</span>
+      </div>
+    </div>
+    <div class="fd">One link sends venues your music, photos, bio, and reviews — everything they need to book you.</div>
+    <div class="fa" id="epkTableAccess">
+      <div class="fa-btn fab-lk">3 Reviews → Unlock</div>
+    </div>
+  </div>
+
+  <div class="feat-row">
+    <div class="fi">04</div>
+    <div class="fn">
+      <div class="fn-row">
+        <div class="fn-dot" style="background:var(--grey)"></div>
+        <div class="fn-name">Community</div>
+      </div>
+      <div class="fn-tags">
+        <span class="fn-tag">Network</span>
+        <span class="fn-tag">Bookings</span>
+      </div>
+    </div>
+    <div class="fd">Connect with bands. Find openers, co-headliners, and tour partners for your next run.</div>
+    <div class="fa">
+      <a href="community.html" class="fa-btn fab-o">Browse →</a>
+    </div>
+  </div>
+</div>
+
+<!-- VENUE HIGHLIGHTS -->
+<div class="vs">
+  <div class="vs-hd">
+    <div class="vs-t">Highly Rated Venues</div>
+    <a href="map.html" class="vs-l">View all →</a>
+  </div>
+  <div id="venueHighlights" class="vs-grid">
+    <div class="vs-empty">Venue highlights load after your first search — <a href="map.html" style="color:var(--teal);text-decoration:none">explore the map →</a></div>
+  </div>
+</div>
+
+<!-- COMMUNITY SECTION -->
+<div class="comm">
+  <div class="comm-l">
+    <div class="comm-c1"></div>
+    <div class="comm-c2"></div>
+    <div class="comm-lbl">// Community</div>
+    <div class="comm-title">Find your<br><em>bandmate.</em></div>
+    <div class="comm-desc">Connect with bands. Find openers, co-headliners, and tour partners for your next run.</div>
+    <a href="community.html" class="comm-btn">Browse Community →</a>
+  </div>
+  <div class="comm-r" id="communityPreview">
+    <div class="cp">
+      <div class="cp-av">B</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <div class="cp-nm">Brightwell</div>
+          <span class="cp-mt">Support</span>
+        </div>
+        <div class="cp-ds">Looking for opener slots in the Southeast — Indie Rock, 45 min sets</div>
+        <div class="cp-bd">Nashville, TN · Active</div>
+      </div>
+    </div>
+    <div class="cp">
+      <div class="cp-av" style="background:var(--olive-pale);color:var(--olive)">M</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <div class="cp-nm">Midnight Palms</div>
+          <span class="cp-mt" style="border-color:var(--olive);color:var(--olive)">Co-Headliner</span>
+        </div>
+        <div class="cp-ds">Touring the Midwest this fall — looking for co-headline partners</div>
+        <div class="cp-bd">Chicago, IL · Active</div>
+      </div>
+    </div>
+    <div class="cp">
+      <div class="cp-av" style="background:rgba(217,69,53,0.08);color:var(--red)">R</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <div class="cp-nm">Red River Sect</div>
+          <span class="cp-mt" style="border-color:var(--red);color:var(--red)">Opener</span>
+        </div>
+        <div class="cp-ds">Country / Americana, available weekends for regional dates</div>
+        <div class="cp-bd">Austin, TX · Active</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loadingOverlay" style="display:none">
-  <div class="loading-logo">Bandmate <span class="nav-logo-dot" style="width:10px;height:10px;background:var(--rust);border-radius:50%;animation:pulse 1.5s infinite"></span></div>
+  <div class="loading-logo">
+    <svg viewBox="0 0 26 26" width="28" height="28" fill="none">
+      <circle cx="13" cy="13" r="11" stroke="var(--ink)" stroke-width="1"/>
+      <ellipse cx="13" cy="13" rx="11" ry="4" stroke="var(--ink)" stroke-width="0.8" opacity="0.5"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="var(--ink)" stroke-width="0.8" opacity="0.5"/>
+    </svg>
+    Bandmate
+  </div>
   <div class="loading-text">Finding venues near you...</div>
   <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
 </div>
 
-<div id="find-venues">
-  <section class="hero" id="map-section">
-
-    <!-- LEFT PANEL -->
-    <div class="hero-panel">
-      <div class="hero-eyebrow">For independent bands everywhere</div>
-      <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
-      <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
-
-      <!-- SEARCH -->
-      <div class="search-wrap">
-        <div class="search-input-row">
-          <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..." />
-          <button class="search-btn" onclick="searchLocation()">Search →</button>
-        </div>
-      </div>
-
-      <button class="locate-btn" onclick="locateMe()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-          <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
-        </svg>
-        Use My Location
-      </button>
-
-      <!-- GENRE FILTER -->
-      <div class="filter-label">Filter by Genre</div>
-      <div class="filter-chips" id="genreChips">
-        <span class="chip active-rust" onclick="toggleChip(this)">All</span>
-        <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
-        <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
-        <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
-        <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
-        <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
-        <span class="chip" onclick="toggleChip(this)">Country</span>
-      </div>
-
-      <!-- RADIUS -->
-      <div class="radius-row">
-        <span class="filter-label" style="margin-bottom:0">Search Radius</span>
-        <span class="radius-val" id="radiusVal">10 miles</span>
-      </div>
-      <input type="range" min="1" max="50" value="10" id="radiusSlider"
-             oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
-
-      <!-- STATUS -->
-      <div class="status-bar" id="statusBar">
-        <div class="status-dot amber" id="statusDot"></div>
-        <span id="statusText">Locating you...</span>
-      </div>
-
-      <!-- RESULTS -->
-      <div class="filter-label" id="resultsLabel">Venues Found</div>
-      <div class="venues-list" id="venuesList">
-        <div class="no-results">
-          <div class="no-results-icon">🗺️</div>
-          <div class="no-results-title">Loading map...</div>
-          <div class="no-results-sub">Venues will appear here once the map loads.</div>
-        </div>
+<!-- MAP SECTION (id kept for existing JS) -->
+<section class="hero" id="map-section">
+  <div class="hero-panel">
+    <div class="hero-eyebrow">For independent bands everywhere</div>
+    <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
+    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..."/>
+        <button class="search-btn" onclick="searchLocation()">Search →</button>
       </div>
     </div>
-
-    <!-- MAP -->
-    <div style="position:relative; overflow:hidden; height:100%;">
-      <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
+      </svg>
+      Use My Location
+    </button>
+    <div class="filter-label">Filter by Genre</div>
+    <div class="filter-chips" id="genreChips">
+      <span class="chip active-rust" onclick="toggleChip(this)">All</span>
+      <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
+      <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
+      <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
+      <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
+      <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
+      <span class="chip" onclick="toggleChip(this)">Country</span>
     </div>
-
-  </section>
-</div>
+    <div class="radius-row">
+      <span class="filter-label" style="margin-bottom:0">Search Radius</span>
+      <span class="radius-val" id="radiusVal">10 miles</span>
+    </div>
+    <input type="range" min="1" max="50" value="10" id="radiusSlider"
+           oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
+    <div class="status-bar" id="statusBar">
+      <div class="status-dot amber" id="statusDot"></div>
+      <span id="statusText">Locating you...</span>
+    </div>
+    <div class="filter-label" id="resultsLabel">Venues Found</div>
+    <div class="venues-list" id="venuesList">
+      <div class="no-results">
+        <div class="no-results-icon">—</div>
+        <div class="no-results-title">Loading map...</div>
+        <div class="no-results-sub">Venues will appear here once the map loads.</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative; overflow:hidden; height:100%;">
+    <div id="map"></div>
+  </div>
+</section>
 
 <!-- FOOTER -->
 <footer class="lp-footer">
-  <div>
-    <div class="lp-footer-logo">Bandmate <span class="nav-logo-dot" style="width:7px;height:7px;display:inline-block;background:var(--rust);border-radius:50%;animation:pulse 1.5s infinite;vertical-align:middle;margin-left:2px;"></span></div>
-    <div class="lp-footer-tagline">Every tool you need to play further.</div>
+  <div class="fl">
+    <svg viewBox="0 0 26 26" width="18" height="18" fill="none">
+      <circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/>
+      <ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+    </svg>
+    Bandmate
   </div>
-  <div class="lp-footer-links">
-    <a href="#find-venues" onclick="smoothScrollTo('find-venues'); return false;">Find Venues</a>
-    <a href="tour.html">Tour Planner</a>
-    <a href="profile.html">EPK Builder</a>
-    <a href="map.html#leave-review">Leave a Review</a>
-  </div>
-  <div class="lp-footer-right">
-    <p>© 2025 Bandmate</p>
-    <p>Built for the road · Not for the boardroom</p>
-  </div>
+  <div class="fc">Built for the road · Not for the boardroom</div>
+  <div class="fr">Beta 2025 · Every tool to play further</div>
 </footer>
 
 <!-- VENUE PAGE OVERLAY -->
@@ -1046,7 +1055,6 @@ body.lp-body { background: var(--cream); }
         <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
       </div>
     </div>
-    <!-- REVIEW FORM -->
     <div class="venue-review-form" id="venueReviewForm">
       <div class="vrf-title">Your Review</div>
       <div class="vrf-sub" id="vrfSub">Reviewing: <span id="vrfVenueName"></span></div>
@@ -1098,7 +1106,6 @@ body.lp-body { background: var(--cream); }
         <button class="vrf-submit" id="vrfSubmitBtn" onclick="submitReview()" disabled>Post Review</button>
       </div>
     </div>
-    <!-- REVIEWS -->
     <div class="reviews-section-title" id="reviewsTitle">Band Reviews</div>
     <div class="reviews-list" id="reviewsList">
       <div class="no-reviews">
@@ -1159,7 +1166,6 @@ body.lp-body { background: var(--cream); }
 <script src="js/reviews.js"></script>
 <script src="js/map.js"></script>
 <script>
-  // Google Maps dynamic injection (key from config.js)
   (function() {
     var s = document.createElement('script');
     s.async = true; s.defer = true;
@@ -1167,6 +1173,7 @@ body.lp-body { background: var(--cream); }
     document.head.appendChild(s);
   })();
 </script>
+
 <!-- BOTTOM NAV (mobile only) -->
 <nav class="bottom-nav" id="bottomNav">
   <a href="index.html" class="bottom-nav-item active">
@@ -1212,6 +1219,12 @@ function smoothScrollTo(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// ── Feature table access cell helpers ────────────────────────────────────────
+function _setTableAccess(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
 // ── Unlock card state (threshold: 3 reviews) ─────────────────────────────────
 function lpUnlockCards() {
   ['tourCardBtn', 'epkCardBtn'].forEach(function(id) {
@@ -1227,12 +1240,26 @@ function lpUnlockCards() {
     if (el) el.style.display = 'none';
   });
 
-  // Route EPK button: if theme already chosen go straight to the EPK page
-  const epkBtn = document.getElementById('epkCardBtn');
-  if (epkBtn && currentBandProfile) {
+  // Update feature table access cells
+  _setTableAccess('tourTableAccess', '<a href="tour.html" class="fa-btn fab-t">Plan Tour →</a>');
+
+  var epkHref = 'profile.html';
+  var epkLabel = 'Build EPK →';
+  if (typeof currentBandProfile !== 'undefined' && currentBandProfile) {
     if (currentBandProfile.epk_theme && currentBandProfile.band_name) {
-      const slug = (currentBandProfile.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      epkBtn.href = `epk.html?band=${slug}`;
+      var slug = (currentBandProfile.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      epkHref  = 'epk.html?band=' + slug;
+      epkLabel = 'View EPK →';
+    }
+  }
+  _setTableAccess('epkTableAccess', '<a href="' + epkHref + '" class="fa-btn fab-t">' + epkLabel + '</a>');
+
+  // Route EPK card button
+  var epkBtn = document.getElementById('epkCardBtn');
+  if (epkBtn && typeof currentBandProfile !== 'undefined' && currentBandProfile) {
+    if (currentBandProfile.epk_theme && currentBandProfile.band_name) {
+      var s2 = (currentBandProfile.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      epkBtn.href = 'epk.html?band=' + s2;
       epkBtn.textContent = 'View Your EPK →';
     } else {
       epkBtn.href = 'profile.html';
@@ -1252,6 +1279,10 @@ function lpShowProgress(count) {
     if (lbl)  lbl.textContent = label;
     if (fill) fill.style.width = pct + '%';
   });
+  // Feature table — show progress state
+  var lockLabel = count + ' of 3 → Unlock';
+  _setTableAccess('tourTableAccess', '<div class="fa-btn fab-lk">' + lockLabel + '</div>');
+  _setTableAccess('epkTableAccess',  '<div class="fa-btn fab-lk">' + lockLabel + '</div>');
 }
 
 async function lpCheckAccess() {
@@ -1267,34 +1298,28 @@ async function lpCheckAccess() {
 
 // ── Live ticker data ──────────────────────────────────────────────────────────
 var TICKER_FALLBACKS = [
-  "Be the first to review a venue in your city",
-  "The Americana Highway route is ready to explore",
-  "The Underground Circuit runs Chicago to DC",
-  "Draw your tour route and find venues along the way",
-  "Your EPK deserves better than a Word doc",
-  "Built by musicians for musicians",
-  "Leave 3 reviews to unlock the Tour Planner free",
-  "Join the community of bands building something together",
+  'Be the first to review a venue in your city',
+  'The Americana Highway route is ready to explore',
+  'The Underground Circuit runs Chicago to DC',
+  'Draw your tour route and find venues along the way',
+  'Your EPK deserves better than a Word doc',
+  'Built by musicians for musicians',
+  'Leave 3 reviews to unlock the Tour Planner free',
+  'Join the community of bands building something together',
 ];
 
 function renderTicker(items) {
   var track = document.getElementById('tickerTrack');
   if (!track) return;
   if (!items || items.length === 0) items = TICKER_FALLBACKS.slice();
-
-  // Mix in fallbacks to ensure density
   var combined = items.slice();
   while (combined.length < 8) combined = combined.concat(TICKER_FALLBACKS);
-
   function buildSet(arr) {
     return arr.map(function(txt) {
       return '<span class="ticker-item">' + txt + '</span><span class="ticker-dot">·</span>';
     }).join('');
   }
-
-  // Two identical copies for seamless CSS loop
-  var html = buildSet(combined) + buildSet(combined);
-  track.innerHTML = html;
+  track.innerHTML = buildSet(combined) + buildSet(combined);
 }
 
 async function loadTickerData() {
@@ -1309,9 +1334,7 @@ async function loadTickerData() {
         .order('created_at', { ascending: false })
         .limit(5)
     ]);
-
     var items = [];
-
     if (reviewsRes.data) {
       reviewsRes.data.forEach(function(r) {
         var band  = r.bands && r.bands.band_name ? r.bands.band_name : null;
@@ -1319,18 +1342,15 @@ async function loadTickerData() {
         var city  = r.venue_city ? ' in ' + r.venue_city : '';
         items.push(band
           ? band + ' just reviewed ' + venue + city
-          : 'New review posted for ' + venue + city
-        );
+          : 'New review posted for ' + venue + city);
       });
     }
-
     if (bandsRes.data) {
       bandsRes.data.forEach(function(b) {
         var city = b.home_city ? ' from ' + b.home_city : '';
         items.push((b.band_name || 'A new band') + city + ' just joined Bandmate');
       });
     }
-
     renderTicker(items.length > 0 ? items : TICKER_FALLBACKS.slice());
   } catch (e) {
     renderTicker(TICKER_FALLBACKS.slice());
@@ -1340,10 +1360,7 @@ async function loadTickerData() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   document.body.style.visibility = 'visible';
-
-  // Show ticker fallback immediately, then replace with real data
   renderTicker(TICKER_FALLBACKS.slice());
-
   initAuth().then(function() {
     lpCheckAccess();
     loadTickerData();

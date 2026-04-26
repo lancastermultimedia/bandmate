@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --paper:      #f2efe6;
+  --teal:       #3a7a8a;
+  --teal-dark:  #1e4a55;
+  --teal-pale:  #c8dce4;
+  --red:        #d94535;
+  --ink:        #0f0f0c;
+  --grey:       #8a8a7c;
+  --olive:      #7a8a3a;
+  --olive-pale: rgba(122,138,58,0.12);
+  --white:      #f8f5ee;
+
+  /* backward-compat aliases */
+  --cream:      var(--paper);
+  --rust:       var(--teal);
+  --rust-light: var(--teal);
+  --sage:       var(--olive);
+  --sage-light: var(--olive);
+  --muted:      var(--grey);
+  --border:     rgba(15,15,12,0.10);
+  --warm:       var(--paper);
+  --gold:       var(--olive);
+  --card-bg:    var(--white);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Kill grain texture */
+body::before { display: none !important; }
+
+/* No rounded corners anywhere */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Remove offset box-shadows globally */
+* { box-shadow: none !important; }
+
+/* ── Global micro-animations ── */
+a, button { transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.18s ease, opacity 0.2s ease; }
