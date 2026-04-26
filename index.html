@@ -307,10 +307,12 @@ body.lp-body { background: var(--paper); }
 /* ── Ticker ── */
 .ticker {
   background: var(--teal-pale);
-  border-top: 1px solid rgba(58,122,138,0.15);
+  border-top: none;
   border-bottom: 1px solid rgba(58,122,138,0.15);
   padding: 6px 28px;
   display: flex; gap: 16px; align-items: center; overflow: hidden;
+  align-self: stretch; /* spans full width inside hero flex column */
+  margin: 0 calc(-1 * var(--hero-pad, 0px)); /* flush to edges if hero has padding */
 }
 .ticker-label {
   font-family: 'Space Mono', monospace;
@@ -497,6 +499,8 @@ body.lp-body { background: var(--paper); }
   color: var(--grey); line-height: 1.4;
 }
 .cp-bd { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.14em; }
+.cp-loading { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 300; letter-spacing: 0.12em; color: var(--grey); padding: 16px 12px; }
+a.cp { display: flex; }
 
 /* ── LP Footer ── */
 .lp-footer {
@@ -762,6 +766,16 @@ body.lp-body { background: var(--paper); }
     </div>
   </div>
 
+  <!-- Ticker — directly below globe -->
+  <div class="ticker" id="tickerWrap">
+    <div class="ticker-label">Activity</div>
+    <div class="ticker-inner">
+      <div class="ticker-track" id="tickerTrack">
+        <span class="ticker-item">Loading community activity…</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Info strip -->
   <div class="poster-info">
     <div class="pi-block">
@@ -802,15 +816,6 @@ body.lp-body { background: var(--paper); }
 
 </section>
 
-<!-- TICKER — immediately after hero -->
-<div class="ticker" id="tickerWrap">
-  <div class="ticker-label">Activity</div>
-  <div class="ticker-inner">
-    <div class="ticker-track" id="tickerTrack">
-      <span class="ticker-item">Loading community activity…</span>
-    </div>
-  </div>
-</div>
 
 <!-- COLOUR BAND -->
 <div class="colour-band"><div class="cb1"></div><div class="cb2"></div><div class="cb3"></div><div class="cb4"></div></div>
@@ -941,17 +946,6 @@ body.lp-body { background: var(--paper); }
   </div>
 </div>
 
-<!-- VENUE HIGHLIGHTS -->
-<div class="vs">
-  <div class="vs-hd">
-    <div class="vs-t">Highly Rated Venues</div>
-    <a href="map.html" class="vs-l">View all →</a>
-  </div>
-  <div id="venueHighlights" class="vs-grid">
-    <div class="vs-empty">Venue highlights load after your first search — <a href="map.html" style="color:var(--teal);text-decoration:none">explore the map →</a></div>
-  </div>
-</div>
-
 <!-- COMMUNITY SECTION -->
 <div class="comm">
   <div class="comm-l">
@@ -963,39 +957,7 @@ body.lp-body { background: var(--paper); }
     <a href="community.html" class="comm-btn">Browse Community →</a>
   </div>
   <div class="comm-r" id="communityPreview">
-    <div class="cp">
-      <div class="cp-av">B</div>
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <div class="cp-nm">Brightwell</div>
-          <span class="cp-mt">Support</span>
-        </div>
-        <div class="cp-ds">Looking for opener slots in the Southeast — Indie Rock, 45 min sets</div>
-        <div class="cp-bd">Nashville, TN · Active</div>
-      </div>
-    </div>
-    <div class="cp">
-      <div class="cp-av" style="background:var(--olive-pale);color:var(--olive)">M</div>
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <div class="cp-nm">Midnight Palms</div>
-          <span class="cp-mt" style="border-color:var(--olive);color:var(--olive)">Co-Headliner</span>
-        </div>
-        <div class="cp-ds">Touring the Midwest this fall — looking for co-headline partners</div>
-        <div class="cp-bd">Chicago, IL · Active</div>
-      </div>
-    </div>
-    <div class="cp">
-      <div class="cp-av" style="background:rgba(217,69,53,0.08);color:var(--red)">R</div>
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <div class="cp-nm">Red River Sect</div>
-          <span class="cp-mt" style="border-color:var(--red);color:var(--red)">Opener</span>
-        </div>
-        <div class="cp-ds">Country / Americana, available weekends for regional dates</div>
-        <div class="cp-bd">Austin, TX · Active</div>
-      </div>
-    </div>
+    <div class="cp-loading">Loading opportunities…</div>
   </div>
 </div>
 
@@ -1402,6 +1364,52 @@ async function loadTickerData() {
   }
 }
 
+// ── Community preview (real data) ─────────────────────────────────────────────
+var TYPE_LABELS = { tour_support: 'Tour Support', local_opener: 'Local Opener', co_headlining: 'Co-Headlining' };
+var TYPE_COLORS = {
+  tour_support:  { bg: 'var(--teal-pale)',        color: 'var(--teal-dark)' },
+  local_opener:  { bg: 'var(--olive-pale)',        color: 'var(--olive)' },
+  co_headlining: { bg: 'rgba(217,69,53,0.09)',     color: 'var(--red)' },
+};
+
+async function loadCommunityPreview() {
+  var el = document.getElementById('communityPreview');
+  if (!el) return;
+  try {
+    var { data } = await sb
+      .from('tour_postings')
+      .select('type, description, bands(band_name, genre, home_city)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div class="cp-loading"><a href="community.html" style="color:var(--teal);text-decoration:none">Be the first to post an opportunity →</a></div>';
+      return;
+    }
+    el.innerHTML = data.map(function(p) {
+      var band = p.bands || {};
+      var initial = (band.band_name || '?')[0].toUpperCase();
+      var tc = TYPE_COLORS[p.type] || { bg: 'var(--teal-pale)', color: 'var(--teal)' };
+      var label = TYPE_LABELS[p.type] || p.type;
+      var city = band.home_city || '';
+      var desc = (p.description || '').slice(0, 90) + (p.description && p.description.length > 90 ? '…' : '');
+      return '<a href="community.html" class="cp" style="text-decoration:none;color:inherit">' +
+        '<div class="cp-av" style="background:' + tc.bg + ';color:' + tc.color + '">' + initial + '</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
+            '<div class="cp-nm">' + (band.band_name || 'Unknown') + '</div>' +
+            '<span class="cp-mt" style="background:' + tc.bg + ';color:' + tc.color + ';border:none;padding:1px 6px">' + label + '</span>' +
+          '</div>' +
+          '<div class="cp-ds">' + desc + '</div>' +
+          '<div class="cp-bd">' + city + (city ? ' · ' : '') + 'Active</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="cp-loading"><a href="community.html" style="color:var(--teal);text-decoration:none">Browse community →</a></div>';
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   document.body.style.visibility = 'visible';
@@ -1409,6 +1417,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initAuth().then(function() {
     lpCheckAccess();
     loadTickerData();
+    loadCommunityPreview();
   });
 });
 </script>
