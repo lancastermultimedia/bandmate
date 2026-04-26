@@ -593,6 +593,18 @@
   })();
 </script>
 <script src="js/feedback.js"></script>
+<script>
+  // Fallback: if Google Maps fails to load (e.g. localhost not authorized),
+  // hide the overlay after 8s so the page is still usable.
+  setTimeout(function() {
+    var ov = document.getElementById('loadingOverlay');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      var hint = ov.querySelector('.loading-logo');
+      if (hint) hint.textContent = 'Map unavailable';
+    }
+  }, 8000);
+</script>
 
 <!-- BOTTOM NAV (mobile only) -->
 <nav class="bottom-nav" id="bottomNav">
