@@ -472,34 +472,36 @@ body.lp-body { background: var(--paper); }
 }
 .comm-btn:hover { background: var(--teal); transform: translateY(-1px); }
 .comm-r {
-  padding: 20px 28px; display: flex; flex-direction: column; gap: 8px;
+  padding: 0; display: grid; grid-template-rows: repeat(3, 1fr);
   overflow: hidden; background: rgba(58,122,138,0.02);
 }
 .cp {
-  display: flex; gap: 10px; padding: 10px 12px;
-  border: 1px solid rgba(15,15,12,0.08);
+  display: flex; gap: 16px; padding: 20px 28px;
+  border-bottom: 1px solid rgba(15,15,12,0.08);
   transition: border-color 0.2s ease, background 0.2s ease;
+  align-items: flex-start;
 }
-.cp:hover { border-color: var(--teal); background: rgba(58,122,138,0.03); }
+.cp:last-child { border-bottom: none; }
+.cp:hover { border-color: var(--teal); background: rgba(58,122,138,0.04); }
 .cp-av {
-  width: 28px; height: 28px; background: var(--teal-pale); flex-shrink: 0;
+  width: 42px; height: 42px; background: var(--teal-pale); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; color: var(--teal-dark);
+  font-family: 'Bebas Neue', sans-serif; font-size: 18px; font-weight: 400; color: var(--teal-dark);
 }
 .cp-nm {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; color: var(--ink);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400; color: var(--ink);
 }
 .cp-mt {
-  font-family: 'Space Mono', monospace; font-size: 6px; text-transform: uppercase;
+  font-family: 'Space Mono', monospace; font-size: 7px; text-transform: uppercase;
   letter-spacing: 0.14em; color: var(--grey); display: inline-block;
-  padding: 1px 5px; border: 1px solid rgba(15,15,12,0.1);
+  padding: 2px 7px; border: 1px solid rgba(15,15,12,0.1);
 }
 .cp-ds {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 300;
-  color: var(--grey); line-height: 1.4;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300;
+  color: var(--grey); line-height: 1.5; margin-top: 5px;
 }
-.cp-bd { font-family: 'Space Mono', monospace; font-size: 6px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.14em; }
-.cp-loading { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 300; letter-spacing: 0.12em; color: var(--grey); padding: 16px 12px; }
+.cp-bd { font-family: 'Space Mono', monospace; font-size: 7px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.14em; margin-top: 6px; }
+.cp-loading { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 300; letter-spacing: 0.12em; color: var(--grey); padding: 24px 28px; }
 a.cp { display: flex; }
 
 /* ── LP Footer ── */
@@ -1392,7 +1394,7 @@ async function loadCommunityPreview() {
       var tc = TYPE_COLORS[p.type] || { bg: 'var(--teal-pale)', color: 'var(--teal)' };
       var label = TYPE_LABELS[p.type] || p.type;
       var city = band.home_city || '';
-      var desc = (p.description || '').slice(0, 90) + (p.description && p.description.length > 90 ? '…' : '');
+      var desc = (p.description || '').slice(0, 130) + (p.description && p.description.length > 130 ? '…' : '');
       return '<a href="community.html" class="cp" style="text-decoration:none;color:inherit">' +
         '<div class="cp-av" style="background:' + tc.bg + ';color:' + tc.color + '">' + initial + '</div>' +
         '<div>' +
