@@ -6291,7 +6291,7 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   cursor: pointer;
   transition: background 0.18s, transform 0.12s;
 }
-.bg-btn:hover { background: #b83f22; transform: translateY(-1px); }
+.bg-btn:hover { background: var(--teal-dark); transform: translateY(-1px); }
 .bg-note {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.72rem;
@@ -6356,7 +6356,7 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   white-space: nowrap;
   transition: background 0.18s, transform 0.12s;
 }
-.comm-post-btn:hover { background: #b83f22; transform: translateY(-1px); }
+.comm-post-btn:hover { background: var(--teal-dark); transform: translateY(-1px); }
 
 /* ── Two-column layout ─────────────────────────────────── */
 .comm-layout {
@@ -6750,7 +6750,7 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   transition: background 0.15s, border-color 0.15s;
 }
 .comm-express-btn:hover,
-.comm-card-btn--rust:hover { background: #b83f22; border-color: #b83f22; }
+.comm-card-btn--rust:hover { background: var(--teal-dark); border-color: var(--teal-dark); }
 
 .comm-manage-btn,
 .comm-card-btn--manage {
@@ -6863,7 +6863,7 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
   cursor: pointer;
   transition: background 0.18s, opacity 0.18s;
 }
-.comm-submit-btn:hover { background: #b83f22; }
+.comm-submit-btn:hover { background: var(--teal-dark); }
 .comm-submit-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* Type selection cards */
@@ -8972,3 +8972,172 @@ input[type="range"] { accent-color: var(--teal) !important; }
   transition: background 0.2s ease, transform 0.18s ease !important;
 }
 .unlock-btn-primary:hover { background: var(--teal) !important; transform: translateY(-1px) !important; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — EXTENDED COMPONENTS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Page stripe bands (inner pages) ─────────────────────────────────────── */
+.page-band {
+  height: 10px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.page-band--ink {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0px, var(--ink) 5px,
+    var(--paper) 5px, var(--paper) 14px
+  );
+}
+.page-band--teal {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--teal) 0px, var(--teal) 5px,
+    var(--paper) 5px, var(--paper) 14px
+  );
+}
+.page-band--olive {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--olive) 0px, var(--olive) 5px,
+    var(--paper) 5px, var(--paper) 14px
+  );
+}
+.page-band--red {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red) 0px, var(--red) 5px,
+    var(--paper) 5px, var(--paper) 14px
+  );
+}
+
+/* ── Loading globe (replaces text logo on map.html) ─────────────────────── */
+@keyframes loadingMeridianSpin {
+  to { transform: rotate(360deg); }
+}
+.loading-globe-wrap {
+  margin-bottom: 18px;
+}
+.loading-globe {
+  display: block;
+}
+.loading-meridian {
+  animation: loadingMeridianSpin 2.4s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.loading-bar-wrap { display: none !important; }
+
+/* ── Community hero — stripe accent + updated palette ────────────────────── */
+.comm-hero {
+  position: relative !important;
+  overflow: hidden !important;
+  background: var(--ink) !important;
+}
+/* Right-side vertical stripe column */
+.comm-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 88px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(58,122,138,0.14) 0px, rgba(58,122,138,0.14) 5px,
+    transparent 5px, transparent 14px
+  );
+  pointer-events: none;
+}
+/* Bottom stripe transition */
+.comm-hero::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--teal) 0px, var(--teal) 5px,
+    transparent 5px, transparent 14px
+  );
+  opacity: 0.35;
+  pointer-events: none;
+}
+.comm-hero-eyebrow {
+  color: var(--teal-pale) !important;
+  opacity: 0.7;
+}
+.comm-post-btn {
+  background: var(--teal) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+}
+.comm-post-btn:hover {
+  background: var(--teal-dark) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Map page panel header stripe ────────────────────────────────────────── */
+.hero-panel-title,
+.panel-section-label,
+.search-label,
+.vf-label {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 7px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.24em !important;
+  color: var(--grey) !important;
+}
+
+/* ── Map info window ─────────────────────────────────────────────────────── */
+.iw-btn {
+  background: var(--teal) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+.iw-tag {
+  font-family: 'Space Mono', monospace !important;
+}
+
+/* ── Tour page card accents ──────────────────────────────────────────────── */
+.ct-card-btn {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+.ct-genre-pill {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 0.55rem !important;
+}
+
+/* ── Profile page stripe ─────────────────────────────────────────────────── */
+.vp-section-title,
+.profile-label,
+.form-label {
+  font-size: 7px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.24em !important;
+  color: var(--grey) !important;
+}
+
+/* ── Global: strip any remaining orange ─────────────────────────────────── */
+[style*="#c94b2a"],
+[style*="#b83f22"],
+[style*="#d4622a"],
+[style*="#ff6b35"] {
+  color: var(--red) !important;
+}

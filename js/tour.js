@@ -255,7 +255,7 @@ function updatePolyline() {
   tourPolyline = new google.maps.Polyline({
     path:          tourWaypoints.map(w => w.latLng),
     geodesic:      true,
-    strokeColor:   '#c94b2a',
+    strokeColor:   '#3a7a8a',
     strokeOpacity: 0.65,
     strokeWeight:  2.5,
     icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeWeight: 2 }, offset: '50%' }],
@@ -335,7 +335,7 @@ function fitBoundsToWaypoints() {
 }
 
 function renderWaypointList() {
-  const colors = ['#c94b2a','#5a7a6a','#d4a843','#4a4540','#8a8278'];
+  const colors = ['#d94535','#3a7a8a','#7a8a3a','#1e4a55','#8a8a7c'];
   document.getElementById('waypointList').innerHTML = tourWaypoints.map((wp, i) => `
     <div class="wp-item">
       <div class="wp-num" style="color:${colors[i % colors.length]}">${i + 1}</div>
@@ -1059,8 +1059,8 @@ const CURATED_TOURS = [
     id:      'americana-highway',
     name:    'The Americana Highway',
     tagline: 'Nashville to Austin through the heart of it all',
-    color:   '#c94b2a',
-    gradient:'linear-gradient(135deg, #c94b2a 0%, #8b3520 50%, #5c2415 100%)',
+    color:   '#d94535',
+    gradient:'linear-gradient(135deg, #d94535 0%, #a8321f 50%, #6e1f10 100%)',
     cities:  ['Nashville, TN', 'Memphis, TN', 'Oxford, MS', 'Jackson, MS', 'New Orleans, LA', 'Baton Rouge, LA', 'Houston, TX', 'Austin, TX'],
     stats:   { cities: 8, days: '10–12 days', genres: 'Americana / Country / Blues', miles: '~1,100 mi' },
     description: 'Follow the spine of American music from Nashville through the Delta and into Texas. This route hits some of the most music-rich cities in the country, passing through the birthplace of blues, soul, and country. Venues along this route tend to draw passionate local crowds and have deep respect for original music. Best run in spring or fall to avoid summer heat.',
@@ -1076,8 +1076,8 @@ const CURATED_TOURS = [
     id:      'college-circuit',
     name:    'The College Circuit',
     tagline: 'Eight college towns, eight ready-made audiences',
-    color:   '#5a7a6a',
-    gradient:'linear-gradient(135deg, #5a7a6a 0%, #3d5c4e 50%, #253d34 100%)',
+    color:   '#3a7a8a',
+    gradient:'linear-gradient(135deg, #3a7a8a 0%, #1e4a55 50%, #0f2d36 100%)',
     cities:  ['Columbus, OH', 'Athens, OH', 'Morgantown, WV', 'Charlottesville, VA', 'Chapel Hill, NC', 'Columbia, SC', 'Athens, GA', 'Tallahassee, FL'],
     stats:   { cities: 8, days: '9–11 days', genres: 'Indie / Alt / Rock / Folk', miles: '~900 mi' },
     description: 'College towns are the secret weapon of the independent touring band. Built-in young audiences, venues that love original music, affordable cities to stay in, and promoters who are genuinely excited about new acts. This southeastern college circuit hits some of the most underrated music scenes in the country. Athens GA alone is worth the whole trip.',

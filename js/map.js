@@ -222,7 +222,7 @@ function _appendSubmittedVenuesSection(svs) {
 
 function addSubmittedVenueMarker(sv) {
   const label = sv.venue_type === 'house_show' ? 'HSV' : 'DIY';
-  const color  = '#5a7a6a'; // sage
+  const color  = '#3a7a8a'; // teal
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
     <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${color}"/>
     <circle cx="18" cy="18" r="10" fill="white" opacity="0.9"/>
@@ -369,7 +369,7 @@ async function enrichAndRenderVenues(venues) {
 
 function addMarker(place) {
   const rating = place.rating || null;
-  const color  = rating >= 4.5 ? '#c94b2a' : rating >= 4.0 ? '#5a7a6a' : rating >= 3.5 ? '#d4a843' : '#8a8278';
+  const color  = rating >= 4.5 ? '#d94535' : rating >= 4.0 ? '#3a7a8a' : rating >= 3.5 ? '#7a8a3a' : '#8a8a7c';
   const svg    = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
     <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${color}"/>
     <circle cx="18" cy="18" r="10" fill="white" opacity="0.9"/>
