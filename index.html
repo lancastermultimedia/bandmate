@@ -25,6 +25,27 @@ body.lp-body { background: var(--paper); }
   transform-origin: center;
 }
 
+/* ── Location pin drop animations ── */
+@keyframes pinFade {
+  0%, 100% { opacity: 0; }
+  12%       { opacity: 0; transform: translateY(-7px) scale(0.7); }
+  28%       { opacity: 0.75; transform: translateY(0) scale(1); }
+  65%       { opacity: 0.65; transform: translateY(0) scale(1); }
+  82%       { opacity: 0; }
+}
+.lp-pin {
+  opacity: 0;
+  animation: pinFade 11s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.lp-pin:nth-child(1) { animation-delay: 0s; }
+.lp-pin:nth-child(2) { animation-delay: 2.2s; }
+.lp-pin:nth-child(3) { animation-delay: 4.1s; }
+.lp-pin:nth-child(4) { animation-delay: 6.4s; }
+.lp-pin:nth-child(5) { animation-delay: 8.3s; }
+.lp-pin:nth-child(6) { animation-delay: 1.5s; }
+
 /* ── LP Nav ── */
 .lp-nav {
   position: fixed;
@@ -175,39 +196,43 @@ body.lp-body { background: var(--paper); }
   color: var(--ink);
   line-height: 1;
 }
-.stripe-band { width: 100%; overflow: hidden; line-height: 0; }
+/* Globe stage — stripes as CSS background, globe punches through */
 .globe-stage {
   position: relative;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: center;
   overflow: hidden;
-  background: var(--paper);
+  padding: 52px 0 44px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(15,15,12,0.82) 0px,
+    rgba(15,15,12,0.82) 6px,
+    var(--paper) 6px,
+    var(--paper) 14px
+  );
 }
-.red-base {
+/* Fade stripes at left and right edges */
+.globe-stage::before {
+  content: '';
   position: absolute;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 340px; height: 80px;
-  background: var(--red);
-  clip-path: ellipse(170px 80px at 50% 100%);
-}
-.teal-arc {
-  position: absolute;
-  bottom: 24px; left: 50%;
-  transform: translateX(-50%);
-  width: 460px; height: 160px;
-  border: 2.5px solid var(--teal);
-  clip-path: ellipse(230px 160px at 50% 100%);
-  border-bottom: none;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--paper) 0%,
+    transparent 14%,
+    transparent 86%,
+    var(--paper) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 .globe-svg-wrap {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 12px;
 }
 .poster-info {
   display: grid;
@@ -221,12 +246,12 @@ body.lp-body { background: var(--paper); }
 .pi-block:last-child { border-right: none; }
 .pi-label {
   font-family: 'Space Mono', monospace;
-  font-size: 6px; text-transform: uppercase; letter-spacing: 0.22em;
-  color: var(--grey); margin-bottom: 5px;
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--grey); margin-bottom: 6px;
 }
 .pi-value {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300; font-size: 11px; color: var(--ink); line-height: 1.5;
+  font-weight: 300; font-size: 13px; color: var(--ink); line-height: 1.55;
 }
 .poster-dates {
   display: flex;
@@ -238,12 +263,12 @@ body.lp-body { background: var(--paper); }
 .pd-left {
   display: flex; align-items: center; gap: 14px;
   font-family: 'Space Mono', monospace;
-  font-size: 7px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--paper);
+  font-size: 8px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--paper);
 }
 .pd-right {
   font-family: 'Space Mono', monospace;
-  font-size: 7px; text-transform: uppercase; letter-spacing: 0.22em;
-  color: rgba(242,239,230,0.35);
+  font-size: 8px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: rgba(242,239,230,0.4);
 }
 
 /* ── Colour band ── */
@@ -275,8 +300,8 @@ body.lp-body { background: var(--paper); }
 }
 .stat-label {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300; font-size: 8px; text-transform: uppercase;
-  letter-spacing: 0.22em; color: var(--grey);
+  font-weight: 300; font-size: 9px; text-transform: uppercase;
+  letter-spacing: 0.16em; color: var(--grey);
 }
 
 /* ── Ticker ── */
@@ -289,7 +314,7 @@ body.lp-body { background: var(--paper); }
 }
 .ticker-label {
   font-family: 'Space Mono', monospace;
-  font-size: 7px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.24em;
+  font-size: 8px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.16em;
   color: var(--teal); flex-shrink: 0;
   border-right: 1px solid rgba(58,122,138,0.2); padding-right: 16px;
 }
@@ -304,8 +329,8 @@ body.lp-body { background: var(--paper); }
 }
 .ticker-item {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300; font-size: 8px; text-transform: uppercase;
-  letter-spacing: 0.14em; color: var(--teal); opacity: 0.75;
+  font-weight: 300; font-size: 9px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--teal); opacity: 0.8;
   padding: 0 28px 0 0; display: inline-block;
 }
 .ticker-dot { color: var(--teal); opacity: 0.3; padding-right: 28px; font-size: 8px; }
@@ -321,8 +346,8 @@ body.lp-body { background: var(--paper); }
 }
 .fh {
   font-family: 'Space Mono', monospace;
-  font-size: 6px; text-transform: uppercase; letter-spacing: 0.22em;
-  color: rgba(242,239,230,0.4);
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: rgba(242,239,230,0.45);
 }
 .feat-row {
   display: grid;
@@ -336,7 +361,7 @@ body.lp-body { background: var(--paper); }
 .feat-row:hover { background: rgba(58,122,138,0.04); }
 .fi {
   font-family: 'Space Mono', monospace;
-  font-size: 9px; color: var(--grey); opacity: 0.45;
+  font-size: 10px; color: var(--grey); opacity: 0.5;
 }
 .fn { display: flex; flex-direction: column; gap: 4px; }
 .fn-row { display: flex; align-items: center; gap: 8px; }
@@ -348,17 +373,17 @@ body.lp-body { background: var(--paper); }
 .fn-tags { display: flex; gap: 6px; }
 .fn-tag {
   font-family: 'Space Mono', monospace;
-  font-size: 6px; text-transform: uppercase; letter-spacing: 0.14em;
-  color: var(--grey); border: 1px solid rgba(15,15,12,0.1); padding: 2px 6px;
+  font-size: 7px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--grey); border: 1px solid rgba(15,15,12,0.1); padding: 2px 7px;
 }
 .fd {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300; font-size: 11px; color: var(--grey); line-height: 1.55;
+  font-weight: 300; font-size: 13px; color: var(--grey); line-height: 1.6;
 }
 .fa { display: flex; align-items: center; }
 .fa-btn {
   font-family: 'Space Mono', monospace;
-  font-size: 7px; text-transform: uppercase; letter-spacing: 0.16em;
+  font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em;
   padding: 8px 14px; text-decoration: none; display: inline-block;
   border: none; cursor: pointer;
   transition: transform 0.18s ease, background 0.2s ease, color 0.2s ease;
@@ -525,7 +550,7 @@ body.lp-body { background: var(--paper); }
   .lp-nav .lp-nav-links { display: none; }
   .poster-top { padding: 16px 20px 8px; }
   .poster-wordmark { font-size: clamp(2.5rem, 12vw, 4rem); }
-  .globe-stage { height: 200px !important; }
+  .globe-stage { padding: 30px 0 24px; }
   .globe-svg-wrap svg { width: 260px !important; }
   .poster-info { grid-template-columns: repeat(2, 1fr); }
   .poster-dates { padding: 8px 20px; }
@@ -657,33 +682,8 @@ body.lp-body { background: var(--paper); }
     <div class="poster-wordmark">Bandmate</div>
   </div>
 
-  <!-- Stripe band -->
-  <div class="stripe-band">
-    <svg width="100%" height="48" preserveAspectRatio="none" viewBox="0 0 680 48">
-      <defs>
-        <pattern id="stripes" x="0" y="0" width="16" height="48" patternUnits="userSpaceOnUse">
-          <rect x="0" y="0" width="7" height="48" fill="#0f0f0c"/>
-          <rect x="7" y="0" width="9" height="48" fill="#f2efe6"/>
-        </pattern>
-        <linearGradient id="fadeL" x1="0%" x2="100%">
-          <stop offset="0%" stop-color="#f2efe6"/>
-          <stop offset="100%" stop-color="#f2efe6" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="fadeR" x1="0%" x2="100%">
-          <stop offset="0%" stop-color="#f2efe6" stop-opacity="0"/>
-          <stop offset="100%" stop-color="#f2efe6"/>
-        </linearGradient>
-      </defs>
-      <rect width="680" height="48" fill="url(#stripes)"/>
-      <rect width="70" height="48" fill="url(#fadeL)"/>
-      <rect x="610" width="70" height="48" fill="url(#fadeR)"/>
-    </svg>
-  </div>
-
-  <!-- Globe stage -->
-  <div class="globe-stage" style="height:280px">
-    <div class="red-base"></div>
-    <div class="teal-arc"></div>
+  <!-- Globe stage (stripes via CSS background, globe punches through) -->
+  <div class="globe-stage">
     <div class="globe-svg-wrap">
       <svg viewBox="0 0 340 250" width="480" xmlns="http://www.w3.org/2000/svg" style="display:block">
         <defs>
@@ -691,7 +691,7 @@ body.lp-body { background: var(--paper); }
             <circle cx="170" cy="125" r="110"/>
           </clipPath>
         </defs>
-        <!-- Globe fill -->
+        <!-- Globe fill (paper color masks stripes underneath) -->
         <circle cx="170" cy="125" r="110" fill="#f2efe6"/>
         <!-- Static latitude lines -->
         <g clip-path="url(#globeClip)">
@@ -711,7 +711,52 @@ body.lp-body { background: var(--paper); }
           <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.5" opacity="0.15" transform="rotate(-45 170 125)"/>
           <ellipse cx="170" cy="125" rx="55" ry="110" fill="none" stroke="#0f0f0c" stroke-width="0.4" opacity="0.1" transform="rotate(90 170 125)"/>
         </g>
-        <!-- Globe outer ring (on top) -->
+        <!-- Location pins — staggered fade-in across globe surface -->
+        <g clip-path="url(#globeClip)">
+          <g class="lp-pin">
+            <g transform="translate(128, 91)">
+              <circle r="5.5" fill="#d94535"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#d94535" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g class="lp-pin">
+            <g transform="translate(208, 83)">
+              <circle r="5.5" fill="#d94535"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#d94535" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g class="lp-pin">
+            <g transform="translate(148, 153)">
+              <circle r="5.5" fill="#3a7a8a"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#3a7a8a" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g class="lp-pin">
+            <g transform="translate(217, 143)">
+              <circle r="5.5" fill="#d94535"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#d94535" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g class="lp-pin">
+            <g transform="translate(170, 72)">
+              <circle r="5.5" fill="#3a7a8a"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#3a7a8a" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g class="lp-pin">
+            <g transform="translate(175, 167)">
+              <circle r="5.5" fill="#d94535"/>
+              <circle r="2" fill="white" opacity="0.85"/>
+              <line y1="4.5" y2="11" stroke="#d94535" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+          </g>
+        </g>
+        <!-- Globe outer ring (on top of all layers) -->
         <circle cx="170" cy="125" r="110" fill="none" stroke="#0f0f0c" stroke-width="1.5"/>
       </svg>
     </div>
