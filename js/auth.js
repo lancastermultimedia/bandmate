@@ -425,7 +425,8 @@ function updateNavAuth() {
       </button>
       <button class="nav-signout" onclick="handleSignout()">Sign Out</button>
     </div>`;
-    if (typeof loadNotifCount === 'function') loadNotifCount();
+    loadNotifCount();
+    _subscribeToNotifications();
     // Update mobile nav footer — logged in with profile
     const mobileFooter = document.getElementById('mobileNavFooter');
     if (mobileFooter && currentBandProfile) {
@@ -452,6 +453,120 @@ function updateNavAuth() {
 
 function escapeHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Notifications (available on all pages; community.js overrides on /community) ──
+let _notifTrayOpen = false;
+let _notifChannel  = null;
+
+async function loadNotifCount() {
+  if (!currentBandProfile) return;
+  const { count } = await sb
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('band_id', currentBandProfile.id)
+    .eq('read', false);
+  const badge = document.getElementById('navBellBadge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent   = count > 99 ? '99+' : String(count);
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function toggleNotifTray() {
+  if (_notifTrayOpen) { _closeNotifTray(); } else { _openNotifTray(); }
+}
+
+function _closeNotifTray() {
+  const tray = document.getElementById('notifTray');
+  if (tray) tray.classList.remove('open');
+  _notifTrayOpen = false;
+}
+
+async function _openNotifTray() {
+  if (!currentBandProfile) return;
+  let tray = document.getElementById('notifTray');
+  if (!tray) {
+    tray = document.createElement('div');
+    tray.id        = 'notifTray';
+    tray.className = 'notif-tray';
+    document.body.appendChild(tray);
+    document.addEventListener('click', function _ntClose(e) {
+      const bell = document.getElementById('navBell');
+      if (!document.getElementById('notifTray')?.contains(e.target) && !bell?.contains(e.target)) {
+        _closeNotifTray();
+        document.removeEventListener('click', _ntClose);
+      }
+    });
+  }
+  const bell = document.getElementById('navBell');
+  if (bell) {
+    const rect       = bell.getBoundingClientRect();
+    tray.style.position = 'fixed';
+    tray.style.top      = (rect.bottom + 8) + 'px';
+    tray.style.right    = (window.innerWidth - rect.right) + 'px';
+    tray.style.left     = 'auto';
+  }
+  _notifTrayOpen = true;
+  tray.innerHTML = '<div class="notif-tray-loading">Loading…</div>';
+  tray.classList.add('open');
+
+  const { data: notifs } = await sb
+    .from('notifications')
+    .select('*')
+    .eq('band_id', currentBandProfile.id)
+    .order('created_at', { ascending: false })
+    .limit(15);
+
+  if ((notifs || []).some(n => !n.read)) {
+    await sb.from('notifications').update({ read: true })
+      .eq('band_id', currentBandProfile.id).eq('read', false);
+    const badge = document.getElementById('navBellBadge');
+    if (badge) badge.style.display = 'none';
+  }
+  _renderNotifTray(tray, notifs || []);
+}
+
+function _renderNotifTray(tray, notifs) {
+  const itemsHtml = notifs.map(n => {
+    const pl   = n.payload || {};
+    const band = pl.from_band || '';
+    const city = pl.city || '';
+    const title = pl.posting_title || '';
+    let desc;
+    if (n.type === 'interest_received')   desc = `${escapeHtml(band)} expressed interest in your posting`;
+    else if (n.type === 'interest_accepted') desc = `Your interest was accepted${city ? ' for ' + escapeHtml(city) : title ? ' for ' + escapeHtml(title) : ''}`;
+    else if (n.type === 'interest_declined') desc = `Your interest was declined${city ? ' for ' + escapeHtml(city) : title ? ' for ' + escapeHtml(title) : ''}`;
+    else if (n.type === 'new_posting_nearby') desc = `${escapeHtml(band)} posted a new opportunity near you`;
+    else if (n.type === 'new_message')    desc = `New message from ${escapeHtml(band)}`;
+    else desc = n.type;
+    const diffMs  = Date.now() - new Date(n.created_at).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const ago = diffMin < 1 ? 'just now' : diffMin < 60 ? `${diffMin}m ago` : diffMin < 1440 ? `${Math.floor(diffMin/60)}h ago` : `${Math.floor(diffMin/1440)}d ago`;
+    return `<div class="notif-item" onclick="_closeNotifTray();window.location.href='community.html'">
+      <div class="notif-body"><div class="notif-desc">${desc}</div><div class="notif-time">${ago}</div></div>
+    </div>`;
+  }).join('');
+  tray.innerHTML = `
+    <div class="notif-tray-header"><span class="notif-tray-title">Notifications</span></div>
+    <div class="notif-list">${itemsHtml || '<div class="notif-tray-empty">No notifications yet.</div>'}</div>`;
+}
+
+function _subscribeToNotifications() {
+  if (!currentBandProfile) return;
+  if (_notifChannel) { sb.removeChannel(_notifChannel); _notifChannel = null; }
+  try {
+    _notifChannel = sb.channel(`notif_${currentBandProfile.id}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `band_id=eq.${currentBandProfile.id}` },
+        async () => { await loadNotifCount(); }
+      )
+      .subscribe();
+  } catch (_) {}
 }
 
 // ─── Mobile Menu ─────────────────────────────────────────────────────────────

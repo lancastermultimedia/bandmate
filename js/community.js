@@ -1243,13 +1243,14 @@ async function openChatModal(toBandId, toBandName) {
   try {
     if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
     _chatChannel = sb.channel(`chat_${[myId, toBandId].sort().join('_')}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
-        const msg = payload.new;
-        if ((msg.sender_band_id === myId && msg.receiver_band_id === toBandId) ||
-            (msg.sender_band_id === toBandId && msg.receiver_band_id === myId)) {
-          _appendChatMessage(msg, myId);
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'band_messages',
+          filter: `receiver_band_id=eq.${myId}` },
+        payload => {
+          const msg = payload.new;
+          if (msg.sender_band_id === toBandId) _appendChatMessage(msg, myId);
         }
-      })
+      )
       .subscribe();
   } catch (_) { /* realtime unavailable — polling not needed for MVP */ }
 

@@ -1,15 +1,15 @@
 :root {
-  --ink: #0e0d0b;
-  --cream: #f5f0e8;
-  --warm: #f0e9d6;
-  --rust: #c94b2a;
-  --rust-light: #e8613d;
-  --gold: #d4a843;
-  --sage: #5a7a6a;
-  --sage-light: #7a9e8c;
-  --muted: #8a8278;
-  --border: rgba(14,13,11,0.12);
-  --card-bg: rgba(255,253,248,0.96);
+  --ink: #0f0f0c;
+  --cream: #f2efe6;
+  --warm: #f2efe6;
+  --rust: #3a7a8a;
+  --rust-light: #3a7a8a;
+  --gold: #7a8a3a;
+  --sage: #7a8a3a;
+  --sage-light: #7a8a3a;
+  --muted: #8a8a7c;
+  --border: rgba(15,15,12,0.10);
+  --card-bg: #f8f5ee;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -9140,4 +9140,32 @@ input[type="range"] { accent-color: var(--teal) !important; }
 [style*="#d4622a"],
 [style*="#ff6b35"] {
   color: var(--red) !important;
+}
+
+/* ── Tour page stripe band (teal, gradient-faded edges) ─────────────────── */
+.tour-stripe-band {
+  height: 18px;
+  position: relative;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(58,122,138,0.75) 0px, rgba(58,122,138,0.75) 5px,
+    transparent 5px, transparent 14px
+  );
+  flex-shrink: 0;
+}
+.tour-stripe-band::before,
+.tour-stripe-band::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 120px;
+  pointer-events: none;
+}
+.tour-stripe-band::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--paper) 0%, transparent 100%);
+}
+.tour-stripe-band::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--paper) 0%, transparent 100%);
 }
