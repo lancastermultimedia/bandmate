@@ -43,3 +43,23 @@ body::before { display: none !important; }
 
 /* ── Global micro-animations ── */
 a, button { transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.18s ease, opacity 0.2s ease; }
+
+/* ── Avatar circle exceptions (override global border-radius: 0) ── */
+.nav-avatar,
+.nav-avatar-init,
+.reviewer-avatar,
+.ri-avatar,
+.ri-avatar-img,
+.profile-photo,
+.profile-photo-init,
+.profile-photo-wrap,
+.comm-avatar,
+.comm-avatar-init,
+.comm-avatar-initials,
+.comm-confirmed-avatar,
+.comm-confirmed-avatar-init,
+.cp-av,
+img[class*="avatar"],
+img[class*="photo"] {
+  border-radius: 50% !important;
+}
