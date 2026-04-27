@@ -58,6 +58,22 @@ async function openVenuePage(placeId, name, address) {
       openContactModal(placeId, name, address);
   }
 
+  // Venue hero photo (Google Places only)
+  const vpPhoto    = document.getElementById('vpHeroPhoto');
+  const vpPhotoImg = document.getElementById('vpHeroPhotoImg');
+  if (vpPhoto && vpPhotoImg) {
+    vpPhoto.style.display = 'none';
+    vpPhotoImg.src = '';
+    if (!isSubmitted && typeof window.getVenuePhotoUrl === 'function') {
+      window.getVenuePhotoUrl(placeId, (url) => {
+        if (url) {
+          vpPhotoImg.src        = url;
+          vpPhoto.style.display = '';
+        }
+      });
+    }
+  }
+
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('venuePage').classList.add('open');
   document.body.style.overflow = 'hidden';

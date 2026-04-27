@@ -9169,3 +9169,45 @@ input[type="range"] { accent-color: var(--teal) !important; }
   right: 0;
   background: linear-gradient(270deg, var(--paper) 0%, transparent 100%);
 }
+
+/* ── Venue page hero photo — halftone / screen-print effect ─────────────── */
+.vp-hero-photo {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: var(--teal-pale);
+}
+.vp-hero-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  display: block;
+  /* desaturate + boost contrast for screen-print base */
+  filter: grayscale(1) contrast(1.35) brightness(0.82);
+}
+/* Combined colour wash + halftone dot grid in a single pseudo-element */
+.vp-hero-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Layer 1: teal colour wash; Layer 2: paper-dot halftone grid */
+  background:
+    radial-gradient(circle, rgba(242,239,230,0.52) 1.8px, transparent 1.8px),
+    rgba(58,122,138,0.52);
+  background-size: 7px 7px, 100% 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Bottom fade so it blends into the page content below */
+.vp-hero-photo::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, var(--paper));
+  z-index: 2;
+  pointer-events: none;
+}

@@ -617,6 +617,21 @@ function openAddVenueModal() {
 }
 window.openAddVenueModal = openAddVenueModal;
 
+// Exposed so reviews.js can fetch a venue photo without holding its own PlacesService
+window.getVenuePhotoUrl = function(placeId, callback) {
+  if (!placesService) { callback(null); return; }
+  placesService.getDetails(
+    { placeId, fields: ['photos'] },
+    (place, status) => {
+      if (status === 'OK' && place.photos && place.photos.length > 0) {
+        callback(place.photos[0].getUrl({ maxWidth: 1200, maxHeight: 440 }));
+      } else {
+        callback(null);
+      }
+    }
+  );
+};
+
 function closeAddVenueModal() {
   document.getElementById('addVenueModal').classList.remove('open');
 }
