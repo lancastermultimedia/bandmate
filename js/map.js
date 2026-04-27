@@ -403,8 +403,9 @@ function showInfoWindow(place, marker) {
   const types    = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
   const typeTags = types.slice(0, 3).map(t => `<span class="iw-tag">${t.replace(/_/g, ' ')}</span>`).join('');
 
-  infoWindow.setContent(`
+  const buildContent = (photoHtml) => `
     <div class="info-window">
+      ${photoHtml}
       <div class="iw-name">${place.name}</div>
       <div class="iw-address">${place.vicinity || ''}</div>
       ${rating
@@ -421,8 +422,24 @@ function showInfoWindow(place, marker) {
       <button class="iw-btn" style="margin-top:6px;background:var(--ink)" onclick="openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
         Reviews + Full Page
       </button>
-    </div>`);
+    </div>`;
+
+  infoWindow.setContent(buildContent(''));
   infoWindow.open(map, marker);
+
+  // Load photo async — nearbySearch results never carry photos
+  if (placesService) {
+    placesService.getDetails(
+      { placeId: place.place_id, fields: ['photos'] },
+      (detail, status) => {
+        if (status === 'OK' && detail.photos && detail.photos.length > 0) {
+          const url = detail.photos[0].getUrl({ maxWidth: 480, maxHeight: 200 });
+          const photoHtml = `<div class="iw-photo-wrap"><img class="iw-photo" src="${url}" alt=""></div>`;
+          infoWindow.setContent(buildContent(photoHtml));
+        }
+      }
+    );
+  }
 }
 
 // ─── Venue list panel ─────────────────────────────────────────────────────────

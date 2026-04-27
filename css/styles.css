@@ -9170,6 +9170,44 @@ input[type="range"] { accent-color: var(--teal) !important; }
   background: linear-gradient(270deg, var(--paper) 0%, transparent 100%);
 }
 
+/* ── Info window venue photo — compact halftone effect ──────────────────── */
+.iw-photo-wrap {
+  position: relative;
+  width: calc(100% + 0px);
+  height: 130px;
+  overflow: hidden;
+  margin: -8px -8px 12px -8px;
+  background: var(--teal-pale);
+  flex-shrink: 0;
+}
+.iw-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  display: block;
+  filter: grayscale(1) contrast(1.3) brightness(0.85);
+}
+.iw-photo-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(242,239,230,0.48) 1.6px, transparent 1.6px),
+    rgba(58,122,138,0.45);
+  background-size: 6px 6px, 100% 100%;
+  pointer-events: none;
+}
+.iw-photo-wrap::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(242,239,230,0.9));
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* ── Venue page hero photo — halftone / screen-print effect ─────────────── */
 .vp-hero-photo {
   position: relative;
