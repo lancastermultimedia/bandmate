@@ -818,6 +818,58 @@ a.cp { display: flex; }
 
 </section>
 
+<!-- MAP SECTION (id kept for existing JS) -->
+<section class="hero" id="map-section">
+  <div class="hero-panel">
+    <div class="hero-eyebrow">For independent bands everywhere</div>
+    <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
+    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..."/>
+        <button class="search-btn" onclick="searchLocation()">Search →</button>
+      </div>
+    </div>
+    <button class="locate-btn" onclick="locateMe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
+      </svg>
+      Use My Location
+    </button>
+    <div class="filter-label">Filter by Genre</div>
+    <div class="filter-chips" id="genreChips">
+      <span class="chip active-rust" onclick="toggleChip(this)">All</span>
+      <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
+      <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
+      <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
+      <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
+      <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
+      <span class="chip" onclick="toggleChip(this)">Country</span>
+    </div>
+    <div class="radius-row">
+      <span class="filter-label" style="margin-bottom:0">Search Radius</span>
+      <span class="radius-val" id="radiusVal">10 miles</span>
+    </div>
+    <input type="range" min="1" max="50" value="10" id="radiusSlider"
+           oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
+    <div class="status-bar" id="statusBar">
+      <div class="status-dot amber" id="statusDot"></div>
+      <span id="statusText">Locating you...</span>
+    </div>
+    <div class="filter-label" id="resultsLabel">Venues Found</div>
+    <div class="venues-list" id="venuesList">
+      <div class="no-results">
+        <div class="no-results-icon">—</div>
+        <div class="no-results-title">Loading map...</div>
+        <div class="no-results-sub">Venues will appear here once the map loads.</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative; overflow:hidden; height:100%;">
+    <div id="map"></div>
+  </div>
+</section>
 
 <!-- COLOUR BAND -->
 <div class="colour-band"><div class="cb1"></div><div class="cb2"></div><div class="cb3"></div><div class="cb4"></div></div>
@@ -976,59 +1028,6 @@ a.cp { display: flex; }
   <div class="loading-text">Finding venues near you...</div>
   <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
 </div>
-
-<!-- MAP SECTION (id kept for existing JS) -->
-<section class="hero" id="map-section">
-  <div class="hero-panel">
-    <div class="hero-eyebrow">For independent bands everywhere</div>
-    <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
-    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
-    <div class="search-wrap">
-      <div class="search-input-row">
-        <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..."/>
-        <button class="search-btn" onclick="searchLocation()">Search →</button>
-      </div>
-    </div>
-    <button class="locate-btn" onclick="locateMe()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
-      </svg>
-      Use My Location
-    </button>
-    <div class="filter-label">Filter by Genre</div>
-    <div class="filter-chips" id="genreChips">
-      <span class="chip active-rust" onclick="toggleChip(this)">All</span>
-      <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
-      <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
-      <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
-      <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
-      <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
-      <span class="chip" onclick="toggleChip(this)">Country</span>
-    </div>
-    <div class="radius-row">
-      <span class="filter-label" style="margin-bottom:0">Search Radius</span>
-      <span class="radius-val" id="radiusVal">10 miles</span>
-    </div>
-    <input type="range" min="1" max="50" value="10" id="radiusSlider"
-           oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
-    <div class="status-bar" id="statusBar">
-      <div class="status-dot amber" id="statusDot"></div>
-      <span id="statusText">Locating you...</span>
-    </div>
-    <div class="filter-label" id="resultsLabel">Venues Found</div>
-    <div class="venues-list" id="venuesList">
-      <div class="no-results">
-        <div class="no-results-icon">—</div>
-        <div class="no-results-title">Loading map...</div>
-        <div class="no-results-sub">Venues will appear here once the map loads.</div>
-      </div>
-    </div>
-  </div>
-  <div style="position:relative; overflow:hidden; height:100%;">
-    <div id="map"></div>
-  </div>
-</section>
 
 <!-- FOOTER -->
 <footer class="lp-footer">
