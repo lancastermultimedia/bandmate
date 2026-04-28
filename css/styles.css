@@ -9247,3 +9247,214 @@ input[type="range"] { accent-color: var(--teal) !important; }
   z-index: 2;
   pointer-events: none;
 }
+
+/* ── EPK Promo section ───────────────────────────────────────────────────── */
+.epk-promo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1.5px solid var(--ink);
+}
+.epk-promo-l {
+  padding: 52px 44px 52px 28px;
+  border-right: 1.5px solid var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+.epk-promo-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 18px;
+}
+.epk-promo-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  font-size: 2.6rem;
+  line-height: 1.08;
+  color: var(--ink);
+  margin-bottom: 18px;
+}
+.epk-promo-title em {
+  font-style: normal;
+  color: var(--teal);
+}
+.epk-promo-desc {
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--grey);
+  max-width: 340px;
+}
+.epk-promo-r {
+  padding: 36px 28px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--paper);
+}
+
+/* ── Mini EPK Card ───────────────────────────────────────────────────────── */
+.epk-mini {
+  border: 1px solid rgba(15,15,12,0.12);
+  overflow: hidden;
+  transition: background 0.25s ease, color 0.25s ease;
+  flex: 1;
+}
+
+/* Theme variables */
+.epk-mini[data-theme="clean"]   { --em-bg:#ffffff; --em-fg:#0e0d0b; --em-accent:#c94b2a; --em-hero-bg:#0e0d0b; --em-hero-fg:#f5f0e8; --em-muted:rgba(14,13,11,0.48); --em-border:rgba(14,13,11,0.1); }
+.epk-mini[data-theme="bold"]    { --em-bg:#0e0d0b; --em-fg:#f5f0e8; --em-accent:#c94b2a; --em-hero-bg:#1a1816; --em-hero-fg:#f5f0e8; --em-muted:rgba(245,240,232,0.45); --em-border:rgba(245,240,232,0.1); }
+.epk-mini[data-theme="vibrant"] { --em-bg:#1a3a2a; --em-fg:#f5f0e8; --em-accent:#d4a843; --em-hero-bg:#152e22; --em-hero-fg:#f5f0e8; --em-muted:rgba(245,240,232,0.45); --em-border:rgba(245,240,232,0.12); }
+.epk-mini[data-theme="static"]  { --em-bg:#090909; --em-fg:#eeeeee; --em-accent:#d4ff00; --em-hero-bg:#111111; --em-hero-fg:#eeeeee; --em-muted:rgba(238,238,238,0.4); --em-border:rgba(238,238,238,0.1); }
+.epk-mini[data-theme="torn"]    { --em-bg:#f0ece0; --em-fg:#080808; --em-accent:#c41010; --em-hero-bg:#e4e0d4; --em-hero-fg:#080808; --em-muted:rgba(8,8,8,0.45); --em-border:rgba(8,8,8,0.15); }
+.epk-mini[data-theme="signal"]  { --em-bg:#faf9f5; --em-fg:#1c1b18; --em-accent:#8a8278; --em-hero-bg:#f3f1eb; --em-hero-fg:#1c1b18; --em-muted:rgba(28,27,24,0.38); --em-border:rgba(28,27,24,0.08); }
+
+.em-hero {
+  background: var(--em-hero-bg);
+  color: var(--em-hero-fg);
+  padding: 20px 18px 18px;
+  border-bottom: 1px solid var(--em-border, rgba(15,15,12,0.1));
+}
+.em-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 6px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+.em-name {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.em-meta {
+  font-size: 0.62rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.em-body {
+  background: var(--em-bg);
+  color: var(--em-fg);
+  padding: 14px 18px 16px;
+}
+.em-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 6px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--em-accent);
+  margin-bottom: 6px;
+}
+.em-bio {
+  font-size: 0.65rem;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--em-muted);
+  margin-bottom: 10px;
+}
+.em-divider {
+  height: 1px;
+  background: var(--em-border, rgba(15,15,12,0.08));
+  margin: 10px 0;
+}
+.em-stats-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+.em-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.em-stat-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--em-fg);
+}
+.em-stat-lbl {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--em-muted);
+}
+.em-links-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.em-link {
+  font-size: 0.57rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--em-border, rgba(15,15,12,0.1));
+  padding: 2px 7px;
+  color: var(--em-fg);
+}
+.em-book-btn {
+  display: inline-block;
+  background: var(--em-accent);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+}
+.epk-mini[data-theme="clean"] .em-book-btn,
+.epk-mini[data-theme="torn"]  .em-book-btn { color: #fff; }
+.epk-mini[data-theme="static"] .em-book-btn { color: #000; }
+.epk-mini[data-theme="signal"] .em-book-btn { color: var(--em-bg); }
+
+/* ── Theme switcher buttons ──────────────────────────────────────────────── */
+.epk-theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ets-label {
+  font-size: 7px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--grey);
+  flex-shrink: 0;
+}
+.ets-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.etb {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 7px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid rgba(15,15,12,0.15);
+  background: transparent;
+  color: var(--grey);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.etb:hover { border-color: var(--teal); color: var(--teal); }
+.etb-active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.etb-active:hover { background: var(--teal); border-color: var(--teal); color: var(--paper); }
+
+@media (max-width: 768px) {
+  .epk-promo { grid-template-columns: 1fr; }
+  .epk-promo-l { border-right: none; border-bottom: 1.5px solid var(--ink); padding: 36px 20px; }
+  .epk-promo-r { padding: 28px 20px; }
+}
