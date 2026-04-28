@@ -7951,6 +7951,123 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   color: white;
 }
 
+/* ─── Nearby Bands dropdown ──────────────────────────────────────────────────── */
+.nb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  margin: 4px 0 0;
+  border-top: 1px solid rgba(15,15,12,0.08);
+  border-bottom: 1px solid rgba(15,15,12,0.08);
+  cursor: pointer;
+  background: var(--paper);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.nb-header:hover { background: rgba(58,122,138,0.06); }
+.nb-title {
+  font-size: 7.5px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.nb-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 6.5px;
+  background: var(--teal);
+  color: var(--paper);
+  padding: 1px 5px;
+  margin-left: 8px;
+  letter-spacing: 0.05em;
+}
+.nb-chevron {
+  font-size: 10px;
+  color: var(--grey);
+  transition: transform 0.2s ease;
+}
+.nb-panel {
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--paper);
+  border-bottom: 1px solid rgba(15,15,12,0.08);
+}
+.nb-list { display: flex; flex-direction: column; }
+.nb-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(15,15,12,0.05);
+  transition: background 0.12s ease;
+}
+.nb-card:last-child { border-bottom: none; }
+.nb-card:hover { background: rgba(58,122,138,0.05); }
+.nb-avatar-link { flex-shrink: 0; display: block; }
+.nb-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% !important;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.nb-avatar-img { width: 34px; height: 34px; border-radius: 50% !important; object-fit: cover; }
+.nb-avatar-init {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% !important;
+  background: var(--teal-pale);
+  color: var(--teal-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.nb-info { flex: 1; min-width: 0; }
+.nb-name {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.nb-genre {
+  font-size: 0.6rem;
+  font-weight: 300;
+  color: var(--grey);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nb-reviews {
+  font-size: 0.55rem;
+  color: var(--teal);
+  font-family: 'Space Mono', monospace;
+}
+.nb-dm-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--grey);
+  border: 1px solid rgba(15,15,12,0.1);
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.nb-dm-btn:hover { color: var(--teal); border-color: var(--teal); background: rgba(58,122,138,0.06); }
+
 /* ─── Add Venue Modal ─────────────────────────────────────────────────────────── */
 
 .av-modal {

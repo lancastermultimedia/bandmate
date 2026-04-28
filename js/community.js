@@ -64,6 +64,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSkeletons();
   await fetchPostings();
 
+  // Map page nearby-bands DM deeplink: community.html?dm=bandId
+  const dmBandId = new URLSearchParams(window.location.search).get('dm');
+  if (dmBandId && currentUser && currentBandProfile) {
+    const { data: dmBand } = await sb.from('bands').select('id, band_name, profile_photo_url').eq('id', dmBandId).single();
+    if (dmBand) {
+      setTimeout(() => openDirectMessageModal(dmBand.id, dmBand.band_name, dmBand.profile_photo_url), 600);
+    }
+  }
+
   // Tour Planner integration — open pre-filled post modal if redirected from tour.html
   if (new URLSearchParams(window.location.search).has('fromtour')) {
     const raw = sessionStorage.getItem('comm_prefill');
@@ -137,9 +146,18 @@ async function fetchPostings() {
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
+  console.log('[community] fetchPostings →', { count: data?.length, error });
+
   if (error) {
+    console.error('[community] fetchPostings error:', error);
     document.getElementById('commFeed').innerHTML = `<div class="comm-empty"><p class="comm-empty-title">Could not load postings</p><p class="comm-empty-sub">${escapeHtml(error.message)}</p></div>`;
     return;
+  }
+
+  if (!data || data.length === 0) {
+    // Cross-check: try a raw count without the join to detect RLS vs genuinely empty
+    const { count } = await sb.from('tour_postings').select('id', { count: 'exact', head: true }).eq('is_active', true);
+    console.log('[community] raw count (no join):', count);
   }
 
   (data || []).forEach(p => {

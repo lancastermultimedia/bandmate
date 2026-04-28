@@ -8,6 +8,8 @@ let _svMarkers       = [];    // submitted venue markers (separate from Google)
 let currentCenter    = FALLBACK_LOCATION;
 let currentRadius    = 10;
 let _accumulatedVenues = [];  // accumulates across pagination pages
+let _currentCityLabel  = 'Nashville';   // bare city name for nearby bands query
+let _nearbyBandsOpen   = false;
 
 // Lazy-init autocomplete for the review venue search modal
 let reviewVenueAutocomplete = null;
@@ -68,6 +70,8 @@ function initMap() {
       map.setZoom(13);
       setStatus('green', `Showing venues near ${place.name}`);
       searchVenuesNearby(currentCenter);
+      _currentCityLabel = place.name.split(',')[0].trim();
+      loadNearbyBands(_currentCityLabel);
     }
   });
 
@@ -135,6 +139,8 @@ function reverseGeocode(coords) {
       : results[0].formatted_address;
     setStatus('green', `Showing venues near ${label}`);
     document.getElementById('locationInput').placeholder = label;
+    _currentCityLabel = city ? city.long_name : label.split(',')[0].trim();
+    loadNearbyBands(_currentCityLabel);
   });
 }
 
@@ -154,6 +160,11 @@ function searchLocation() {
       map.setCenter(results[0].geometry.location);
       map.setZoom(13);
       searchVenuesNearby(currentCenter);
+      const cityComp = results[0].address_components.find(c =>
+        c.types.includes('locality') || c.types.includes('sublocality')
+      );
+      _currentCityLabel = cityComp ? cityComp.long_name : query.split(',')[0].trim();
+      loadNearbyBands(_currentCityLabel);
     } else {
       setStatus('amber', 'Location not found — try another city');
     }
@@ -735,6 +746,78 @@ async function submitNewVenue() {
 window.submitNewVenue = submitNewVenue;
 
 // ─── Map style ────────────────────────────────────────────────────────────────
+
+// ─── Nearby Bands ────────────────────────────────────────────────────────────
+
+async function loadNearbyBands(cityName) {
+  const header  = document.getElementById('nearbyBandsHeader');
+  const panel   = document.getElementById('nearbyBandsPanel');
+  const list    = document.getElementById('nearbyBandsList');
+  const countEl = document.getElementById('nearbyBandsCount');
+  if (!header || !list) return;
+
+  const bareCity = (cityName || '').split(',')[0].trim();
+  if (!bareCity) return;
+
+  const { data: bands } = await sb
+    .from('bands')
+    .select('id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count')
+    .ilike('home_city', `${bareCity}%`)
+    .not('band_name', 'is', null)
+    .order('review_count', { ascending: false })
+    .limit(20);
+
+  const filtered = (bands || []).filter(b =>
+    b.band_name && (!currentBandProfile || b.id !== currentBandProfile.id)
+  );
+
+  if (!filtered.length) {
+    header.style.display = 'none';
+    panel.style.display  = 'none';
+    return;
+  }
+
+  countEl.textContent   = filtered.length;
+  header.style.display  = 'flex';
+  if (_nearbyBandsOpen) panel.style.display = 'block';
+
+  list.innerHTML = filtered.map(b => {
+    const initials = (b.band_name || 'B').substring(0, 2).toUpperCase();
+    const slug     = (b.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const epkHref  = b.epk_theme && slug ? `epk.html?band=${slug}` : null;
+    const avatarImg = b.profile_photo_url
+      ? `<img src="${b.profile_photo_url}" class="nb-avatar nb-avatar-img" alt="${escapeStr(b.band_name)}">`
+      : `<div class="nb-avatar nb-avatar-init">${initials}</div>`;
+    const avatar = epkHref
+      ? `<a href="${epkHref}" target="_blank" class="nb-avatar-link" title="View EPK">${avatarImg}</a>`
+      : avatarImg;
+    const dmBtn = currentUser
+      ? `<a href="community.html?dm=${b.id}" class="nb-dm-btn" title="Message ${escapeStr(b.band_name)}">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+           </svg>
+         </a>`
+      : '';
+    const rcHtml = b.review_count
+      ? `<span class="nb-reviews">★ ${b.review_count}</span>`
+      : '';
+    return `<div class="nb-card">
+      ${avatar}
+      <div class="nb-info">
+        <div class="nb-name">${escapeStr(b.band_name)}</div>
+        <div class="nb-genre">${escapeStr(b.genre || '—')} ${rcHtml}</div>
+      </div>
+      ${dmBtn}
+    </div>`;
+  }).join('');
+}
+window.toggleNearbyBands = function() {
+  _nearbyBandsOpen = !_nearbyBandsOpen;
+  const panel   = document.getElementById('nearbyBandsPanel');
+  const chevron = document.getElementById('nearbyBandsChevron');
+  if (panel)   panel.style.display  = _nearbyBandsOpen ? 'block' : 'none';
+  if (chevron) chevron.textContent  = _nearbyBandsOpen ? '▴' : '▾';
+};
 
 function getMapStyle() {
   return [

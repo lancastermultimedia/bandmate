@@ -312,6 +312,19 @@
       <button class="add-venue-cta-btn" onclick="openAddVenueModal()">Add a Venue →</button>
     </div>
 
+    <!-- NEARBY BANDS -->
+    <div class="nb-header" id="nearbyBandsHeader" style="display:none" onclick="toggleNearbyBands()">
+      <div class="nb-title">
+        <div class="fn-dot" style="background:var(--teal);width:6px;height:6px;display:inline-block;margin-right:6px;flex-shrink:0"></div>
+        Nearby Bands
+        <span class="nb-count" id="nearbyBandsCount"></span>
+      </div>
+      <div class="nb-chevron" id="nearbyBandsChevron">▾</div>
+    </div>
+    <div class="nb-panel" id="nearbyBandsPanel" style="display:none">
+      <div class="nb-list" id="nearbyBandsList"></div>
+    </div>
+
     <!-- RESULTS -->
     <div class="filter-label" id="resultsLabel">Venues Found</div>
     <div class="venues-list" id="venuesList">
