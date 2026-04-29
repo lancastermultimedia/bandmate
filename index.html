@@ -857,6 +857,21 @@ a.cp { display: flex; }
       <div class="status-dot amber" id="statusDot"></div>
       <span id="statusText">Locating you...</span>
     </div>
+    <div class="add-venue-cta">
+      <div class="add-venue-cta-text">Know a house show or DIY space?</div>
+      <button class="add-venue-cta-btn" onclick="openAddVenueModal()">Add a Venue →</button>
+    </div>
+    <div class="nb-header" id="nearbyBandsHeader" style="display:none" onclick="toggleNearbyBands()">
+      <div class="nb-title">
+        <div class="fn-dot" style="background:var(--teal);width:6px;height:6px;display:inline-block;margin-right:6px;flex-shrink:0"></div>
+        Nearby Bands
+        <span class="nb-count" id="nearbyBandsCount"></span>
+      </div>
+      <div class="nb-chevron" id="nearbyBandsChevron">▾</div>
+    </div>
+    <div class="nb-panel" id="nearbyBandsPanel" style="display:none">
+      <div class="nb-list" id="nearbyBandsList"></div>
+    </div>
     <div class="filter-label" id="resultsLabel">Venues Found</div>
     <div class="venues-list" id="venuesList">
       <div class="no-results">
@@ -1015,9 +1030,13 @@ a.cp { display: flex; }
   <div class="venue-page-inner">
     <button class="venue-page-back" onclick="closevenuePage()">← Back to Map</button>
     <div class="venue-page-header">
+      <div class="vp-hero-photo" id="vpHeroPhoto" style="display:none">
+        <img id="vpHeroPhotoImg" class="vp-hero-photo-img" alt="">
+      </div>
       <div class="venue-page-eyebrow" id="vpEyebrow">Venue</div>
       <div class="venue-page-name" id="vpName">Venue Name</div>
       <div class="venue-page-address" id="vpAddress">Address</div>
+      <div id="vpTypeTag" style="display:none;margin-bottom:12px"></div>
       <div class="venue-page-scores" id="vpScores">
         <div class="score-card"><div class="score-num" id="vpOverall">—</div><div class="score-label">Overall</div></div>
         <div class="score-card"><div class="score-num" id="vpSound">—</div><div class="score-label">Sound</div></div>
@@ -1028,6 +1047,12 @@ a.cp { display: flex; }
       <div class="venue-page-actions">
         <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
         <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
+      </div>
+    </div>
+    <div id="vpDiyInfo" style="display:none">
+      <div id="vpDiyGrid" class="sv-info-grid"></div>
+      <div id="vpDiyContact" style="display:none">
+        <div id="vpDiyContactLinks"></div>
       </div>
     </div>
     <div class="venue-review-form" id="venueReviewForm">
