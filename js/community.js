@@ -62,7 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
   _buildGenreFilters();
   renderSkeletons();
-  await fetchPostings();
+  try { await fetchPostings(); }
+  catch (e) {
+    console.error('[community] fetchPostings threw:', e);
+    document.getElementById('commFeed').innerHTML = `<div class="comm-empty"><p class="comm-empty-title">Something went wrong</p><p class="comm-empty-sub">${e.message}</p></div>`;
+  }
 
   // Map page nearby-bands DM deeplink: community.html?dm=bandId
   const dmBandId = new URLSearchParams(window.location.search).get('dm');
@@ -238,7 +242,12 @@ function renderFeed(postings) {
       </div>`;
     return;
   }
-  feed.innerHTML = postings.map(renderCard).join('');
+  const cards = [];
+  for (const p of postings) {
+    try { cards.push(renderCard(p)); }
+    catch (e) { console.error('[community] renderCard failed for posting', p.id, e); }
+  }
+  feed.innerHTML = cards.join('') || `<div class="comm-empty"><div class="comm-empty-title">Could not render postings</div><div class="comm-empty-sub">Check console for details</div></div>`;
 }
 
 function renderCard(p) {
@@ -270,7 +279,7 @@ function renderCard(p) {
     : '';
 
   // Tour route
-  const cityNames  = dates.map(d => d.city.split(',')[0].trim());
+  const cityNames  = dates.map(d => (d.city || '').split(',')[0].trim()).filter(Boolean);
   const routeParts = cityNames.slice(0, 3);
   const moreCount  = cityNames.length > 3 ? cityNames.length - 3 : 0;
   const routeHtml  = routeParts.join(' <span class="comm-route-arrow">→</span> ') + (moreCount ? ` <span class="comm-route-more">+${moreCount} more</span>` : '');
