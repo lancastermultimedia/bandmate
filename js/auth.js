@@ -386,35 +386,10 @@ function closeUnlockCelebration() {
 function _updatePremiumGate() {
   const gate = document.getElementById('premiumGate');
   if (!gate) return;
-
-  const isLoggedIn = !!currentUser;
-  const isPremium  = isBandPremium(currentBandProfile);
-
-  if (isPremium) {
-    gate.style.display = 'none';
-    return;
-  }
-
-  // Don't show the gate until we know auth has resolved — prevents false-locked
-  // state during the brief window before onAuthStateChange fires with the session.
-  if (!_authSettled) return;
-
-  // Show gate — populate dynamic fields
-  const count     = currentBandProfile?.review_count || 0;
-  const remaining = Math.max(0, 3 - count);
-  const pct       = Math.min(100, (count / 3) * 100);
-
-  const bar   = document.getElementById('gateProgressBar');
-  const label = document.getElementById('gateProgressLabel');
-  const cta   = document.getElementById('gateSigninCta');
-
-  if (bar)   bar.style.width   = pct + '%';
-  if (label) label.textContent = isLoggedIn
-    ? `${count} of 3 reviews · ${remaining} more to unlock`
-    : 'Create a free account to get started';
-  if (cta)   cta.style.display = isLoggedIn ? 'none' : 'inline-block';
-
-  gate.style.display = 'flex';
+  // The community feed is viewable by all users.
+  // Posting is gated inside openPostModal() which shows a locked-state modal for non-premium users.
+  // Hiding the gate prevents it from covering the feed and the hero "Post an Opportunity" button.
+  gate.style.display = 'none';
 }
 
 function updateNavAuth() {
