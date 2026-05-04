@@ -12,15 +12,34 @@ let currentBandProfile = null;
 let _authSettled = false; // true once initAuth has resolved at least once
 
 async function initAuth() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) { currentUser = session.user; await loadBandProfile(); }
-  _authSettled = true;
-  updateNavAuth();
-  sb.auth.onAuthStateChange(async (_event, session) => {
-    currentUser = session ? session.user : null;
-    if (currentUser) await loadBandProfile(); else currentBandProfile = null;
-    _authSettled = true;
-    updateNavAuth();
+  // Wait for onAuthStateChange INITIAL_SESSION — this is the authoritative source
+  // in Supabase v2 and fires reliably even when getSession() races the SDK init.
+  await new Promise((resolve) => {
+    let _done = false;
+    const _finish = () => { if (!_done) { _done = true; resolve(); } };
+
+    // Safety: resolve after 5s if INITIAL_SESSION never fires
+    const _timeout = setTimeout(() => {
+      devLog('[auth] timeout — resolving without session');
+      _authSettled = true;
+      updateNavAuth();
+      _finish();
+    }, 5000);
+
+    sb.auth.onAuthStateChange(async (_event, session) => {
+      devLog('[auth] onAuthStateChange:', _event, session?.user?.email || 'no session');
+      currentUser = session ? session.user : null;
+      if (currentUser) {
+        try { await loadBandProfile(); } catch (e) { console.warn('[auth] loadBandProfile threw:', e.message); }
+      } else {
+        currentBandProfile = null;
+      }
+      _authSettled = true;
+      devLog('[auth] settled — user:', currentUser?.email, 'profile:', currentBandProfile?.band_name);
+      updateNavAuth();
+      clearTimeout(_timeout);
+      _finish(); // resolves on first fire (INITIAL_SESSION); ongoing events keep listener alive
+    });
   });
 }
 

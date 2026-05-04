@@ -233,7 +233,7 @@ async function loadVenueReviews(placeId, venueName) {
 function setVrfStar(val) {
   vrfStarRating = val;
   document.querySelectorAll('#vrfStars .star-btn').forEach((s, i) =>
-    s.style.color = i < val ? '#d4a843' : '#ddd8cc'
+    s.classList.toggle('active', i < val)
   );
   updateSubmitBtn();
 }
@@ -316,7 +316,7 @@ async function submitReview() {
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('vrfText').value = '';
   vrfStarRating = 0;
-  document.querySelectorAll('#vrfStars .star-btn').forEach(s => s.style.color = '#ddd8cc');
+  document.querySelectorAll('#vrfStars .star-btn').forEach(s => s.classList.remove('active'));
   await loadVenueReviews(currentVenuePlaceId, currentVenueName);
 }
 
