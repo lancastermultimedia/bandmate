@@ -9,13 +9,17 @@ function devLog(...args) {
 // Shared auth state (referenced by reviews.js)
 let currentUser = null;
 let currentBandProfile = null;
+let _authSettled = false; // true once initAuth has resolved at least once
 
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) { currentUser = session.user; await loadBandProfile(); updateNavAuth(); }
+  if (session) { currentUser = session.user; await loadBandProfile(); }
+  _authSettled = true;
+  updateNavAuth();
   sb.auth.onAuthStateChange(async (_event, session) => {
     currentUser = session ? session.user : null;
     if (currentUser) await loadBandProfile(); else currentBandProfile = null;
+    _authSettled = true;
     updateNavAuth();
   });
 }
@@ -371,6 +375,10 @@ function _updatePremiumGate() {
     gate.style.display = 'none';
     return;
   }
+
+  // Don't show the gate until we know auth has resolved — prevents false-locked
+  // state during the brief window before onAuthStateChange fires with the session.
+  if (!_authSettled) return;
 
   // Show gate — populate dynamic fields
   const count     = currentBandProfile?.review_count || 0;
