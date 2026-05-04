@@ -41,7 +41,7 @@ function _scorePosting(p) {
   // City match: any date in user's home city (+30)
   if (bp?.home_city) {
     const myCity = bp.home_city.toLowerCase().split(',')[0].trim();
-    const match  = (p.posting_dates || []).some(d => d.city.toLowerCase().includes(myCity));
+    const match  = (p.posting_dates || []).some(d => (d.city || '').toLowerCase().includes(myCity));
     if (match) score += 30;
   }
 
@@ -458,10 +458,10 @@ function applyFilters() {
   if (search) {
     const q = search.toLowerCase();
     results = results.filter(p =>
-      p.title.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q) ||
+      (p.title || '').toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q) ||
       (p.bands?.band_name || '').toLowerCase().includes(q) ||
-      (p.posting_dates || []).some(d => d.city.toLowerCase().includes(q))
+      (p.posting_dates || []).some(d => (d.city || '').toLowerCase().includes(q))
     );
   }
   if (genre) {
@@ -470,7 +470,7 @@ function applyFilters() {
   }
   if (location) {
     const lq = location.toLowerCase();
-    results = results.filter(p => (p.posting_dates || []).some(d => d.city.toLowerCase().includes(lq)));
+    results = results.filter(p => (p.posting_dates || []).some(d => (d.city || '').toLowerCase().includes(lq)));
   }
   if (length === 'single')  results = results.filter(p => (p.posting_dates || []).length === 1);
   if (length === 'weekend') results = results.filter(p => (p.posting_dates || []).length >= 2 && (p.posting_dates || []).length <= 3);
