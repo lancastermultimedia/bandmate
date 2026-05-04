@@ -59,7 +59,7 @@ function _scorePosting(p) {
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await initAuth();
+  try { await initAuth(); } catch (e) { console.error('[community] initAuth threw:', e.message); }
   _buildGenreFilters();
   renderSkeletons();
   try { await fetchPostings(); }
