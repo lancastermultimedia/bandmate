@@ -12,34 +12,31 @@ let currentBandProfile = null;
 let _authSettled = false; // true once initAuth has resolved at least once
 
 async function initAuth() {
-  // Wait for onAuthStateChange INITIAL_SESSION — this is the authoritative source
-  // in Supabase v2 and fires reliably even when getSession() races the SDK init.
-  await new Promise((resolve) => {
-    let _done = false;
-    const _finish = () => { if (!_done) { _done = true; resolve(); } };
+  // Read session immediately from localStorage — fast and synchronous with storage.
+  const { data: { session } } = await sb.auth.getSession();
+  currentUser = session ? session.user : null;
+  if (currentUser) {
+    try { await loadBandProfile(); } catch (e) { console.warn('[auth] loadBandProfile:', e.message); }
+  }
+  _authSettled = true;
+  updateNavAuth();
 
-    // Safety: resolve after 5s if INITIAL_SESSION never fires
-    const _timeout = setTimeout(() => {
-      devLog('[auth] timeout — resolving without session');
-      _authSettled = true;
-      updateNavAuth();
-      _finish();
-    }, 5000);
-
-    sb.auth.onAuthStateChange(async (_event, session) => {
-      devLog('[auth] onAuthStateChange:', _event, session?.user?.email || 'no session');
-      currentUser = session ? session.user : null;
-      if (currentUser) {
-        try { await loadBandProfile(); } catch (e) { console.warn('[auth] loadBandProfile threw:', e.message); }
-      } else {
-        currentBandProfile = null;
+  // Keep listening for future auth changes (sign-in, sign-out, token refresh).
+  // Guard: only reload the band profile when the user actually changes, not on
+  // every TOKEN_REFRESHED — prevents the race where a second concurrent
+  // loadBandProfile() call returns null and overwrites a good profile.
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    const prevUserId = currentUser?.id;
+    currentUser = session ? session.user : null;
+    if (currentUser) {
+      if (!currentBandProfile || currentUser.id !== prevUserId) {
+        try { await loadBandProfile(); } catch (e) { console.warn('[auth] loadBandProfile:', e.message); }
       }
-      _authSettled = true;
-      devLog('[auth] settled — user:', currentUser?.email, 'profile:', currentBandProfile?.band_name);
-      updateNavAuth();
-      clearTimeout(_timeout);
-      _finish(); // resolves on first fire (INITIAL_SESSION); ongoing events keep listener alive
-    });
+    } else {
+      currentBandProfile = null;
+    }
+    _authSettled = true;
+    updateNavAuth();
   });
 }
 
