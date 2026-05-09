@@ -1,5 +1,4 @@
-# Local credentials — generated at deploy time, never commit
-config.js
+# config.js committed on redesign/montague-nasa for Netlify — see branch notes
 
 # FTP credentials — never commit
 .vscode/sftp.json
