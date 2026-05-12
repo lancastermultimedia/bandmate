@@ -10052,6 +10052,74 @@ input[type="range"] { accent-color: var(--teal) !important; }
 }
 .booked-dismiss:hover { transform: translateY(-1px); }
 
+/* ── Phase 2: Co-Headliner Tour Header ─────────────────────────────────────── */
+.tour-co-header {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(58,122,138,0.06); border-bottom: 1px solid rgba(58,122,138,0.15);
+  padding: 10px 16px;
+}
+.tour-co-avatars { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.tour-co-avatar {
+  width: 28px; height: 28px; border-radius: 50% !important;
+  object-fit: cover; border: 1.5px solid rgba(58,122,138,0.3);
+}
+.tour-co-avatar--init {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--teal-pale); color: var(--teal-dark);
+  font-size: 11px; font-weight: 400;
+}
+.tour-co-avatar-sep {
+  font-size: 8px; color: var(--grey); letter-spacing: 0.05em; padding: 0 2px;
+}
+.tour-co-info { flex: 1; min-width: 0; }
+.tour-co-label {
+  font-size: 7px; font-weight: 400; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 1px;
+}
+.tour-co-name {
+  font-size: 12px; font-weight: 400; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tour-co-send-btn {
+  flex-shrink: 0; background: var(--teal); color: var(--white); border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 300;
+  letter-spacing: 0.18em; text-transform: uppercase; padding: 7px 14px;
+  cursor: pointer; transition: transform 0.15s;
+}
+.tour-co-send-btn:hover { transform: translateY(-1px); }
+
+/* ── Phase 2: Itinerary Chat Bubble ─────────────────────────────────────────── */
+.chat-bubble--itinerary {
+  background: rgba(58,122,138,0.07) !important;
+  border: 1px solid rgba(58,122,138,0.2) !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  padding: 10px 14px !important;
+}
+.chat-bubble--itinerary .chat-bubble-time {
+  align-self: flex-end; margin-top: 4px;
+}
+.chat-itin-icon {
+  font-size: 18px; color: var(--teal); line-height: 1;
+  margin-bottom: 5px;
+}
+.chat-itin-body { width: 100%; }
+.chat-itin-label {
+  font-size: 7px; font-weight: 400; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 2px;
+}
+.chat-itin-name {
+  font-size: 13px; font-weight: 400; color: var(--ink); margin-bottom: 8px;
+}
+.chat-itin-open {
+  background: var(--ink); color: var(--white); border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 300;
+  letter-spacing: 0.18em; text-transform: uppercase; padding: 7px 14px;
+  cursor: pointer; transition: transform 0.15s;
+}
+.chat-itin-open:hover { transform: translateY(-1px); }
+
 @media (max-width: 600px) {
   .profile-tab-nav { padding: 0 12px; }
   .ptab { padding: 12px 12px; font-size: 7.5px; }

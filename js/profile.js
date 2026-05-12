@@ -1114,6 +1114,23 @@ async function loadInlineChatMessages() {
   box.innerHTML = data.map(msg => {
     const mine = String(msg.sender_band_id) === String(myId);
     const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    if (msg.message_type === 'itinerary') {
+      const meta = msg.metadata || {};
+      if (meta.itinerary_html) _sharedItineraries[msg.id] = meta;
+      return `<div class="chat-bubble chat-bubble--itinerary ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
+        <div class="chat-itin-icon">◉</div>
+        <div class="chat-itin-body">
+          <div class="chat-itin-label">Shared Itinerary</div>
+          <div class="chat-itin-name">${escapeHtml(meta.tour_name || 'Tour Itinerary')}</div>
+          ${meta.itinerary_html
+            ? `<button class="chat-itin-open" onclick="openSharedItinerary('${msg.id}')">View & Print →</button>`
+            : ''}
+        </div>
+        <div class="chat-bubble-time">${time}</div>
+      </div>`;
+    }
+
     return `<div class="chat-bubble ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
       <div class="chat-bubble-text">${escapeHtml(msg.message_text)}</div>
       <div class="chat-bubble-time">${time}</div>
@@ -1318,12 +1335,16 @@ async function handleInterestResponse(interestId, bandId, status, postingId) {
     if (posting?.linked_tour_id) {
       const roleMap = { tour_support: 'opener', local_opener: 'support', co_headlining: 'co-headliner' };
       const role    = roleMap[posting.type] || 'support';
-      const update  = { supporting_band_id: bandId, supporting_role: role };
 
-      if (posting.linked_stop_ids?.length) {
-        await sb.from('tour_stops').update(update).in('id', posting.linked_stop_ids);
+      if (posting.type === 'co_headlining') {
+        await _createCoHeadlinerTour(posting.linked_tour_id, bandId);
       } else {
-        await sb.from('tour_stops').update(update).eq('tour_id', posting.linked_tour_id);
+        const update = { supporting_band_id: bandId, supporting_role: role };
+        if (posting.linked_stop_ids?.length) {
+          await sb.from('tour_stops').update(update).in('id', posting.linked_stop_ids);
+        } else {
+          await sb.from('tour_stops').update(update).eq('tour_id', posting.linked_tour_id);
+        }
       }
     }
   }
@@ -1339,6 +1360,7 @@ async function handleInterestResponse(interestId, bandId, status, postingId) {
 // ── Tour Manager ──────────────────────────────────────────────
 
 let _tours = [];
+let _sharedItineraries = {}; // msgId → { tour_name, itinerary_html }
 
 async function loadTourManager(bandId) {
   const list = document.getElementById('tourManagerList');
@@ -1347,7 +1369,7 @@ async function loadTourManager(bandId) {
 
   const { data: tours, error } = await sb
     .from('saved_tours')
-    .select('*, tour_stops(*, supporting_band:bands!supporting_band_id(id, band_name, profile_photo_url))')
+    .select('*, tour_stops(*, supporting_band:bands!supporting_band_id(id, band_name, profile_photo_url)), co_headliner:bands!co_headliner_band_id(id, band_name, profile_photo_url)')
     .eq('band_id', bandId)
     .order('created_at', { ascending: false });
 
@@ -1384,12 +1406,27 @@ function renderTourCard(tour) {
   const booked = stops.filter(s => s.status === 'yes').length;
   const pct    = total ? Math.round((booked / total) * 100) : 0;
   const fullyBooked = total > 0 && pct === 100;
+  const coH    = tour.co_headliner; // joined band object or null
 
   const stopsHtml = stops.length
     ? stops.map((s, i) => renderTourStop(s, i + 1)).join('')
     : `<div class="comm-chat-empty" style="padding:12px 16px">No stops yet — <a href="tour.html" style="color:var(--teal)">build a route in Tour Planner</a>, then save it here.</div>`;
 
-  // shareable link feature removed — itinerary download serves this purpose
+  const coHeaderHtml = coH ? `
+    <div class="tour-co-header">
+      <div class="tour-co-avatars">
+        ${coH.profile_photo_url
+          ? `<img src="${escapeHtml(coH.profile_photo_url)}" class="tour-co-avatar" alt="">`
+          : `<div class="tour-co-avatar tour-co-avatar--init">${escapeHtml((coH.band_name || 'B').charAt(0).toUpperCase())}</div>`}
+      </div>
+      <div class="tour-co-info">
+        <div class="tour-co-label">Co-Headlining Tour with</div>
+        <div class="tour-co-name">${escapeHtml(coH.band_name)}</div>
+      </div>
+      ${tour.itinerary_html
+        ? `<button class="tour-co-send-btn" onclick="sendSharedItinerary('${tour.id}')">Send Itinerary ↗</button>`
+        : ''}
+    </div>` : '';
 
   const bookedBanner = fullyBooked ? `
     <div class="tour-booked-banner">
@@ -1407,6 +1444,7 @@ function renderTourCard(tour) {
     </div>` : '';
 
   return `<div class="tour-card${fullyBooked ? ' tour-card--booked' : ''}" id="tour-card-${tour.id}">
+    ${coHeaderHtml}
     <div class="tour-card-header">
       <div class="tour-card-name">${escapeHtml(tour.name)}</div>
       <div class="tour-card-actions">
@@ -1491,7 +1529,7 @@ async function _reloadTourCard(tourId) {
   const prevTour   = _tours.find(t => String(t.id) === String(tourId));
   const prevBooked = (prevTour?.tour_stops || []).filter(s => s.status === 'yes').length;
 
-  const { data: tour } = await sb.from('saved_tours').select('*, tour_stops(*)').eq('id', tourId).single();
+  const { data: tour } = await sb.from('saved_tours').select('*, tour_stops(*, supporting_band:bands!supporting_band_id(id, band_name, profile_photo_url)), co_headliner:bands!co_headliner_band_id(id, band_name, profile_photo_url)').eq('id', tourId).single();
   if (!tour) return;
 
   // Preserve any unsaved tour notes currently in the DOM
@@ -1795,4 +1833,90 @@ function _launchBookedCelebration(tourName) {
     </div>`;
   document.body.appendChild(el);
   setTimeout(() => document.getElementById('bookedCelebration')?.remove(), 6000);
+}
+
+// ── Phase 2: Co-Headliner Shared Tour ─────────────────────────────────────────
+
+async function _createCoHeadlinerTour(originalTourId, otherBandId) {
+  // Fetch original tour + stops
+  const { data: orig, error: origErr } = await sb
+    .from('saved_tours')
+    .select('*, tour_stops(*)')
+    .eq('id', originalTourId)
+    .single();
+  if (origErr || !orig) { showToast('Could not load tour for co-headliner link.', 'error'); return; }
+
+  // Create mirrored tour for other band
+  const { data: mirror, error: mirrorErr } = await sb
+    .from('saved_tours')
+    .insert({
+      band_id: otherBandId,
+      name: orig.name,
+      co_headliner_band_id: currentBandProfile?.id,
+    })
+    .select()
+    .single();
+  if (mirrorErr || !mirror) { showToast('Could not create co-headliner tour.', 'error'); return; }
+
+  // Copy stops into mirrored tour (all pending)
+  const stops = (orig.tour_stops || []).map(s => ({
+    tour_id:    mirror.id,
+    venue_name: s.venue_name,
+    city:       s.city,
+    state:      s.state,
+    place_id:   s.place_id,
+    position:   s.position,
+    status:     'pending',
+  }));
+  if (stops.length) await sb.from('tour_stops').insert(stops);
+
+  // Link original tour back to the mirror
+  await sb.from('saved_tours').update({
+    co_headliner_band_id: otherBandId,
+    co_headliner_tour_id: mirror.id,
+  }).eq('id', originalTourId);
+
+  // Also set co_headliner_tour_id on mirror to point back
+  await sb.from('saved_tours').update({ co_headliner_tour_id: originalTourId }).eq('id', mirror.id);
+
+  showToast('Co-headliner tour created for both bands!', 'success');
+}
+
+async function sendSharedItinerary(tourId) {
+  const tour = _tours.find(t => String(t.id) === String(tourId));
+  if (!tour || !tour.itinerary_html) { showToast('No itinerary to send.', 'error'); return; }
+  const coH = tour.co_headliner;
+  if (!coH) { showToast('No co-headliner linked to this tour.', 'error'); return; }
+
+  const meta = { tour_name: tour.name, itinerary_html: tour.itinerary_html };
+  const { data: msg, error } = await sb.from('band_messages').insert({
+    sender_band_id:   currentBandProfile.id,
+    receiver_band_id: coH.id,
+    message_text:     `Shared itinerary: ${tour.name}`,
+    message_type:     'itinerary',
+    metadata:         meta,
+    is_read:          false,
+  }).select().single();
+  if (error) { showToast('Send failed — ' + error.message, 'error'); return; }
+
+  if (msg) _sharedItineraries[msg.id] = meta;
+
+  await sb.from('notifications').insert({
+    band_id: coH.id,
+    type:    'shared_itinerary',
+    payload: { from_band: currentBandProfile.band_name, tour_name: tour.name },
+    read:    false,
+  });
+
+  showToast('Itinerary sent to ' + coH.band_name + '!', 'success');
+}
+
+function openSharedItinerary(msgId) {
+  const meta = _sharedItineraries[msgId];
+  if (!meta?.itinerary_html) { showToast('Itinerary not available.', 'error'); return; }
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
+  win.document.write(_itinPrintDoc(meta.tour_name || 'Tour Itinerary', dateStr, '', meta.itinerary_html));
+  win.document.close();
 }

@@ -544,6 +544,7 @@ function _renderNotifTray(tray, notifs) {
     new_posting_nearby:  '↗',
     new_message:         '✉',
     message:             '✉',
+    shared_itinerary:    '◉',
   };
   const itemsHtml = notifs.map(n => {
     const pl    = n.payload || {};
@@ -556,6 +557,7 @@ function _renderNotifTray(tray, notifs) {
     else if (n.type === 'interest_declined') desc = `Your interest was not accepted${title ? ' — ' + escapeHtml(title) : ''}`;
     else if (n.type === 'new_posting_nearby') desc = `<strong>${escapeHtml(band)}</strong> posted a new opportunity`;
     else if (n.type === 'new_message' || n.type === 'message') desc = `New message from <strong>${escapeHtml(band)}</strong>${pl.preview ? ': ' + escapeHtml(pl.preview.substring(0, 40)) + '…' : ''}`;
+    else if (n.type === 'shared_itinerary') desc = `<strong>${escapeHtml(band)}</strong> shared a tour itinerary${pl.tour_name ? ': <em>' + escapeHtml(pl.tour_name) + '</em>' : ''}`;
     else desc = escapeHtml(n.type);
 
     const diffMs  = Date.now() - new Date(n.created_at).getTime();
@@ -563,7 +565,7 @@ function _renderNotifTray(tray, notifs) {
     const ago = diffMin < 1 ? 'just now' : diffMin < 60 ? `${diffMin}m ago` : diffMin < 1440 ? `${Math.floor(diffMin / 60)}h ago` : `${Math.floor(diffMin / 1440)}d ago`;
     const unreadClass = !n.read ? ' notif-item--unread' : '';
     const icon = typeIcon[n.type] || '·';
-    const dest = (n.type === 'new_message' || n.type === 'message') ? 'profile.html' : 'community.html';
+    const dest = (n.type === 'new_message' || n.type === 'message' || n.type === 'shared_itinerary') ? 'profile.html' : 'community.html';
 
     return `<div class="notif-item${unreadClass}" onclick="_closeNotifTray();window.location.href='${dest}'">
       <div class="notif-icon">${icon}</div>
