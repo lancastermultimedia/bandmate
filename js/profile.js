@@ -164,9 +164,13 @@ async function renderProfile() {
   // ── Review history ──
   loadReviewHistory(bp.id);
 
-  // ── Community sections (always shown when logged in) ──
-  loadMyPostings(bp.id);
-  loadCommunityActivity(bp.id);
+  // ── Community tab badge (shows unread notification count) ──
+  updateCommBadge(bp.id);
+
+  // ── Reset tab state so switching back to EPK tab works cleanly ──
+  _commTabLoaded = false;
+  _tourTabLoaded = false;
+  switchProfileTab('epk');
 }
 
 // ── Community: My Postings ────────────────────────────────────────────────────
@@ -923,4 +927,611 @@ function escProfileStr(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THREE-TAB PROFILE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+let _activeProfileTab = 'epk';
+let _commTabLoaded    = false;
+let _tourTabLoaded    = false;
+
+function switchProfileTab(tab) {
+  _activeProfileTab = tab;
+  document.querySelectorAll('.ptab').forEach(b =>
+    b.classList.toggle('ptab--active', b.dataset.tab === tab)
+  );
+  document.querySelectorAll('.profile-tab-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('tab-' + tab);
+  if (panel) panel.style.display = 'block';
+
+  const bp = currentBandProfile;
+  if (!bp) return;
+
+  if (tab === 'community' && !_commTabLoaded) {
+    _commTabLoaded = true;
+    loadCommunityTab(bp.id);
+  }
+  if (tab === 'tour' && !_tourTabLoaded) {
+    _tourTabLoaded = true;
+    loadTourManager(bp.id);
+  }
+}
+
+// Update the red badge on the Community tab button
+async function updateCommBadge(bandId) {
+  if (!bandId) return;
+  const { count } = await sb
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('band_id', bandId)
+    .eq('read', false);
+  const badge = document.getElementById('commTabBadge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count > 9 ? '9+' : count;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Community Tab ─────────────────────────────────────────────
+
+async function loadCommunityTab(bandId) {
+  await Promise.all([
+    loadMessageThreads(bandId),
+    loadMyPostingsWithResponses(bandId),
+    loadCommunityActivity(bandId),
+    loadNotifications(bandId),
+  ]);
+  updateCommBadge(bandId);
+}
+
+async function loadMessageThreads(bandId) {
+  const el = document.getElementById('messageThreadsList');
+  if (!el) return;
+
+  const { data, error } = await sb
+    .from('band_messages')
+    .select('id, sender_band_id, receiver_band_id, content, created_at, is_read')
+    .or(`sender_band_id.eq.${bandId},receiver_band_id.eq.${bandId}`)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div class="comm-chat-empty">No messages yet. Message a band from the Community page to get started.</div>';
+    return;
+  }
+
+  // Group by conversation partner
+  const threads = {};
+  data.forEach(msg => {
+    const otherId = String(msg.sender_band_id) === String(bandId) ? msg.receiver_band_id : msg.sender_band_id;
+    if (!threads[otherId]) threads[otherId] = { otherId, messages: [], unread: 0 };
+    threads[otherId].messages.push(msg);
+    if (String(msg.receiver_band_id) === String(bandId) && !msg.is_read) threads[otherId].unread++;
+  });
+
+  const otherIds = Object.keys(threads);
+  const { data: bands } = await sb.from('bands').select('id, band_name, profile_photo_url').in('id', otherIds);
+  const bandMap = {};
+  (bands || []).forEach(b => { bandMap[b.id] = b; });
+
+  const html = otherIds
+    .sort((a, b) => new Date(threads[b].messages[0].created_at) - new Date(threads[a].messages[0].created_at))
+    .map(otherId => {
+      const t    = threads[otherId];
+      const band = bandMap[otherId] || {};
+      const last = t.messages[0];
+      const prev = escapeHtml((last.content || '').substring(0, 60)) + (last.content?.length > 60 ? '…' : '');
+      const time = new Date(last.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const init = (band.band_name || '?')[0].toUpperCase();
+      const av   = band.profile_photo_url
+        ? `<img src="${band.profile_photo_url}" class="mt-avatar-img" alt="">`
+        : `<div class="mt-avatar-init">${init}</div>`;
+      return `<div class="msg-thread" onclick="openInlineChat(${otherId},'${escapeHtml(band.band_name || 'Unknown')}')">
+        <div class="mt-avatar">${av}</div>
+        <div class="mt-body">
+          <div class="mt-name">${escapeHtml(band.band_name || 'Unknown Band')}</div>
+          <div class="mt-preview">${prev}</div>
+        </div>
+        <div class="mt-right">
+          <div class="mt-time">${time}</div>
+          ${t.unread > 0 ? `<div class="mt-unread">${t.unread}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+  el.innerHTML = html || '<div class="comm-chat-empty">No messages yet.</div>';
+}
+
+// ── Inline Chat ───────────────────────────────────────────────
+
+let _chatOtherBandId   = null;
+let _chatRealtimeSub   = null;
+
+function openInlineChat(bandId, bandName) {
+  _chatOtherBandId = bandId;
+  const panel = document.getElementById('inlineChatPanel');
+  const title  = document.getElementById('chatPanelTitle');
+  if (!panel || !title) return;
+  title.textContent = bandName;
+  panel.classList.add('open');
+  loadInlineChatMessages();
+
+  // Mark messages as read
+  if (currentBandProfile) {
+    sb.from('band_messages')
+      .update({ is_read: true })
+      .eq('receiver_band_id', currentBandProfile.id)
+      .eq('sender_band_id', bandId)
+      .eq('is_read', false)
+      .then(() => {});
+  }
+
+  // Real-time subscription
+  if (_chatRealtimeSub) sb.removeChannel(_chatRealtimeSub);
+  _chatRealtimeSub = sb.channel(`profile-chat-${bandId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'band_messages' }, payload => {
+      const msg   = payload.new;
+      const myId  = String(currentBandProfile?.id);
+      const thId  = String(_chatOtherBandId);
+      if ((String(msg.sender_band_id) === myId && String(msg.receiver_band_id) === thId) ||
+          (String(msg.sender_band_id) === thId && String(msg.receiver_band_id) === myId)) {
+        loadInlineChatMessages();
+      }
+    })
+    .subscribe();
+}
+
+function closeInlineChat() {
+  const panel = document.getElementById('inlineChatPanel');
+  if (panel) panel.classList.remove('open');
+  if (_chatRealtimeSub) { sb.removeChannel(_chatRealtimeSub); _chatRealtimeSub = null; }
+  _chatOtherBandId = null;
+}
+
+async function loadInlineChatMessages() {
+  const myId   = currentBandProfile?.id;
+  const theirId = _chatOtherBandId;
+  const box    = document.getElementById('inlineChatMessages');
+  if (!myId || !theirId || !box) return;
+
+  const { data, error } = await sb
+    .from('band_messages')
+    .select('*')
+    .or(`and(sender_band_id.eq.${myId},receiver_band_id.eq.${theirId}),and(sender_band_id.eq.${theirId},receiver_band_id.eq.${myId})`)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  if (error || !data?.length) {
+    box.innerHTML = '<div class="comm-chat-empty">No messages yet — say hello!</div>';
+    return;
+  }
+
+  box.innerHTML = data.map(msg => {
+    const mine = String(msg.sender_band_id) === String(myId);
+    const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `<div class="chat-bubble ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
+      <div class="chat-bubble-text">${escapeHtml(msg.content)}</div>
+      <div class="chat-bubble-time">${time}</div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendInlineChatMessage() {
+  const input   = document.getElementById('inlineChatInput');
+  const content = input?.value.trim();
+  if (!content || !_chatOtherBandId || !currentBandProfile) return;
+  input.value = '';
+
+  const { error } = await sb.from('band_messages').insert({
+    sender_band_id:   currentBandProfile.id,
+    receiver_band_id: _chatOtherBandId,
+    content,
+    is_read: false,
+  });
+  if (error) { showToast('Message failed to send', 'error'); input.value = content; return; }
+
+  // Notify recipient
+  await sb.from('notifications').insert({
+    band_id: _chatOtherBandId,
+    type:    'message',
+    payload: { from_band: currentBandProfile.band_name, preview: content.substring(0, 60) },
+    read:    false,
+  });
+
+  await loadInlineChatMessages();
+}
+
+// ── Notifications ─────────────────────────────────────────────
+
+async function loadNotifications(bandId) {
+  const el = document.getElementById('notificationsList');
+  if (!el) return;
+
+  const { data, error } = await sb
+    .from('notifications')
+    .select('*')
+    .eq('band_id', bandId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div class="comm-chat-empty">No notifications yet.</div>';
+    return;
+  }
+
+  const labels = {
+    interest_received:   'expressed interest in your posting',
+    message:             'sent you a message',
+    new_posting_nearby:  'posted a new opportunity near you',
+    interest_accepted:   'accepted your interest',
+    interest_declined:   'declined your interest',
+    tour_response:       'responded to your tour inquiry',
+  };
+
+  el.innerHTML = data.map(n => {
+    const p    = n.payload || {};
+    const from = escapeHtml(p.from_band || 'A band');
+    const lbl  = labels[n.type] || n.type;
+    const time = new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const cls  = n.read ? '' : 'notif-item--unread';
+    const extra = p.posting_title ? `: <em>${escapeHtml(p.posting_title)}</em>` : '';
+    return `<div class="notif-item ${cls}">
+      <div class="notif-dot"></div>
+      <div class="notif-body">
+        <div class="notif-text"><strong>${from}</strong> ${lbl}${extra}</div>
+        <div class="notif-time">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markAllNotifsRead() {
+  if (!currentBandProfile) return;
+  await sb.from('notifications').update({ read: true })
+    .eq('band_id', currentBandProfile.id)
+    .eq('read', false);
+  loadNotifications(currentBandProfile.id);
+  updateCommBadge(currentBandProfile.id);
+}
+
+// ── My Postings with expandable responses ─────────────────────
+
+async function loadMyPostingsWithResponses(bandId) {
+  const section = document.getElementById('myPostingsSection');
+  const list    = document.getElementById('myPostingsList');
+  if (!section || !list) return;
+
+  const { data, error } = await sb
+    .from('tour_postings')
+    .select('id, title, type, is_active, is_paused, created_at, interest_count, posting_dates(city)')
+    .eq('band_id', bandId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data?.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const typeLabels = { tour_support: 'Tour Support', local_opener: 'Local Opener', co_headlining: 'Co-Headlining' };
+
+  list.innerHTML = data.map(p => {
+    const cities    = (p.posting_dates || []).map(d => d.city.split(',')[0]).slice(0, 3).join(', ');
+    const label     = typeLabels[p.type] || p.type;
+    const status    = !p.is_active ? 'Closed' : p.is_paused ? 'Paused' : 'Active';
+    const statusCls = !p.is_active ? 'prof-posting-status--closed' : p.is_paused ? 'prof-posting-status--paused' : 'prof-posting-status--active';
+    const interests = p.interest_count || 0;
+    return `<div class="prof-posting-expanded" id="posting-block-${p.id}">
+      <div class="prof-posting-row" onclick="togglePostingResponses('${p.id}')">
+        <div class="prof-posting-info">
+          <div class="prof-posting-title">${escapeHtml(p.title)}</div>
+          <div class="prof-posting-meta">${label}${cities ? ' · ' + escapeHtml(cities) : ''} · <strong>${interests} interested</strong></div>
+        </div>
+        <div class="prof-posting-right" style="display:flex;align-items:center;gap:8px">
+          <span class="prof-posting-status ${statusCls}">${status}</span>
+          <span class="prof-posting-expand-icon" id="expand-icon-${p.id}">▾</span>
+        </div>
+      </div>
+      <div class="prof-posting-responses" id="responses-${p.id}" style="display:none"></div>
+    </div>`;
+  }).join('');
+}
+
+async function togglePostingResponses(postingId) {
+  const el   = document.getElementById(`responses-${postingId}`);
+  const icon = document.getElementById(`expand-icon-${postingId}`);
+  if (!el) return;
+
+  if (el.style.display !== 'none') {
+    el.style.display = 'none';
+    if (icon) icon.textContent = '▾';
+    return;
+  }
+
+  el.style.display = 'block';
+  if (icon) icon.textContent = '▴';
+  el.innerHTML = '<div class="prof-loading">Loading responses…</div>';
+
+  const { data, error } = await sb
+    .from('posting_interests')
+    .select('id, status, created_at, band_id, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme), posting_dates(city, date)')
+    .eq('posting_id', postingId)
+    .order('created_at', { ascending: false });
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div class="comm-chat-empty">No responses yet.</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(i => {
+    const band = i.bands || {};
+    const pd   = i.posting_dates || {};
+    const init = (band.band_name || '?')[0].toUpperCase();
+    const av   = band.profile_photo_url
+      ? `<img src="${band.profile_photo_url}" class="resp-avatar-img" alt="">`
+      : `<div class="resp-avatar-init">${init}</div>`;
+    const date = pd.date ? new Date(pd.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    const city = pd.city ? pd.city.split(',')[0] : '';
+    const slug = band.epk_theme && band.band_name ? bandSlug(band.band_name) : null;
+    const nameHtml = slug
+      ? `<a href="epk.html?band=${slug}" class="resp-name resp-name-link" target="_blank">${escapeHtml(band.band_name)}</a>`
+      : `<div class="resp-name">${escapeHtml(band.band_name || 'Unknown Band')}</div>`;
+    let actions = i.status === 'pending'
+      ? `<button class="resp-btn resp-btn--accept" onclick="handleInterestResponse('${i.id}',${band.id},'accepted','${postingId}')">Accept</button>
+         <button class="resp-btn resp-btn--decline" onclick="handleInterestResponse('${i.id}',${band.id},'declined','${postingId}')">Decline</button>`
+      : `<span class="resp-status resp-status--${i.status}">${i.status}</span>`;
+    actions += `<button class="resp-btn resp-btn--msg" onclick="switchProfileTab('community');openInlineChat(${band.id},'${escapeHtml(band.band_name || '')}')">Message</button>`;
+    return `<div class="resp-row">
+      <div class="resp-avatar">${av}</div>
+      <div class="resp-body">
+        ${nameHtml}
+        <div class="resp-meta">${escapeHtml(band.genre || '')}${city ? ' · ' + escapeHtml(city) : ''}${date ? ' · ' + date : ''}</div>
+      </div>
+      <div class="resp-actions">${actions}</div>
+    </div>`;
+  }).join('');
+}
+
+async function handleInterestResponse(interestId, bandId, status, postingId) {
+  const { error } = await sb.from('posting_interests').update({ status }).eq('id', interestId);
+  if (error) { showToast('Failed to update — ' + error.message, 'error'); return; }
+
+  await sb.from('notifications').insert({
+    band_id: bandId,
+    type:    status === 'accepted' ? 'interest_accepted' : 'interest_declined',
+    payload: { from_band: currentBandProfile?.band_name },
+    read:    false,
+  });
+
+  showToast(status === 'accepted' ? 'Accepted!' : 'Declined', status === 'accepted' ? 'success' : '');
+  // Collapse and reload
+  const el = document.getElementById(`responses-${postingId}`);
+  if (el) el.style.display = 'none';
+  const icon = document.getElementById(`expand-icon-${postingId}`);
+  if (icon) icon.textContent = '▾';
+  if (currentBandProfile) loadMyPostingsWithResponses(currentBandProfile.id);
+}
+
+// ── Tour Manager ──────────────────────────────────────────────
+
+let _tours = [];
+
+async function loadTourManager(bandId) {
+  const list = document.getElementById('tourManagerList');
+  if (!list) return;
+  list.innerHTML = '<div class="prof-loading">Loading tours…</div>';
+
+  const { data: tours, error } = await sb
+    .from('saved_tours')
+    .select('*, tour_stops(*)')
+    .eq('band_id', bandId)
+    .order('created_at', { ascending: false });
+
+  if (error) { list.innerHTML = '<div class="prof-loading">Failed to load tours.</div>'; return; }
+
+  _tours = tours || [];
+
+  const localTour = _getLocalStorageTour();
+  const migrateHtml = (localTour?.legs?.length)
+    ? `<div class="tour-migrate-banner">
+        <div class="tour-migrate-text">You have an unsaved route from the Tour Planner — save it here?</div>
+        <button class="resp-btn resp-btn--accept" onclick="migrateLocalTour()">Save Tour →</button>
+       </div>` : '';
+
+  if (!_tours.length) {
+    list.innerHTML = migrateHtml + `<div class="tour-empty">
+      <div class="tour-empty-text">No saved tours yet.</div>
+      <button class="profile-action-btn profile-action-btn-primary" onclick="openCreateTourModal()">+ Create Your First Tour</button>
+      <a href="tour.html" class="profile-action-btn profile-action-btn-secondary" style="text-decoration:none;display:inline-block;margin-top:4px">Build a Route →</a>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = migrateHtml + _tours.map(t => renderTourCard(t)).join('');
+}
+
+function _getLocalStorageTour() {
+  try { return JSON.parse(localStorage.getItem('bandmate_tour') || 'null'); } catch { return null; }
+}
+
+function renderTourCard(tour) {
+  const stops  = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+  const total  = stops.length;
+  const booked = stops.filter(s => s.status === 'yes').length;
+  const pct    = total ? Math.round((booked / total) * 100) : 0;
+
+  const stopsHtml = stops.length
+    ? stops.map((s, i) => renderTourStop(s, i + 1)).join('')
+    : `<div class="comm-chat-empty" style="padding:12px 16px">No stops yet — <a href="tour.html" style="color:var(--teal)">build a route in Tour Planner</a>, then save it here.</div>`;
+
+  const publicToggle = tour.is_public
+    ? `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',false)">Make Private</button>`
+    : `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',true)">Make Shareable</button>`;
+
+  return `<div class="tour-card" id="tour-card-${tour.id}">
+    <div class="tour-card-header">
+      <div class="tour-card-name">${escapeHtml(tour.name)}</div>
+      <div class="tour-card-actions">
+        <button class="tour-action-btn" onclick="renameTour('${tour.id}')" title="Rename">✎</button>
+        <button class="tour-action-btn" onclick="shareTourLink('${tour.id}','${tour.share_token}')" title="Copy share link">↗</button>
+        <button class="tour-action-btn tour-action-btn--delete" onclick="deleteTour('${tour.id}')" title="Delete tour">✕</button>
+      </div>
+    </div>
+    ${total > 0 ? `<div class="tour-progress">
+      <div class="tour-progress-bar-track"><div class="tour-progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="tour-progress-label">${booked} / ${total} booked — ${pct}%</div>
+    </div>` : ''}
+    <div class="tour-stops-list">${stopsHtml}</div>
+    <div class="tour-card-footer">
+      <a href="tour.html" class="tour-footer-link">Add stops →</a>
+      ${publicToggle}
+    </div>
+  </div>`;
+}
+
+function renderTourStop(stop, num) {
+  const statusBtns = ['yes', 'pending', 'no'].map(s => {
+    const labels = { yes: '✓ Yes', pending: '?', no: '✕ No' };
+    const active = stop.status === s ? 'stop-active' : '';
+    return `<button class="stop-status-btn stop-status-btn--${s} ${active}" onclick="updateStopStatus('${stop.id}','${s}','${stop.tour_id}')">${labels[s]}</button>`;
+  }).join('');
+  const loc = [stop.city, stop.state].filter(Boolean).join(', ');
+  return `<div class="tour-stop-row" id="stop-row-${stop.id}">
+    <div class="stop-num">${num}</div>
+    <div class="stop-body">
+      <div class="stop-venue">${escapeHtml(stop.venue_name)}</div>
+      ${loc ? `<div class="stop-city">${escapeHtml(loc)}</div>` : ''}
+    </div>
+    <div class="stop-right">
+      <div class="stop-status-group">${statusBtns}</div>
+      <button class="stop-delete" onclick="deleteStop('${stop.id}','${stop.tour_id}')" title="Remove stop">✕</button>
+    </div>
+  </div>`;
+}
+
+async function updateStopStatus(stopId, status, tourId) {
+  const { error } = await sb.from('tour_stops').update({ status }).eq('id', stopId);
+  if (error) { showToast('Failed to update — ' + error.message, 'error'); return; }
+  if (status === 'no') showToast('Marked as No. Go to Tour Planner to find a replacement venue.');
+  await _reloadTourCard(tourId);
+}
+
+async function deleteStop(stopId, tourId) {
+  if (!confirm('Remove this stop?')) return;
+  const { error } = await sb.from('tour_stops').delete().eq('id', stopId);
+  if (error) { showToast('Failed to remove — ' + error.message, 'error'); return; }
+  showToast('Stop removed.');
+  await _reloadTourCard(tourId);
+}
+
+async function _reloadTourCard(tourId) {
+  const { data: tour } = await sb.from('saved_tours').select('*, tour_stops(*)').eq('id', tourId).single();
+  if (!tour) return;
+  const card = document.getElementById(`tour-card-${tourId}`);
+  if (card) card.outerHTML = renderTourCard(tour);
+  _tours = _tours.map(t => t.id === tourId ? tour : t);
+}
+
+function openCreateTourModal() {
+  const modal = document.getElementById('createTourModal');
+  if (modal) { modal.classList.add('open'); document.getElementById('newTourName').focus(); }
+}
+
+function closeCreateTourModal() {
+  const modal = document.getElementById('createTourModal');
+  if (modal) modal.classList.remove('open');
+  const inp = document.getElementById('newTourName');
+  if (inp) inp.value = '';
+}
+
+async function createTour() {
+  const name = document.getElementById('newTourName')?.value.trim();
+  if (!name) { showToast('Please enter a tour name', 'error'); return; }
+  if (!currentBandProfile) return;
+
+  const { data, error } = await sb.from('saved_tours').insert({
+    band_id: currentBandProfile.id,
+    name,
+  }).select('*, tour_stops(*)').single();
+
+  if (error) { showToast('Failed to create — ' + error.message, 'error'); return; }
+
+  closeCreateTourModal();
+  _tours.unshift(data);
+  const list   = document.getElementById('tourManagerList');
+  const empty  = list?.querySelector('.tour-empty');
+  if (empty) empty.remove();
+  list?.insertAdjacentHTML('afterbegin', renderTourCard(data));
+  showToast('Tour created!', 'success');
+}
+
+async function deleteTour(tourId) {
+  if (!confirm('Delete this tour? This cannot be undone.')) return;
+  const { error } = await sb.from('saved_tours').delete().eq('id', tourId);
+  if (error) { showToast('Failed to delete — ' + error.message, 'error'); return; }
+  document.getElementById(`tour-card-${tourId}`)?.remove();
+  _tours = _tours.filter(t => t.id !== tourId);
+  if (!_tours.length) {
+    const list = document.getElementById('tourManagerList');
+    if (list) list.innerHTML = `<div class="tour-empty"><div class="tour-empty-text">No saved tours yet.</div><button class="profile-action-btn profile-action-btn-primary" onclick="openCreateTourModal()">+ Create Your First Tour</button></div>`;
+  }
+  showToast('Tour deleted.', 'success');
+}
+
+async function renameTour(tourId) {
+  const tour    = _tours.find(t => t.id === tourId);
+  const newName = prompt('Rename tour:', tour?.name || '');
+  if (!newName?.trim() || newName.trim() === tour?.name) return;
+  const { error } = await sb.from('saved_tours').update({ name: newName.trim() }).eq('id', tourId);
+  if (error) { showToast('Failed to rename — ' + error.message, 'error'); return; }
+  const el = document.querySelector(`#tour-card-${tourId} .tour-card-name`);
+  if (el) el.textContent = newName.trim();
+  _tours = _tours.map(t => t.id === tourId ? { ...t, name: newName.trim() } : t);
+  showToast('Renamed!', 'success');
+}
+
+async function toggleTourPublic(tourId, makePublic) {
+  const { error } = await sb.from('saved_tours').update({ is_public: makePublic }).eq('id', tourId);
+  if (error) { showToast('Failed — ' + error.message, 'error'); return; }
+  showToast(makePublic ? 'Tour is now shareable via link.' : 'Tour is now private.', 'success');
+  await _reloadTourCard(tourId);
+}
+
+function shareTourLink(tourId, shareToken) {
+  const url = `${window.location.origin.replace(/\/[^/]*$/, '')}/tour.html?share=${shareToken}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Share link copied!', 'success'))
+      .catch(() => _fallbackCopyText(url));
+  } else {
+    _fallbackCopyText(url);
+  }
+}
+
+async function migrateLocalTour() {
+  const local = _getLocalStorageTour();
+  if (!local?.legs?.length || !currentBandProfile) return;
+
+  const name = `Tour — ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+  const { data: tour, error } = await sb.from('saved_tours')
+    .insert({ band_id: currentBandProfile.id, name })
+    .select().single();
+  if (error) { showToast('Migration failed — ' + error.message, 'error'); return; }
+
+  const stops = (local.legs || []).reduce((acc, leg, idx) => {
+    const vname = leg.venue_name || leg.destination || leg.end_address || null;
+    if (vname) acc.push({ tour_id: tour.id, venue_name: vname, city: leg.city || '', state: leg.state || '', place_id: leg.place_id || null, position: idx, status: 'pending' });
+    return acc;
+  }, []);
+
+  if (stops.length) await sb.from('tour_stops').insert(stops);
+
+  document.querySelector('.tour-migrate-banner')?.remove();
+  showToast('Tour saved to your profile!', 'success');
+  _tourTabLoaded = false;
+  loadTourManager(currentBandProfile.id);
 }
