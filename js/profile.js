@@ -1307,8 +1307,28 @@ async function handleInterestResponse(interestId, bandId, status, postingId) {
     read:    false,
   });
 
+  // If accepted and the posting is linked to a tour, write the band into those stops
+  if (status === 'accepted') {
+    const { data: posting } = await sb
+      .from('tour_postings')
+      .select('linked_tour_id, linked_stop_ids, type')
+      .eq('id', postingId)
+      .single();
+
+    if (posting?.linked_tour_id) {
+      const roleMap = { tour_support: 'opener', local_opener: 'support', co_headlining: 'co-headliner' };
+      const role    = roleMap[posting.type] || 'support';
+      const update  = { supporting_band_id: bandId, supporting_role: role };
+
+      if (posting.linked_stop_ids?.length) {
+        await sb.from('tour_stops').update(update).in('id', posting.linked_stop_ids);
+      } else {
+        await sb.from('tour_stops').update(update).eq('tour_id', posting.linked_tour_id);
+      }
+    }
+  }
+
   showToast(status === 'accepted' ? 'Accepted!' : 'Declined', status === 'accepted' ? 'success' : '');
-  // Collapse and reload
   const el = document.getElementById(`responses-${postingId}`);
   if (el) el.style.display = 'none';
   const icon = document.getElementById(`expand-icon-${postingId}`);
@@ -1327,7 +1347,7 @@ async function loadTourManager(bandId) {
 
   const { data: tours, error } = await sb
     .from('saved_tours')
-    .select('*, tour_stops(*)')
+    .select('*, tour_stops(*, supporting_band:bands!supporting_band_id(id, band_name, profile_photo_url))')
     .eq('band_id', bandId)
     .order('created_at', { ascending: false });
 
@@ -1419,11 +1439,23 @@ function renderTourStop(stop, num) {
   }).join('');
   const loc = [stop.city, stop.state].filter(Boolean).join(', ');
   const hasNote = !!(stop.notes && stop.notes.trim());
+  const sb_band = stop.supporting_band;
+  const roleLabel = { opener: 'Opening', support: 'Support Act', 'co-headliner': 'Co-Headlining' }[stop.supporting_role] || '';
+  const supportHtml = sb_band ? `<div class="stop-support-band">
+    ${sb_band.profile_photo_url
+      ? `<img src="${escapeHtml(sb_band.profile_photo_url)}" class="stop-support-avatar" alt="">`
+      : `<div class="stop-support-avatar stop-support-avatar--init">${escapeHtml((sb_band.band_name || 'B').charAt(0).toUpperCase())}</div>`}
+    <div class="stop-support-info">
+      <div class="stop-support-name">${escapeHtml(sb_band.band_name)}</div>
+      ${roleLabel ? `<div class="stop-support-role">${roleLabel}</div>` : ''}
+    </div>
+  </div>` : '';
   return `<div class="tour-stop-row" id="stop-row-${stop.id}">
     <div class="stop-num">${num}</div>
     <div class="stop-body">
       <div class="stop-venue">${escapeHtml(stop.venue_name)}</div>
       ${loc ? `<div class="stop-city">${escapeHtml(loc)}</div>` : ''}
+      ${supportHtml}
       <div class="stop-action-links">
         ${stop.place_id ? `<a href="map.html?place=${stop.place_id}" target="_blank" class="stop-action-link">View / Review ↗</a>` : ''}
         ${stop.place_id ? `<button class="stop-action-link stop-action-link--contact" data-place-id="${stop.place_id}" data-name="${escapeHtml(stop.venue_name || '')}" data-loc="${escapeHtml(loc)}" onclick="openContactModal(this.dataset.placeId,this.dataset.name,this.dataset.loc)">Contact →</button>` : ''}

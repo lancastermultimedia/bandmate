@@ -9921,6 +9921,38 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .tour-notes-area:focus { border-color: var(--teal); }
 
 /* ── Stop Notes ──────────────────────────────────────────── */
+/* ── Stop supporting band pill ───────────────────────────── */
+.stop-support-band {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 6px; padding: 5px 8px;
+  background: rgba(58,122,138,0.07); border-left: 2px solid var(--teal);
+}
+.stop-support-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+}
+.stop-support-avatar--init {
+  background: var(--teal); color: #fff;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.04em;
+  display: flex; align-items: center; justify-content: center;
+}
+.stop-support-info { min-width: 0; }
+.stop-support-name {
+  font-size: 10px; font-weight: 400; color: var(--teal);
+  letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stop-support-role {
+  font-size: 8px; font-weight: 300; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--grey); margin-top: 1px;
+}
+/* ── Tour link section in post modal ─────────────────────── */
+.comm-stop-check {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 11px; font-weight: 300; color: var(--ink);
+  padding: 7px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.comm-stop-check:last-child { border-bottom: none; }
+.comm-stop-check input[type="checkbox"] { flex-shrink: 0; margin-top: 2px; }
 .stop-action-links {
   display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;
 }

@@ -249,6 +249,29 @@
       </div>
     </div>
 
+    <!-- Section 5: Tour Link -->
+    <div class="comm-modal-section" id="tourLinkSection">
+      <div class="comm-modal-label">Link to a saved tour <span style="font-weight:300;color:var(--muted)">(optional)</span></div>
+      <div class="comm-modal-sublabel" style="font-size:10px;font-weight:300;color:var(--muted);margin-bottom:8px">Accepted bands will appear beside their venue in your Tour Manager</div>
+      <select id="postLinkedTour" class="comm-modal-input" onchange="onTourLinkChange(this.value)">
+        <option value="">— No tour link —</option>
+      </select>
+      <div id="tourStopSelector" style="display:none;margin-top:12px">
+        <div class="comm-modal-label">Which stops?</div>
+        <div class="comm-radio-group" style="margin-top:6px">
+          <label class="comm-radio-label">
+            <input type="radio" name="stopScope" value="all" checked onchange="onStopScopeChange(this.value)">
+            All stops on this tour
+          </label>
+          <label class="comm-radio-label">
+            <input type="radio" name="stopScope" value="specific" onchange="onStopScopeChange(this.value)">
+            Specific stops only
+          </label>
+        </div>
+        <div id="specificStopsList" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+
     <div class="comm-modal-err" id="postErr"></div>
     <button class="comm-submit-btn" id="postSubmitBtn" onclick="submitPosting()">Post to Community →</button>
   </div>

@@ -10,6 +10,7 @@ let _filters           = { search: '', type: 'all', genre: '', location: '', len
 let _postType          = null;
 let _slotsNeeded       = 1;
 let _editingPostingId  = null; // null = new post, number = editing existing
+let _postTours         = [];   // saved tours for the tour-link dropdown
 let _deletePostingId   = null;
 let _interestPostingId = null;
 let _interestDates     = [];
@@ -626,6 +627,17 @@ function _openPostForm(prefill) {
     addDateRow();
   }
 
+  // Reset tour link section
+  const tourSel = document.getElementById('postLinkedTour');
+  if (tourSel) { tourSel.value = ''; }
+  const tourStopSel = document.getElementById('tourStopSelector');
+  if (tourStopSel) tourStopSel.style.display = 'none';
+  const specList = document.getElementById('specificStopsList');
+  if (specList) { specList.style.display = 'none'; specList.innerHTML = ''; }
+  const allRadio = document.querySelector('input[name="stopScope"][value="all"]');
+  if (allRadio) allRadio.checked = true;
+  _loadPostTourOptions(prefill);
+
   document.getElementById('postModal').classList.add('open');
 
   document.getElementById('postDescription').oninput = function() {
@@ -634,6 +646,55 @@ function _openPostForm(prefill) {
     hint.textContent = len < 50 ? `${50 - len} more characters needed` : '';
     hint.style.color = len < 50 ? 'var(--rust)' : 'var(--muted)';
   };
+}
+
+async function _loadPostTourOptions(prefill) {
+  if (!currentBandProfile) return;
+  const { data: tours } = await sb
+    .from('saved_tours')
+    .select('id, name, tour_stops(id, venue_name, city, state, position)')
+    .eq('band_id', currentBandProfile.id)
+    .order('created_at', { ascending: false });
+  _postTours = tours || [];
+  const sel = document.getElementById('postLinkedTour');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— No tour link —</option>' +
+    (_postTours.length
+      ? _postTours.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')
+      : '<option value="" disabled>No saved tours yet</option>');
+  if (prefill?.linked_tour_id) {
+    sel.value = String(prefill.linked_tour_id);
+    onTourLinkChange(String(prefill.linked_tour_id), prefill.linked_stop_ids || []);
+  }
+}
+
+function onTourLinkChange(tourId, preselectedStops = []) {
+  const selector = document.getElementById('tourStopSelector');
+  if (!tourId) { if (selector) selector.style.display = 'none'; return; }
+  if (selector) selector.style.display = 'block';
+
+  const tour  = _postTours.find(t => String(t.id) === String(tourId));
+  const stops = (tour?.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+  const list  = document.getElementById('specificStopsList');
+  if (list) {
+    list.innerHTML = stops.map(s => {
+      const loc     = [s.city, s.state].filter(Boolean).join(', ');
+      const checked = preselectedStops.includes(s.id) ? 'checked' : '';
+      return `<label class="comm-stop-check">
+        <input type="checkbox" class="post-stop-checkbox" value="${s.id}" ${checked}>
+        <span>${escapeHtml(s.venue_name || 'TBD')}${loc ? ' — ' + escapeHtml(loc) : ''}</span>
+      </label>`;
+    }).join('');
+  }
+
+  const scope = preselectedStops.length ? 'specific' : 'all';
+  const radio = document.querySelector(`input[name="stopScope"][value="${scope}"]`);
+  if (radio) { radio.checked = true; onStopScopeChange(scope); }
+}
+
+function onStopScopeChange(scope) {
+  const list = document.getElementById('specificStopsList');
+  if (list) list.style.display = scope === 'specific' ? 'block' : 'none';
 }
 
 function closePostModal() {
@@ -795,7 +856,16 @@ async function submitPosting() {
   if (!dates.length) { errEl.textContent = 'Please add at least one date and venue.'; return; }
 
   const genres = getSelectedGenres('postGenreChips');
-  const btn    = document.getElementById('postSubmitBtn');
+
+  // Tour link
+  const linkedTourIdRaw = document.getElementById('postLinkedTour')?.value || '';
+  const linkedTourId    = linkedTourIdRaw ? parseInt(linkedTourIdRaw) : null;
+  const stopScope       = document.querySelector('input[name="stopScope"]:checked')?.value;
+  const linkedStopIds   = (linkedTourId && stopScope === 'specific')
+    ? Array.from(document.querySelectorAll('.post-stop-checkbox:checked')).map(cb => parseInt(cb.value))
+    : [];
+
+  const btn = document.getElementById('postSubmitBtn');
   btn.disabled = true; btn.textContent = _editingPostingId ? 'Saving…' : 'Posting…';
 
   const postPayload = {
@@ -806,6 +876,8 @@ async function submitPosting() {
     slots_needed:       _slotsNeeded,
     contact_preference: contactPref,
     contact_email:      contactPref === 'email' ? contactEmail : null,
+    linked_tour_id:     linkedTourId,
+    linked_stop_ids:    linkedStopIds,
   };
 
   let postingId;
