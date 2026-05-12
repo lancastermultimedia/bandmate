@@ -1369,9 +1369,7 @@ function renderTourCard(tour) {
     ? stops.map((s, i) => renderTourStop(s, i + 1)).join('')
     : `<div class="comm-chat-empty" style="padding:12px 16px">No stops yet — <a href="tour.html" style="color:var(--teal)">build a route in Tour Planner</a>, then save it here.</div>`;
 
-  const publicToggle = tour.is_public
-    ? `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',false)">Make Private</button>`
-    : `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',true)">Make Shareable</button>`;
+  // shareable link feature removed — itinerary download serves this purpose
 
   const bookedBanner = fullyBooked ? `
     <div class="tour-booked-banner">
@@ -1393,7 +1391,6 @@ function renderTourCard(tour) {
       <div class="tour-card-name">${escapeHtml(tour.name)}</div>
       <div class="tour-card-actions">
         <button class="tour-action-btn" onclick="renameTour('${tour.id}')" title="Rename">✎</button>
-        <button class="tour-action-btn" onclick="shareTourLink('${tour.id}','${tour.share_token}')" title="Copy share link">↗</button>
         <button class="tour-action-btn tour-action-btn--delete" onclick="deleteTour('${tour.id}')" title="Delete tour">✕</button>
       </div>
     </div>
@@ -1409,7 +1406,6 @@ function renderTourCard(tour) {
     </div>
     <div class="tour-card-footer">
       <a href="tour.html" class="tour-footer-link">Add stops →</a>
-      ${publicToggle}
       ${fullyBooked ? `<button class="tour-footer-link" onclick="downloadTourItinerary('${tour.id}')">↓ Itinerary</button>` : ''}
     </div>
   </div>`;
@@ -1430,7 +1426,7 @@ function renderTourStop(stop, num) {
       ${loc ? `<div class="stop-city">${escapeHtml(loc)}</div>` : ''}
       <div class="stop-action-links">
         ${stop.place_id ? `<a href="map.html?place=${stop.place_id}" target="_blank" class="stop-action-link">View / Review ↗</a>` : ''}
-        ${stop.place_id ? `<a href="https://www.google.com/maps/place/?q=place_id:${stop.place_id}" target="_blank" class="stop-action-link stop-action-link--contact">Contact ↗</a>` : ''}
+        ${stop.place_id ? `<button class="stop-action-link stop-action-link--contact" data-place-id="${stop.place_id}" data-name="${escapeHtml(stop.venue_name || '')}" data-loc="${escapeHtml(loc)}" onclick="openContactModal(this.dataset.placeId,this.dataset.name,this.dataset.loc)">Contact →</button>` : ''}
       </div>
       <button class="stop-note-toggle" onclick="toggleStopNote('${stop.id}')">${hasNote ? '↳ note' : '+ note'}</button>
       <div class="stop-note-wrap${hasNote ? ' stop-note-wrap--open' : ''}" id="stop-note-wrap-${stop.id}">
@@ -1621,37 +1617,11 @@ function downloadTourItinerary(tourId) {
   }
 }
 
-function _printTourItinerary(tour, stops) {
-  // Inject per-stop notes into the stored itinerary HTML, then open a print window
-  const parser  = new DOMParser();
-  const doc     = parser.parseFromString(`<div id="root">${tour.itinerary_html}</div>`, 'text/html');
-  const showEls = doc.querySelectorAll('.itin-show');
-
-  showEls.forEach((el, idx) => {
-    const note = stops[idx]?.notes?.trim();
-    if (!note) return;
-    const nd = doc.createElement('div');
-    nd.className = 'itin-stop-note';
-    nd.innerHTML = `<div class="isn-label">Note</div><div class="isn-text">${escapeHtml(note)}</div>`;
-    el.appendChild(nd);
-  });
-
-  const itinHtml = doc.getElementById('root').innerHTML;
-  const dateStr  = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  const tourNotesHtml = tour.notes?.trim()
-    ? `<div class="tour-notes-block">
-        <div class="tnb-label">Tour Notes</div>
-        <div class="tnb-text">${escapeHtml(tour.notes.trim())}</div>
-       </div>`
-    : '';
-
-  const win = window.open('', '_blank');
-  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
-  win.document.write(`<!DOCTYPE html>
+function _itinPrintDoc(tourName, dateStr, notesHtml, bodyHtml) {
+  return `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8">
-<title>${escapeHtml(tour.name)} — Itinerary</title>
+<title>${escapeHtml(tourName)} — Itinerary</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#f2efe6;--teal:#3a7a8a;--olive:#7a8a3a;--red:#d94535;--ink:#0f0f0c;--grey:#8a8a7c;--warm:#f2efe6;--rust:#3a7a8a;--sage:#7a8a3a;--muted:#8a8a7c;--gold:#c8a84b;--border:rgba(15,15,12,0.1);}
@@ -1686,36 +1656,75 @@ body{font-family:'DM Sans',sans-serif;font-weight:300;background:#fff;color:var(
 </style></head>
 <body>
 <div class="print-hd">
-  <div class="print-title">${escapeHtml(tour.name)}</div>
+  <div class="print-title">${escapeHtml(tourName)}</div>
   <div class="print-meta">mybandmate.us<br>Generated ${dateStr}</div>
 </div>
-${tourNotesHtml}
-<div id="itin-grid">${itinHtml}</div>
-<div class="print-ft"><span>Bandmate Tour Itinerary</span><span>${escapeHtml(tour.name)}</span></div>
+${notesHtml}
+<div id="itin-grid">${bodyHtml}</div>
+<div class="print-ft"><span>Bandmate Tour Itinerary</span><span>${escapeHtml(tourName)}</span></div>
 <script>window.onload=()=>window.print();<\/script>
-</body></html>`);
+</body></html>`;
+}
+
+function _printTourItinerary(tour, stops) {
+  // Inject per-stop notes into the stored itinerary HTML, then open a print window
+  const parser  = new DOMParser();
+  const doc     = parser.parseFromString(`<div id="root">${tour.itinerary_html}</div>`, 'text/html');
+  const showEls = doc.querySelectorAll('.itin-show');
+
+  showEls.forEach((el, idx) => {
+    const note = stops[idx]?.notes?.trim();
+    if (!note) return;
+    const nd = doc.createElement('div');
+    nd.className = 'itin-stop-note';
+    nd.innerHTML = `<div class="isn-label">Note</div><div class="isn-text">${escapeHtml(note)}</div>`;
+    el.appendChild(nd);
+  });
+
+  const itinHtml = doc.getElementById('root').innerHTML;
+  const dateStr  = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const tourNotesHtml = tour.notes?.trim()
+    ? `<div class="tour-notes-block">
+        <div class="tnb-label">Tour Notes</div>
+        <div class="tnb-text">${escapeHtml(tour.notes.trim())}</div>
+       </div>`
+    : '';
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
+  win.document.write(_itinPrintDoc(tour.name, dateStr, tourNotesHtml, itinHtml));
   win.document.close();
 }
 
 function _downloadPlainItinerary(tour, stops) {
   const statusLabel = { yes: 'BOOKED', pending: 'PENDING', no: 'NOT BOOKED' };
-  const line = '─'.repeat(44);
-  const stopsText = stops.map((s, i) => {
-    const loc  = [s.city, s.state].filter(Boolean).join(', ');
-    const note = s.notes?.trim() ? `\n      Notes: ${s.notes.trim()}` : '';
-    return `  ${String(i + 1).padStart(2, '0')}  ${s.venue_name || 'TBD'}${loc ? '  ·  ' + loc : ''}  [${statusLabel[s.status] || 'PENDING'}]${note}`;
-  }).join('\n\n');
-  const tourNotesSection = tour.notes?.trim() ? `\n${line}\nTOUR NOTES\n\n${tour.notes.trim()}\n` : '';
+  const statusColor = { yes: '#3a7a8a', pending: '#7a8a3a', no: '#d94535' };
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const content = ['BANDMATE — TOUR ITINERARY', line, '', tour.name, `Generated ${dateStr}`, '', line, 'STOPS', '', stopsText, tourNotesSection, line, 'mybandmate.us', ''].join('\n');
-  const blob = new Blob([content], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+
+  const stopsHtml = stops.map((s, i) => {
+    const loc     = [s.city, s.state].filter(Boolean).join(', ');
+    const color   = statusColor[s.status] || '#8a8a7c';
+    const noteHtml = s.notes?.trim()
+      ? `<div class="itin-stop-note"><div class="isn-label">Note</div><div class="isn-text">${escapeHtml(s.notes.trim())}</div></div>`
+      : '';
+    return `<div class="itin-day itin-show">
+      <div class="itin-date">Stop ${String(i + 1).padStart(2, '0')}</div>
+      <div class="itin-type-label">${escapeHtml(s.venue_name || 'TBD')}</div>
+      ${loc ? `<div class="itin-city">${escapeHtml(loc)}</div>` : ''}
+      <div style="margin-top:4px;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${color}">${statusLabel[s.status] || 'PENDING'}</div>
+      ${noteHtml}
+    </div>`;
+  }).join('');
+
+  const tourNotesHtml = tour.notes?.trim()
+    ? `<div class="tour-notes-block"><div class="tnb-label">Tour Notes</div><div class="tnb-text">${escapeHtml(tour.notes.trim())}</div></div>`
+    : '';
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
+  win.document.write(_itinPrintDoc(tour.name, dateStr, tourNotesHtml, stopsHtml));
+  win.document.close();
 }
 
 function _launchBookedCelebration(tourName) {
