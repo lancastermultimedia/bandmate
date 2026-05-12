@@ -1130,16 +1130,16 @@ async function sendInlineChatMessage() {
 
   const { error } = await sb.from('band_messages').insert({
     sender_band_id:   currentBandProfile.id,
-    receiver_band_id: _chatOtherBandId,
+    receiver_band_id: parseInt(_chatOtherBandId),
     content,
     is_read: false,
   });
-  if (error) { showToast('Message failed to send', 'error'); input.value = content; return; }
+  if (error) { showToast('Message failed — ' + error.message, 'error'); input.value = content; return; }
 
   // Notify recipient
   await sb.from('notifications').insert({
-    band_id: _chatOtherBandId,
-    type:    'message',
+    band_id: parseInt(_chatOtherBandId),
+    type:    'new_message',
     payload: { from_band: currentBandProfile.band_name, preview: content.substring(0, 60) },
     read:    false,
   });

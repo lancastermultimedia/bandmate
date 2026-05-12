@@ -7094,48 +7094,66 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 /* Notification tray */
 .notif-tray {
   position: fixed;
-  width: 320px;
-  background: #fff;
-  border: 1.5px solid rgba(14,13,11,0.15);
-  box-shadow: 4px 4px 0 rgba(14,13,11,0.1);
+  width: 340px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
   z-index: 900;
-  max-height: 400px;
+  max-height: 460px;
   overflow-y: auto;
+  display: none;
 }
+.notif-tray.open { display: block; }
 .notif-tray-header {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(14,13,11,0.08);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 9px;
+  border-bottom: 1px solid var(--border);
+  background: var(--paper);
+  position: sticky; top: 0; z-index: 1;
 }
+.notif-tray-title {
+  font-size: 7px; font-weight: 400;
+  letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink);
+}
+.notif-tray-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 10px; color: var(--grey); padding: 0; line-height: 1;
+  transition: color 0.15s;
+}
+.notif-tray-close:hover { color: var(--ink); }
+.notif-list { padding: 0; }
 .notif-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(14,13,11,0.06);
-  transition: background 0.12s;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
 }
-.notif-item:hover { background: #faf9f5; }
-.notif-item.unread { background: rgba(201,75,42,0.04); }
-.notif-item-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.8rem;
-  color: var(--ink);
-  line-height: 1.45;
-  margin-bottom: 3px;
-}
-.notif-item-time {
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(58,122,138,0.05); }
+.notif-item--unread { background: rgba(58,122,138,0.04); }
+.notif-item--unread:hover { background: rgba(58,122,138,0.08); }
+.notif-icon {
+  font-size: 10px; color: var(--teal); flex-shrink: 0;
+  width: 16px; text-align: center; margin-top: 1px;
   font-family: 'Space Mono', monospace;
-  font-size: 0.52rem;
-  color: var(--muted);
 }
-.notif-empty {
-  padding: 24px 16px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-align: center;
+.notif-item--unread .notif-icon { color: var(--teal); }
+.notif-body { flex: 1; min-width: 0; }
+.notif-desc {
+  font-size: 11px; font-weight: 300; color: var(--ink);
+  line-height: 1.5; margin-bottom: 4px;
+}
+.notif-desc strong { font-weight: 500; }
+.notif-time {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px; color: var(--grey); letter-spacing: 0.06em;
+}
+.notif-tray-empty {
+  padding: 28px 14px; text-align: center;
+  font-size: 11px; font-weight: 300; color: var(--grey);
+}
+.notif-tray-loading {
+  padding: 16px 14px;
+  font-size: 11px; font-weight: 300; color: var(--grey);
 }
 
 /* ── Venue search (post modal date rows) ───────────────── */
@@ -9737,19 +9755,7 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .chat-bubble--mine .chat-bubble-text { background: var(--ink); color: var(--white); }
 .chat-bubble-time { font-size: 7px; color: var(--grey); margin-top: 3px; font-family: 'Space Mono', monospace; }
 
-/* ── Notifications ───────────────────────────────────────────── */
-.notif-item {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
-}
-.notif-dot {
-  width: 6px; height: 6px;
-  background: transparent; flex-shrink: 0; margin-top: 5px;
-}
-.notif-item--unread .notif-dot { background: var(--teal); }
-.notif-body { flex: 1; }
-.notif-text { font-size: 11px; font-weight: 300; color: var(--ink); line-height: 1.45; margin-bottom: 3px; }
-.notif-time { font-size: 8px; color: var(--grey); }
+/* ── Notifications — styles consolidated above (.notif-tray block) ── */
 
 /* ── My Postings — Expandable Responses ─────────────────────── */
 .prof-posting-expanded { border-bottom: 1px solid var(--border); }
