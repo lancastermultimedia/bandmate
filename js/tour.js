@@ -162,6 +162,7 @@ function restoreTourState() {
       document.getElementById('itinCount').textContent           = state.itinCount || '';
       document.getElementById('itinArea').style.display          = 'block';
       document.getElementById('downloadItinBtn').style.display   = 'block';
+      document.getElementById('saveTourBtn').style.display       = 'block';
       document.getElementById('findBandmatesWrap').style.display = 'block';
     }
   } catch (e) {
@@ -301,6 +302,7 @@ function resetSteps() {
   document.getElementById('venueSelectionArea').style.display = 'none';
   document.getElementById('itinArea').style.display            = 'none';
   document.getElementById('downloadItinBtn').style.display     = 'none';
+  document.getElementById('saveTourBtn').style.display         = 'none';
   document.getElementById('findBandmatesWrap').style.display   = 'none';
   document.getElementById('venueSelectionList').innerHTML      = '';
   document.getElementById('itinContainer').innerHTML          = '';
@@ -894,6 +896,7 @@ function renderItinerary(days, isPremium) {
   document.getElementById('itinCount').textContent            = parts.join(' · ');
   document.getElementById('itinArea').style.display            = 'block';
   document.getElementById('downloadItinBtn').style.display     = 'block';
+  document.getElementById('saveTourBtn').style.display         = 'block';
   document.getElementById('findBandmatesWrap').style.display   = 'block';
 
   saveTourState();
@@ -1366,4 +1369,75 @@ function getTourMapStyle() {
     { featureType: 'poi',             elementType: 'labels',          stylers: [{ visibility: 'off' }] },
     { featureType: 'transit',                                          stylers: [{ visibility: 'off' }] },
   ];
+}
+
+// ── Save route to profile Tour Manager ────────────────────────────────────────
+
+async function saveTourToProfile() {
+  if (!currentUser || !currentBandProfile) {
+    openAuth('login');
+    return;
+  }
+  if (!tourWaypoints.length) {
+    showToast('Add some stops first', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('saveTourBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  // Prompt for tour name, default to city range
+  const cities = tourWaypoints
+    .map(wp => (wp.city || '').split(',')[0].trim())
+    .filter(Boolean);
+  const defaultName = cities.length >= 2
+    ? `${cities[0]} → ${cities[cities.length - 1]}`
+    : cities[0] || 'My Tour';
+  const name = prompt('Name this tour:', defaultName);
+  if (!name?.trim()) {
+    btn.textContent = orig;
+    btn.disabled = false;
+    return;
+  }
+
+  const { data: tour, error: tourErr } = await sb
+    .from('saved_tours')
+    .insert({ band_id: currentBandProfile.id, name: name.trim() })
+    .select()
+    .single();
+
+  if (tourErr) {
+    showToast('Save failed — ' + tourErr.message, 'error');
+    btn.textContent = orig;
+    btn.disabled = false;
+    return;
+  }
+
+  // Build stops from waypoints — use selected venue if available, fall back to city
+  const stops = tourWaypoints.map((wp, idx) => {
+    const sel    = wp.selectedVenueIndex != null ? wp.venueResults?.[wp.selectedVenueIndex] : null;
+    const city   = (wp.city || '').split(',')[0].trim();
+    const state  = (wp.city || '').split(',')[1]?.trim() || '';
+    return {
+      tour_id:    tour.id,
+      venue_name: sel?.name || city || `Stop ${idx + 1}`,
+      city,
+      state,
+      place_id:   sel?.place_id || null,
+      position:   idx,
+      status:     'pending',
+    };
+  });
+
+  const { error: stopsErr } = await sb.from('tour_stops').insert(stops);
+  if (stopsErr) {
+    showToast('Tour created but stops failed — ' + stopsErr.message, 'error');
+  } else {
+    showToast('Tour saved! View it in your Profile → Tour Manager.', 'success');
+  }
+
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
 }

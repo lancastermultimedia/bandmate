@@ -236,9 +236,14 @@
         <div class="itin-header-count" id="itinCount"></div>
       </div>
       <div class="itin-list" id="itinContainer"></div>
-      <button id="downloadItinBtn" class="tour-btn tour-btn-secondary" style="display:none;margin-top:12px" onclick="downloadItinerary()">
-        Download as PDF / Print →
-      </button>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button id="downloadItinBtn" class="tour-btn tour-btn-secondary" style="display:none;flex:1" onclick="downloadItinerary()">
+          Download / Print →
+        </button>
+        <button id="saveTourBtn" class="tour-btn tour-btn-primary" style="display:none;flex:1" onclick="saveTourToProfile()">
+          Save to Tour Manager →
+        </button>
+      </div>
     </div>
 
   </div>
