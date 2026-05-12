@@ -1363,6 +1363,7 @@ function renderTourCard(tour) {
   const total  = stops.length;
   const booked = stops.filter(s => s.status === 'yes').length;
   const pct    = total ? Math.round((booked / total) * 100) : 0;
+  const fullyBooked = total > 0 && pct === 100;
 
   const stopsHtml = stops.length
     ? stops.map((s, i) => renderTourStop(s, i + 1)).join('')
@@ -1372,7 +1373,22 @@ function renderTourCard(tour) {
     ? `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',false)">Make Private</button>`
     : `<button class="tour-footer-link" onclick="toggleTourPublic('${tour.id}',true)">Make Shareable</button>`;
 
-  return `<div class="tour-card" id="tour-card-${tour.id}">
+  const bookedBanner = fullyBooked ? `
+    <div class="tour-booked-banner">
+      <svg viewBox="0 0 26 26" width="22" height="22" fill="none" class="tour-booked-globe">
+        <circle cx="13" cy="13" r="11" stroke="#f2efe6" stroke-width="1"/>
+        <ellipse cx="13" cy="13" rx="11" ry="4" stroke="#f2efe6" stroke-width="0.8" opacity="0.6"/>
+        <ellipse cx="13" cy="9" rx="9.5" ry="2.8" stroke="#f2efe6" stroke-width="0.5" opacity="0.3"/>
+        <ellipse cx="13" cy="17" rx="9.5" ry="2.8" stroke="#f2efe6" stroke-width="0.5" opacity="0.3"/>
+        <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#f2efe6" stroke-width="0.8" opacity="0.6"/>
+        <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#f2efe6" stroke-width="0.5" opacity="0.3" transform="rotate(60 13 13)"/>
+        <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#f2efe6" stroke-width="0.5" opacity="0.3" transform="rotate(-60 13 13)"/>
+      </svg>
+      <span class="tour-booked-text">Tour Fully Booked!</span>
+      <button class="tour-download-btn" onclick="downloadTourItinerary('${tour.id}')">↓ Download Itinerary</button>
+    </div>` : '';
+
+  return `<div class="tour-card${fullyBooked ? ' tour-card--booked' : ''}" id="tour-card-${tour.id}">
     <div class="tour-card-header">
       <div class="tour-card-name">${escapeHtml(tour.name)}</div>
       <div class="tour-card-actions">
@@ -1382,13 +1398,19 @@ function renderTourCard(tour) {
       </div>
     </div>
     ${total > 0 ? `<div class="tour-progress">
-      <div class="tour-progress-bar-track"><div class="tour-progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="tour-progress-bar-track"><div class="tour-progress-bar-fill${fullyBooked ? ' tour-progress-bar-fill--complete' : ''}" style="width:${pct}%"></div></div>
       <div class="tour-progress-label">${booked} / ${total} booked — ${pct}%</div>
     </div>` : ''}
+    ${bookedBanner}
     <div class="tour-stops-list">${stopsHtml}</div>
+    <div class="tour-notes-section">
+      <div class="tour-notes-label">Tour Notes</div>
+      <textarea class="tour-notes-area" id="tour-notes-${tour.id}" placeholder="General notes, contacts, logistics…" onblur="saveTourNotes('${tour.id}')">${escapeHtml(tour.notes || '')}</textarea>
+    </div>
     <div class="tour-card-footer">
       <a href="tour.html" class="tour-footer-link">Add stops →</a>
       ${publicToggle}
+      ${fullyBooked ? `<button class="tour-footer-link" onclick="downloadTourItinerary('${tour.id}')">↓ Itinerary</button>` : ''}
     </div>
   </div>`;
 }
@@ -1400,11 +1422,16 @@ function renderTourStop(stop, num) {
     return `<button class="stop-status-btn stop-status-btn--${s} ${active}" onclick="updateStopStatus('${stop.id}','${s}','${stop.tour_id}')">${labels[s]}</button>`;
   }).join('');
   const loc = [stop.city, stop.state].filter(Boolean).join(', ');
+  const hasNote = !!(stop.notes && stop.notes.trim());
   return `<div class="tour-stop-row" id="stop-row-${stop.id}">
     <div class="stop-num">${num}</div>
     <div class="stop-body">
       <div class="stop-venue">${escapeHtml(stop.venue_name)}</div>
       ${loc ? `<div class="stop-city">${escapeHtml(loc)}</div>` : ''}
+      <button class="stop-note-toggle" onclick="toggleStopNote('${stop.id}')">${hasNote ? '↳ note' : '+ note'}</button>
+      <div class="stop-note-wrap${hasNote ? ' stop-note-wrap--open' : ''}" id="stop-note-wrap-${stop.id}">
+        <textarea class="stop-note-area" id="stop-note-${stop.id}" placeholder="Contact, address, load-in time…" onblur="saveStopNotes('${stop.id}','${stop.tour_id}')">${escapeHtml(stop.notes || '')}</textarea>
+      </div>
     </div>
     <div class="stop-right">
       <div class="stop-status-group">${statusBtns}</div>
@@ -1429,11 +1456,27 @@ async function deleteStop(stopId, tourId) {
 }
 
 async function _reloadTourCard(tourId) {
+  const prevTour   = _tours.find(t => String(t.id) === String(tourId));
+  const prevBooked = (prevTour?.tour_stops || []).filter(s => s.status === 'yes').length;
+
   const { data: tour } = await sb.from('saved_tours').select('*, tour_stops(*)').eq('id', tourId).single();
   if (!tour) return;
+
+  // Preserve any unsaved tour notes currently in the DOM
+  const noteEl = document.getElementById(`tour-notes-${tourId}`);
+  if (noteEl) tour.notes = noteEl.value;
+
   const card = document.getElementById(`tour-card-${tourId}`);
   if (card) card.outerHTML = renderTourCard(tour);
-  _tours = _tours.map(t => t.id === tourId ? tour : t);
+  _tours = _tours.map(t => String(t.id) === String(tourId) ? tour : t);
+
+  // Fire celebration if this action just completed the tour
+  const stops  = tour.tour_stops || [];
+  const total  = stops.length;
+  const booked = stops.filter(s => s.status === 'yes').length;
+  if (total > 0 && booked === total && prevBooked < total) {
+    _launchBookedCelebration(tour.name);
+  }
 }
 
 function openCreateTourModal() {
@@ -1534,4 +1577,113 @@ async function migrateLocalTour() {
   showToast('Tour saved to your profile!', 'success');
   _tourTabLoaded = false;
   loadTourManager(currentBandProfile.id);
+}
+
+function toggleStopNote(stopId) {
+  const wrap = document.getElementById(`stop-note-wrap-${stopId}`);
+  if (!wrap) return;
+  const isOpen = wrap.classList.toggle('stop-note-wrap--open');
+  const btn = document.querySelector(`#stop-row-${stopId} .stop-note-toggle`);
+  if (btn) btn.textContent = isOpen ? '↳ note' : '+ note';
+  if (isOpen) wrap.querySelector('textarea')?.focus();
+}
+
+async function saveTourNotes(tourId) {
+  const val = document.getElementById(`tour-notes-${tourId}`)?.value || '';
+  const { error } = await sb.from('saved_tours').update({ notes: val }).eq('id', tourId);
+  if (!error) _tours = _tours.map(t => String(t.id) === String(tourId) ? { ...t, notes: val } : t);
+}
+
+async function saveStopNotes(stopId, tourId) {
+  const val = document.getElementById(`stop-note-${stopId}`)?.value || '';
+  const { error } = await sb.from('tour_stops').update({ notes: val }).eq('id', stopId);
+  if (!error) {
+    _tours = _tours.map(t => {
+      if (String(t.id) !== String(tourId)) return t;
+      return { ...t, tour_stops: (t.tour_stops || []).map(s => String(s.id) === String(stopId) ? { ...s, notes: val } : s) };
+    });
+  }
+}
+
+function downloadTourItinerary(tourId) {
+  const tour = _tours.find(t => String(t.id) === String(tourId));
+  if (!tour) return;
+  const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+  const statusLabel = { yes: 'BOOKED', pending: 'PENDING', no: 'NOT BOOKED' };
+  const line = '─'.repeat(44);
+
+  const stopsText = stops.map((s, i) => {
+    const loc  = [s.city, s.state].filter(Boolean).join(', ');
+    const note = s.notes?.trim() ? `\n      Notes: ${s.notes.trim()}` : '';
+    return `  ${String(i + 1).padStart(2, '0')}  ${s.venue_name || 'TBD'}${loc ? '  ·  ' + loc : ''}  [${statusLabel[s.status] || 'PENDING'}]${note}`;
+  }).join('\n\n');
+
+  const tourNotesSection = tour.notes?.trim()
+    ? `\n${line}\nTOUR NOTES\n\n${tour.notes.trim()}\n`
+    : '';
+
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const content = [
+    'BANDMATE — TOUR ITINERARY',
+    line,
+    '',
+    tour.name,
+    `Generated ${dateStr}`,
+    '',
+    line,
+    'STOPS',
+    '',
+    stopsText,
+    tourNotesSection,
+    line,
+    'mybandmate.us',
+    '',
+  ].join('\n');
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function _launchBookedCelebration(tourName) {
+  if (document.getElementById('bookedCelebration')) return;
+  const colors = ['#3a7a8a', '#d94535', '#7a8a3a', '#c8dce4', '#1e4a55', '#f2efe6'];
+  const drops = Array.from({ length: 54 }, (_, i) => {
+    const color = colors[i % colors.length];
+    const x     = (Math.random() * 96 + 2).toFixed(1);
+    const delay = (Math.random() * 1.5).toFixed(2);
+    const dur   = (1.8 + Math.random() * 1.4).toFixed(2);
+    const size  = (5 + Math.random() * 9).toFixed(1);
+    const shape = i % 3 === 1 ? '' : 'border-radius:50%';
+    return `<div class="booked-drop" style="left:${x}%;animation-delay:${delay}s;animation-duration:${dur}s;background:${color};width:${size}px;height:${size}px;${shape}"></div>`;
+  }).join('');
+
+  const el = document.createElement('div');
+  el.id = 'bookedCelebration';
+  el.className = 'booked-celebration';
+  el.innerHTML = `
+    <div class="booked-drops">${drops}</div>
+    <div class="booked-message">
+      <svg viewBox="0 0 26 26" width="52" height="52" fill="none" class="booked-globe-svg">
+        <circle cx="13" cy="13" r="11" stroke="#0f0f0c" stroke-width="1"/>
+        <ellipse cx="13" cy="13" rx="11" ry="4" stroke="#0f0f0c" stroke-width="0.8" opacity="0.5"/>
+        <ellipse cx="13" cy="9" rx="9.5" ry="2.8" stroke="#0f0f0c" stroke-width="0.5" opacity="0.22"/>
+        <ellipse cx="13" cy="17" rx="9.5" ry="2.8" stroke="#0f0f0c" stroke-width="0.5" opacity="0.22"/>
+        <g class="booked-globe-spin">
+          <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#0f0f0c" stroke-width="0.8" opacity="0.5"/>
+          <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#0f0f0c" stroke-width="0.5" opacity="0.22" transform="rotate(60 13 13)"/>
+          <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#0f0f0c" stroke-width="0.5" opacity="0.22" transform="rotate(-60 13 13)"/>
+        </g>
+      </svg>
+      <div class="booked-title">Tour Fully Booked!</div>
+      <div class="booked-sub">${escapeHtml(tourName)}</div>
+      <button class="booked-dismiss" onclick="document.getElementById('bookedCelebration').remove()">Close ✕</button>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById('bookedCelebration')?.remove(), 6000);
 }
