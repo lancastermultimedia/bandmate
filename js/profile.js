@@ -995,7 +995,7 @@ async function loadMessageThreads(bandId) {
 
   const { data, error } = await sb
     .from('band_messages')
-    .select('id, sender_band_id, receiver_band_id, content, created_at, is_read')
+    .select('id, sender_band_id, receiver_band_id, message_text, created_at, is_read')
     .or(`sender_band_id.eq.${bandId},receiver_band_id.eq.${bandId}`)
     .order('created_at', { ascending: false })
     .limit(200);
@@ -1025,7 +1025,7 @@ async function loadMessageThreads(bandId) {
       const t    = threads[otherId];
       const band = bandMap[otherId] || {};
       const last = t.messages[0];
-      const prev = escapeHtml((last.content || '').substring(0, 60)) + (last.content?.length > 60 ? '…' : '');
+      const prev = escapeHtml((last.message_text || '').substring(0, 60)) + (last.message_text?.length > 60 ? '…' : '');
       const time = new Date(last.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const init = (band.band_name || '?')[0].toUpperCase();
       const av   = band.profile_photo_url
@@ -1115,7 +1115,7 @@ async function loadInlineChatMessages() {
     const mine = String(msg.sender_band_id) === String(myId);
     const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     return `<div class="chat-bubble ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
-      <div class="chat-bubble-text">${escapeHtml(msg.content)}</div>
+      <div class="chat-bubble-text">${escapeHtml(msg.message_text)}</div>
       <div class="chat-bubble-time">${time}</div>
     </div>`;
   }).join('');
@@ -1131,8 +1131,8 @@ async function sendInlineChatMessage() {
   const { error } = await sb.from('band_messages').insert({
     sender_band_id:   currentBandProfile.id,
     receiver_band_id: parseInt(_chatOtherBandId),
-    content,
-    is_read: false,
+    message_text:     content,
+    is_read:          false,
   });
   if (error) { showToast('Message failed — ' + error.message, 'error'); input.value = content; return; }
 
