@@ -9921,6 +9921,18 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .tour-notes-area:focus { border-color: var(--teal); }
 
 /* ── Stop Notes ──────────────────────────────────────────── */
+.stop-action-links {
+  display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;
+}
+.stop-action-link {
+  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 300;
+  letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
+  color: var(--teal); border-bottom: 1px solid rgba(58,122,138,0.3);
+  transition: color 0.15s, border-color 0.15s;
+}
+.stop-action-link:hover { color: var(--teal-dark); border-color: var(--teal); }
+.stop-action-link--contact { color: var(--grey); border-color: rgba(138,138,124,0.3); }
+.stop-action-link--contact:hover { color: var(--ink); border-color: var(--ink); }
 .stop-note-toggle {
   background: none; border: none; cursor: pointer; padding: 0;
   font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 300;

@@ -1428,6 +1428,10 @@ function renderTourStop(stop, num) {
     <div class="stop-body">
       <div class="stop-venue">${escapeHtml(stop.venue_name)}</div>
       ${loc ? `<div class="stop-city">${escapeHtml(loc)}</div>` : ''}
+      <div class="stop-action-links">
+        ${stop.place_id ? `<a href="map.html?place=${stop.place_id}" target="_blank" class="stop-action-link">View / Review ↗</a>` : ''}
+        ${stop.place_id ? `<a href="https://www.google.com/maps/place/?q=place_id:${stop.place_id}" target="_blank" class="stop-action-link stop-action-link--contact">Contact ↗</a>` : ''}
+      </div>
       <button class="stop-note-toggle" onclick="toggleStopNote('${stop.id}')">${hasNote ? '↳ note' : '+ note'}</button>
       <div class="stop-note-wrap${hasNote ? ' stop-note-wrap--open' : ''}" id="stop-note-wrap-${stop.id}">
         <textarea class="stop-note-area" id="stop-note-${stop.id}" placeholder="Contact, address, load-in time…" onblur="saveStopNotes('${stop.id}','${stop.tour_id}')">${escapeHtml(stop.notes || '')}</textarea>
@@ -1609,37 +1613,101 @@ function downloadTourItinerary(tourId) {
   const tour = _tours.find(t => String(t.id) === String(tourId));
   if (!tour) return;
   const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+
+  if (tour.itinerary_html) {
+    _printTourItinerary(tour, stops);
+  } else {
+    _downloadPlainItinerary(tour, stops);
+  }
+}
+
+function _printTourItinerary(tour, stops) {
+  // Inject per-stop notes into the stored itinerary HTML, then open a print window
+  const parser  = new DOMParser();
+  const doc     = parser.parseFromString(`<div id="root">${tour.itinerary_html}</div>`, 'text/html');
+  const showEls = doc.querySelectorAll('.itin-show');
+
+  showEls.forEach((el, idx) => {
+    const note = stops[idx]?.notes?.trim();
+    if (!note) return;
+    const nd = doc.createElement('div');
+    nd.className = 'itin-stop-note';
+    nd.innerHTML = `<div class="isn-label">Note</div><div class="isn-text">${escapeHtml(note)}</div>`;
+    el.appendChild(nd);
+  });
+
+  const itinHtml = doc.getElementById('root').innerHTML;
+  const dateStr  = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const tourNotesHtml = tour.notes?.trim()
+    ? `<div class="tour-notes-block">
+        <div class="tnb-label">Tour Notes</div>
+        <div class="tnb-text">${escapeHtml(tour.notes.trim())}</div>
+       </div>`
+    : '';
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
+  win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>${escapeHtml(tour.name)} — Itinerary</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2efe6;--teal:#3a7a8a;--olive:#7a8a3a;--red:#d94535;--ink:#0f0f0c;--grey:#8a8a7c;--warm:#f2efe6;--rust:#3a7a8a;--sage:#7a8a3a;--muted:#8a8a7c;--gold:#c8a84b;--border:rgba(15,15,12,0.1);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;font-weight:300;background:#fff;color:var(--ink);padding:36px;max-width:700px;margin:0 auto;}
+.print-hd{border-bottom:1.5px solid var(--ink);padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;}
+.print-title{font-size:20px;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;}
+.print-meta{font-size:8px;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:var(--grey);text-align:right;line-height:1.8;}
+.tour-notes-block{background:rgba(58,122,138,0.06);border-left:3px solid var(--teal);padding:14px 16px;margin-bottom:20px;}
+.tnb-label{font-size:7px;font-weight:400;letter-spacing:0.22em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;}
+.tnb-text{font-size:12px;font-weight:300;line-height:1.55;white-space:pre-wrap;}
+#itin-grid{display:flex;flex-direction:column;gap:8px;}
+.itin-day{border:1px solid var(--border);padding:14px 16px;page-break-inside:avoid;}
+.itin-show{background:#fff;border-left:3px solid var(--rust);}
+.itin-drive{background:var(--warm);border-left:3px solid var(--border);}
+.itin-rest{background:var(--warm);border-left:3px solid var(--sage);}
+.itin-date{font-family:'Space Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:2px;}
+.itin-type-label{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:5px;}
+.itin-city{font-size:16px;margin-bottom:8px;}
+.itin-drive-detail{font-size:12px;color:#5a5550;font-weight:300;}
+.itin-venue{background:rgba(15,15,12,0.03);padding:10px 12px;margin-top:6px;}
+.itin-venue-name{font-size:14px;margin-bottom:2px;}
+.itin-venue-address{font-family:'Space Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;}
+.itin-venue-rating{font-family:'Space Mono',monospace;font-size:9px;color:var(--gold);}
+.itin-no-venue{font-family:'Space Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);}
+.itin-contact-btn,.paywall-overlay{display:none!important;}
+.itin-stop-note{margin-top:8px;padding:8px 10px;background:rgba(122,138,58,0.08);border-left:2px solid var(--olive);}
+.isn-label{font-size:7px;font-weight:400;letter-spacing:0.2em;text-transform:uppercase;color:var(--olive);margin-bottom:3px;}
+.isn-text{font-size:11px;font-weight:300;line-height:1.5;white-space:pre-wrap;}
+.print-ft{border-top:1px solid var(--border);margin-top:24px;padding-top:12px;font-size:8px;font-weight:300;letter-spacing:0.16em;text-transform:uppercase;color:var(--grey);display:flex;justify-content:space-between;}
+@media print{body{padding:16px;}}
+</style></head>
+<body>
+<div class="print-hd">
+  <div class="print-title">${escapeHtml(tour.name)}</div>
+  <div class="print-meta">mybandmate.us<br>Generated ${dateStr}</div>
+</div>
+${tourNotesHtml}
+<div id="itin-grid">${itinHtml}</div>
+<div class="print-ft"><span>Bandmate Tour Itinerary</span><span>${escapeHtml(tour.name)}</span></div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+function _downloadPlainItinerary(tour, stops) {
   const statusLabel = { yes: 'BOOKED', pending: 'PENDING', no: 'NOT BOOKED' };
   const line = '─'.repeat(44);
-
   const stopsText = stops.map((s, i) => {
     const loc  = [s.city, s.state].filter(Boolean).join(', ');
     const note = s.notes?.trim() ? `\n      Notes: ${s.notes.trim()}` : '';
     return `  ${String(i + 1).padStart(2, '0')}  ${s.venue_name || 'TBD'}${loc ? '  ·  ' + loc : ''}  [${statusLabel[s.status] || 'PENDING'}]${note}`;
   }).join('\n\n');
-
-  const tourNotesSection = tour.notes?.trim()
-    ? `\n${line}\nTOUR NOTES\n\n${tour.notes.trim()}\n`
-    : '';
-
+  const tourNotesSection = tour.notes?.trim() ? `\n${line}\nTOUR NOTES\n\n${tour.notes.trim()}\n` : '';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const content = [
-    'BANDMATE — TOUR ITINERARY',
-    line,
-    '',
-    tour.name,
-    `Generated ${dateStr}`,
-    '',
-    line,
-    'STOPS',
-    '',
-    stopsText,
-    tourNotesSection,
-    line,
-    'mybandmate.us',
-    '',
-  ].join('\n');
-
+  const content = ['BANDMATE — TOUR ITINERARY', line, '', tour.name, `Generated ${dateStr}`, '', line, 'STOPS', '', stopsText, tourNotesSection, line, 'mybandmate.us', ''].join('\n');
   const blob = new Blob([content], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

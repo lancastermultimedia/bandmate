@@ -1404,7 +1404,11 @@ async function saveTourToProfile() {
 
   const { data: tour, error: tourErr } = await sb
     .from('saved_tours')
-    .insert({ band_id: currentBandProfile.id, name: name.trim() })
+    .insert({
+      band_id:        currentBandProfile.id,
+      name:           name.trim(),
+      itinerary_html: document.getElementById('itinContainer')?.innerHTML || '',
+    })
     .select()
     .single();
 
