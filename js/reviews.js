@@ -201,25 +201,25 @@ async function loadVenueReviews(placeId, venueName) {
     const slug     = (band.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const epkHref  = band.epk_theme && slug ? `epk.html?band=${slug}` : null;
     const avatarEl = band.profile_photo_url
-      ? `<img src="${band.profile_photo_url}" class="ri-avatar ri-avatar-img" alt="${band.band_name || ''}">`
+      ? `<img src="${band.profile_photo_url}" class="ri-avatar ri-avatar-img" alt="${escapeHtml(band.band_name || '')}">`
       : `<div class="ri-avatar">${initials}</div>`;
     const avatarWrapped = epkHref
-      ? `<a href="${epkHref}" class="ri-avatar-link" title="View ${band.band_name}'s EPK">${avatarEl}</a>`
+      ? `<a href="${epkHref}" class="ri-avatar-link" title="View ${escapeHtml(band.band_name)}'s EPK">${avatarEl}</a>`
       : avatarEl;
     const nameEl = epkHref
-      ? `<a href="${epkHref}" class="ri-band ri-band-link">${band.band_name || 'Anonymous Band'}</a>`
-      : `<div class="ri-band">${band.band_name || 'Anonymous Band'}</div>`;
+      ? `<a href="${epkHref}" class="ri-band ri-band-link">${escapeHtml(band.band_name || 'Anonymous Band')}</a>`
+      : `<div class="ri-band">${escapeHtml(band.band_name || 'Anonymous Band')}</div>`;
     return `<div class="review-item">
       <div class="ri-header">
         ${avatarWrapped}
         <div>
           ${nameEl}
-          <div class="ri-meta">${band.genre || ''} · ${band.home_city || ''} · ${date}</div>
+          <div class="ri-meta">${escapeHtml(band.genre || '')} · ${escapeHtml(band.home_city || '')} · ${date}</div>
         </div>
         <div class="ri-stars">${stars}</div>
       </div>
-      ${r.genre_played ? `<div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sage);margin-bottom:10px">Played as: ${r.genre_played}</div>` : ''}
-      <p class="ri-text">${r.review_text}</p>
+      ${r.genre_played ? `<div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sage);margin-bottom:10px">Played as: ${escapeHtml(r.genre_played)}</div>` : ''}
+      <p class="ri-text">${escapeHtml(r.review_text)}</p>
       <div class="ri-scores">
         <div class="ri-score"><div class="ri-score-dot"></div>Sound <strong>${r.sound_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Communication <strong>${r.comms_rating}/5</strong></div>

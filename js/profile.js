@@ -357,8 +357,14 @@ async function saveMusicLinks() {
 
   const useEmbed = document.getElementById('bandcampEmbedToggle')?.checked;
   const rawEmbed = document.getElementById('linkBandcampEmbed')?.value.trim() || '';
-  // Sanitize embed: only allow <iframe> tags from bandcamp.com
-  const safeEmbed = (useEmbed && rawEmbed && rawEmbed.includes('bandcamp.com')) ? rawEmbed : null;
+  // Sanitize embed: verify iframe src hostname is exactly bandcamp.com
+  function _isSafeBandcampEmbed(html) {
+    const m = html.match(/src=["']([^"']+)["']/i);
+    if (!m) return false;
+    try { const h = new URL(m[1]).hostname; return h === 'bandcamp.com' || h.endsWith('.bandcamp.com'); }
+    catch { return false; }
+  }
+  const safeEmbed = (useEmbed && rawEmbed && _isSafeBandcampEmbed(rawEmbed)) ? rawEmbed : null;
 
   const updates = {
     spotify_url:     document.getElementById('linkSpotify').value.trim()    || null,

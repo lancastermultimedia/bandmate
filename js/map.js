@@ -258,8 +258,8 @@ function addSubmittedVenueMarker(sv) {
     const typeLabel = sv.venue_type === 'house_show' ? 'House Show' : 'DIY Venue';
     infoWindow.setContent(`
       <div class="info-window">
-        <div class="iw-name">${sv.name}</div>
-        <div class="iw-address">${sv.city}</div>
+        <div class="iw-name">${escapeHtml(sv.name)}</div>
+        <div class="iw-address">${escapeHtml(sv.city)}</div>
         <div class="iw-tags">
           <span class="iw-tag" style="background:var(--sage);color:white;border-color:var(--sage)">${typeLabel}</span>
         </div>
