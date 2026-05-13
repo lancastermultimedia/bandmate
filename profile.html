@@ -12,8 +12,9 @@
 /* ── DM Panel overrides (inline to bypass CDN cache) ── */
 .chat-panel-backdrop{position:fixed;inset:0;background:rgba(15,15,12,0.38);z-index:299;opacity:0;pointer-events:none;transition:opacity .25s ease}
 .chat-panel-backdrop.open{opacity:1;pointer-events:auto}
-.inline-chat-panel{background:rgba(242,239,230,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-left:1px solid rgba(15,15,12,0.12);width:min(440px,100vw);transition:right .28s cubic-bezier(.25,.46,.45,.94)}
-.chat-panel-header{border-bottom:1px solid rgba(15,15,12,0.08);padding:12px 16px 12px 12px;background:rgba(242,239,230,0.7)}
+.inline-chat-panel{position:fixed;top:0;right:-100%;width:min(440px,100vw);height:100vh;background:rgba(242,239,230,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-left:1.5px solid rgba(15,15,12,0.14);display:flex;flex-direction:column;z-index:300;transition:right .28s cubic-bezier(.25,.46,.45,.94)}
+.inline-chat-panel.open{right:0}
+.chat-panel-header{border-bottom:1px solid rgba(15,15,12,0.1);padding:12px 16px 12px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(242,239,230,0.7)}
 .chat-panel-back{display:flex;align-items:center;gap:5px;font-size:8px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);background:none;border:none;cursor:pointer;padding:6px 8px;transition:color .12s}
 .chat-panel-back:hover{color:var(--ink)}
 .cp-header-identity{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
@@ -32,7 +33,7 @@
 .chat-bubble{max-width:80%;display:flex;flex-direction:column}
 .chat-bubble--mine{align-self:flex-end;align-items:flex-end}
 .chat-bubble--theirs{align-self:flex-start;align-items:flex-start}
-.chat-bubble-text{background:rgba(200,220,228,0.55);color:var(--ink);padding:9px 14px;font-size:12px;font-weight:300;line-height:1.55;word-break:break-word;border:1px solid rgba(58,122,138,0.12)}
+.chat-bubble-text{background:rgba(58,122,138,0.13);color:var(--ink);padding:9px 14px;font-size:12px;font-weight:300;line-height:1.55;word-break:break-word;border:1px solid rgba(58,122,138,0.22)}
 .chat-bubble--mine .chat-bubble-text{background:var(--ink);color:var(--white);border-color:transparent}
 .chat-bubble-time{font-size:7px;color:var(--grey);margin-top:3px;font-family:'Space Mono',monospace;letter-spacing:.06em;opacity:0;transition:opacity .15s}
 .chat-bubble:hover .chat-bubble-time{opacity:1}
