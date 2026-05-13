@@ -57,6 +57,12 @@
 .bsr-arrow{color:var(--grey);flex-shrink:0}
 .band-search-empty{padding:12px;font-size:10px;font-weight:300;color:var(--grey)}
 </style>
+<script>
+// Unregister any stale service workers — they break CSS cache-busting
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+</script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
