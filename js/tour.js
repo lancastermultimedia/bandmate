@@ -907,29 +907,19 @@ function renderItinerary(days, isPremium) {
 function postTourToCommunity() {
   if (!currentUser) { openAuth('login'); return; }
 
-  // Build prefill data from the current itinerary
-  const startDateInput = document.getElementById('tourStartDate');
-  const startDateStr   = startDateInput ? startDateInput.value : '';
-
-  // Parse show days from waypoints — each waypoint with a selected venue is a date
-  const showDates = [];
-  if (typeof tourWaypoints !== 'undefined') {
-    let cursor = startDateStr ? new Date(startDateStr + 'T12:00:00') : null;
-    (tourWaypoints || []).forEach(wp => {
-      const venueIdx   = wp.selectedVenueIndex ?? 0;
-      const venue      = wp.venueResults?.[venueIdx];
-      const cityStr    = wp.city || '';
-      const dateStr    = cursor ? cursor.toISOString().slice(0, 10) : '';
-      showDates.push({
-        date:            dateStr,
-        city:            cityStr,
-        venue_name:      venue?.name       || null,
-        venue_place_id:  venue?.place_id   || null,
-        venue_address:   venue?.vicinity   || null,
-      });
-      if (cursor) cursor.setDate(cursor.getDate() + 1);
-    });
-  }
+  // Build prefill from waypoints using lastShowDates (properly computed show dates
+  // from the itinerary builder, accounting for drive/rest days between stops)
+  const showDates = (tourWaypoints || []).map((wp, idx) => {
+    const venueIdx = wp.selectedVenueIndex ?? 0;
+    const venue    = wp.venueResults?.[venueIdx];
+    return {
+      date:           lastShowDates?.[idx] ? lastShowDates[idx].toISOString().slice(0, 10) : '',
+      city:           wp.city || '',
+      venue_name:     venue?.name      || null,
+      venue_place_id: venue?.place_id  || null,
+      venue_address:  venue?.vicinity  || null,
+    };
+  });
 
   // Store as sessionStorage so community.js can pick it up
   // Split genre string into array (e.g. "Rock, Indie" → ['Rock', 'Indie'])
@@ -1422,10 +1412,12 @@ async function saveTourToProfile() {
   }
 
   // Build stops from waypoints — use selected venue if available, fall back to city
+  // lastShowDates[idx] is the computed show date for waypoint idx
   const stops = tourWaypoints.map((wp, idx) => {
-    const sel    = wp.selectedVenueIndex != null ? wp.venueResults?.[wp.selectedVenueIndex] : null;
-    const city   = (wp.city || '').split(',')[0].trim();
-    const state  = (wp.city || '').split(',')[1]?.trim() || '';
+    const sel      = wp.selectedVenueIndex != null ? wp.venueResults?.[wp.selectedVenueIndex] : null;
+    const city     = (wp.city || '').split(',')[0].trim();
+    const state    = (wp.city || '').split(',')[1]?.trim() || '';
+    const showDate = lastShowDates?.[idx] ? lastShowDates[idx].toISOString().slice(0, 10) : null;
     return {
       tour_id:    tour.id,
       venue_name: sel?.name || city || `Stop ${idx + 1}`,
@@ -1434,6 +1426,7 @@ async function saveTourToProfile() {
       place_id:   sel?.place_id || null,
       position:   idx,
       status:     'pending',
+      show_date:  showDate,
     };
   });
 

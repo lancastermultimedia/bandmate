@@ -1932,6 +1932,7 @@ function postTourToCommForType(tourId, type) {
 
   const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
   const showDates = stops.filter(s => s.venue_name).map(s => ({
+    date:           s.show_date || '',
     city:           s.city || '',
     venue_name:     s.venue_name,
     venue_place_id: s.place_id || null,
