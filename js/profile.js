@@ -1031,7 +1031,7 @@ async function loadMessageThreads(bandId) {
       const av   = band.profile_photo_url
         ? `<img src="${band.profile_photo_url}" class="mt-avatar-img" alt="">`
         : `<div class="mt-avatar-init">${init}</div>`;
-      return `<div class="msg-thread" onclick="openInlineChat(${otherId},'${escapeHtml(band.band_name || 'Unknown')}')">
+      return `<div class="msg-thread" onclick="openInlineChat(${otherId},'${escapeHtml(band.band_name || 'Unknown')}','${escapeHtml(band.profile_photo_url || '')}')">
         <div class="mt-avatar">${av}</div>
         <div class="mt-body">
           <div class="mt-name">${escapeHtml(band.band_name || 'Unknown Band')}</div>
@@ -1051,13 +1051,82 @@ async function loadMessageThreads(bandId) {
 
 let _chatOtherBandId   = null;
 let _chatRealtimeSub   = null;
+let _bandSearchTimer   = null;
+let _bandSearchResults = [];
 
-function openInlineChat(bandId, bandName) {
+// ── Band search (new conversation) ────────────────────────────
+function searchBandsInput(val) {
+  clearTimeout(_bandSearchTimer);
+  const results = document.getElementById('bandSearchResults');
+  if (!results) return;
+  if (!val.trim()) { results.innerHTML = ''; results.style.display = 'none'; return; }
+  _bandSearchTimer = setTimeout(async () => {
+    const { data } = await sb
+      .from('bands')
+      .select('id, band_name, genre, home_city, profile_photo_url')
+      .ilike('band_name', `%${val.trim()}%`)
+      .neq('id', currentBandProfile?.id || 0)
+      .limit(8);
+    _bandSearchResults = data || [];
+    if (!_bandSearchResults.length) {
+      results.innerHTML = '<div class="band-search-empty">No bands found</div>';
+      results.style.display = 'block';
+      return;
+    }
+    results.innerHTML = _bandSearchResults.map((b, i) => {
+      const init = (b.band_name || '?')[0].toUpperCase();
+      const av   = b.profile_photo_url
+        ? `<img src="${escapeHtml(b.profile_photo_url)}" class="bsr-avatar bsr-avatar--img" alt="">`
+        : `<div class="bsr-avatar bsr-avatar--init">${init}</div>`;
+      const meta = [b.genre, b.home_city].filter(Boolean).join(' · ');
+      return `<div class="band-search-result" onmousedown="openInlineChatFromSearch(${i})">
+        ${av}
+        <div class="bsr-info">
+          <div class="bsr-name">${escapeHtml(b.band_name)}</div>
+          ${meta ? `<div class="bsr-meta">${escapeHtml(meta)}</div>` : ''}
+        </div>
+        <svg viewBox="0 0 14 14" width="11" height="11" fill="none" class="bsr-arrow"><line x1="2" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.2"/><polygon points="8,4 13,7 8,10" fill="currentColor"/></svg>
+      </div>`;
+    }).join('');
+    results.style.display = 'block';
+  }, 280);
+}
+
+function openInlineChatFromSearch(idx) {
+  const b = _bandSearchResults[idx];
+  if (!b) return;
+  const input = document.getElementById('bandSearchInput');
+  const results = document.getElementById('bandSearchResults');
+  if (input) input.value = '';
+  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+  openInlineChat(b.id, b.band_name, b.profile_photo_url || '');
+}
+
+function clearBandSearch() {
+  const results = document.getElementById('bandSearchResults');
+  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+}
+
+// ── Inline Chat ───────────────────────────────────────────────
+
+function openInlineChat(bandId, bandName, photoUrl) {
   _chatOtherBandId = bandId;
   const panel = document.getElementById('inlineChatPanel');
   const title  = document.getElementById('chatPanelTitle');
   if (!panel || !title) return;
   title.textContent = bandName;
+
+  // Set header avatar
+  const avatarEl = document.getElementById('chatPanelAvatar');
+  if (avatarEl) {
+    const init = (bandName || '?')[0].toUpperCase();
+    avatarEl.innerHTML = photoUrl
+      ? `<img src="${escapeHtml(photoUrl)}" class="cp-avatar-img" alt="">`
+      : `<div class="cp-avatar-init">${init}</div>`;
+  }
+
+  // Show backdrop + panel
+  document.getElementById('chatPanelBackdrop')?.classList.add('open');
   panel.classList.add('open');
   loadInlineChatMessages();
 
@@ -1089,6 +1158,7 @@ function openInlineChat(bandId, bandName) {
 function closeInlineChat() {
   const panel = document.getElementById('inlineChatPanel');
   if (panel) panel.classList.remove('open');
+  document.getElementById('chatPanelBackdrop')?.classList.remove('open');
   if (_chatRealtimeSub) { sb.removeChannel(_chatRealtimeSub); _chatRealtimeSub = null; }
   _chatOtherBandId = null;
 }
@@ -1111,31 +1181,51 @@ async function loadInlineChatMessages() {
     return;
   }
 
-  box.innerHTML = data.map(msg => {
-    const mine = String(msg.sender_band_id) === String(myId);
-    const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const now       = new Date();
+  const todayStr  = now.toDateString();
+  const yestDate  = new Date(now); yestDate.setDate(yestDate.getDate() - 1);
+  const yestStr   = yestDate.toDateString();
+  const dayLabel  = d => {
+    const s = new Date(d).toDateString();
+    if (s === todayStr)  return 'Today';
+    if (s === yestStr)   return 'Yesterday';
+    return new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  };
 
+  let lastDay = null;
+  const html = data.map(msg => {
+    const mine    = String(msg.sender_band_id) === String(myId);
+    const time    = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const dayStr  = new Date(msg.created_at).toDateString();
+    let sep = '';
+    if (dayStr !== lastDay) {
+      sep = `<div class="chat-day-sep"><span>${dayLabel(msg.created_at)}</span></div>`;
+      lastDay = dayStr;
+    }
+
+    let bubble;
     if (msg.message_type === 'itinerary') {
       const meta = msg.metadata || {};
       if (meta.itinerary_html) _sharedItineraries[msg.id] = meta;
-      return `<div class="chat-bubble chat-bubble--itinerary ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
+      bubble = `<div class="chat-bubble chat-bubble--itinerary ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
         <div class="chat-itin-icon">◉</div>
         <div class="chat-itin-body">
           <div class="chat-itin-label">Shared Itinerary</div>
           <div class="chat-itin-name">${escapeHtml(meta.tour_name || 'Tour Itinerary')}</div>
-          ${meta.itinerary_html
-            ? `<button class="chat-itin-open" onclick="openSharedItinerary('${msg.id}')">View & Print →</button>`
-            : ''}
+          ${meta.itinerary_html ? `<button class="chat-itin-open" onclick="openSharedItinerary('${msg.id}')">View & Print →</button>` : ''}
         </div>
         <div class="chat-bubble-time">${time}</div>
       </div>`;
+    } else {
+      bubble = `<div class="chat-bubble ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
+        <div class="chat-bubble-text">${escapeHtml(msg.message_text)}</div>
+        <div class="chat-bubble-time">${time}</div>
+      </div>`;
     }
-
-    return `<div class="chat-bubble ${mine ? 'chat-bubble--mine' : 'chat-bubble--theirs'}">
-      <div class="chat-bubble-text">${escapeHtml(msg.message_text)}</div>
-      <div class="chat-bubble-time">${time}</div>
-    </div>`;
+    return sep + bubble;
   }).join('');
+
+  box.innerHTML = html;
   box.scrollTop = box.scrollHeight;
 }
 
@@ -1301,7 +1391,7 @@ async function togglePostingResponses(postingId) {
       ? `<button class="resp-btn resp-btn--accept" onclick="handleInterestResponse('${i.id}',${band.id},'accepted','${postingId}')">Accept</button>
          <button class="resp-btn resp-btn--decline" onclick="handleInterestResponse('${i.id}',${band.id},'declined','${postingId}')">Decline</button>`
       : `<span class="resp-status resp-status--${i.status}">${i.status}</span>`;
-    actions += `<button class="resp-btn resp-btn--msg" onclick="switchProfileTab('community');openInlineChat(${band.id},'${escapeHtml(band.band_name || '')}')">Message</button>`;
+    actions += `<button class="resp-btn resp-btn--msg" onclick="switchProfileTab('community');openInlineChat(${band.id},'${escapeHtml(band.band_name || '')}','${escapeHtml(band.profile_photo_url || '')}')">Message</button>`;
     return `<div class="resp-row">
       <div class="resp-avatar">${av}</div>
       <div class="resp-body">

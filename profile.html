@@ -396,6 +396,11 @@
         <div class="profile-section-title-row">
           <div class="profile-section-title" style="margin-bottom:0">Messages</div>
         </div>
+        <div class="band-search-wrap">
+          <svg class="band-search-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.2"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.2"/></svg>
+          <input type="text" id="bandSearchInput" class="band-search-input" placeholder="Search all bands to start a conversation…" autocomplete="off" oninput="searchBandsInput(this.value)" onblur="setTimeout(clearBandSearch,180)">
+        </div>
+        <div id="bandSearchResults" class="band-search-results" style="display:none"></div>
         <div id="messageThreadsList"><div class="prof-loading">Loading…</div></div>
       </div>
 
@@ -423,16 +428,27 @@
 
     </div>
 
+    <!-- Backdrop (dims page behind chat panel) -->
+    <div class="chat-panel-backdrop" id="chatPanelBackdrop" onclick="closeInlineChat()"></div>
+
     <!-- Inline Chat Panel (slides in from right) -->
     <div class="inline-chat-panel" id="inlineChatPanel">
       <div class="chat-panel-header">
-        <button class="chat-panel-back" onclick="closeInlineChat()">← Back</button>
-        <div class="chat-panel-title" id="chatPanelTitle"></div>
+        <button class="chat-panel-back" onclick="closeInlineChat()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><line x1="10" y1="2" x2="3" y2="8" stroke="currentColor" stroke-width="1.4"/><line x1="3" y1="8" x2="10" y2="14" stroke="currentColor" stroke-width="1.4"/></svg>
+          Back
+        </button>
+        <div class="cp-header-identity">
+          <div class="cp-avatar-wrap" id="chatPanelAvatar"></div>
+          <div class="chat-panel-title" id="chatPanelTitle"></div>
+        </div>
       </div>
       <div class="chat-panel-messages" id="inlineChatMessages"></div>
       <div class="chat-panel-input-row">
         <input type="text" class="chat-panel-input" id="inlineChatInput" placeholder="Type a message…" maxlength="2000" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}">
-        <button class="chat-panel-send" onclick="sendInlineChatMessage()">Send</button>
+        <button class="chat-panel-send" onclick="sendInlineChatMessage()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><line x1="2" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.4"/><polygon points="9,4 14,8 9,12" fill="currentColor"/></svg>
+        </button>
       </div>
     </div>
   </div>
