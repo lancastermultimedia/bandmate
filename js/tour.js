@@ -8,6 +8,7 @@ let tourMarkers   = [];
 let tourPolyline  = null;
 let tourHintEl    = null;
 let lastShowDates = null; // estimated show dates computed during Step 1
+let _savedTourId  = null; // set after successful saveTourToProfile()
 
 // ── Map init (Google Maps callback) ──────────────────────────────────────────
 
@@ -936,11 +937,12 @@ function postTourToCommunity() {
     .split(',').map(g => g.trim()).filter(Boolean);
 
   const prefill = {
-    type:          'tour_support',
-    title:         '',
-    description:   '',
-    genres:        genreList,
-    posting_dates: showDates,
+    type:           null, // user selects on arrival
+    title:          '',
+    description:    '',
+    genres:         genreList,
+    posting_dates:  showDates,
+    linked_tour_id: _savedTourId || null,
   };
   sessionStorage.setItem('comm_prefill', JSON.stringify(prefill));
   window.location.href = 'community.html?fromtour=1';
@@ -1439,6 +1441,7 @@ async function saveTourToProfile() {
   if (stopsErr) {
     showToast('Tour created but stops failed — ' + stopsErr.message, 'error');
   } else {
+    _savedTourId = tour.id;
     showToast('Tour saved! View it in your Profile → Tour Manager.', 'success');
   }
 

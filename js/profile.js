@@ -1462,6 +1462,20 @@ function renderTourCard(tour) {
       <div class="tour-notes-label">Tour Notes</div>
       <textarea class="tour-notes-area" id="tour-notes-${tour.id}" placeholder="General notes, contacts, logistics…" onblur="saveTourNotes('${tour.id}')">${escapeHtml(tour.notes || '')}</textarea>
     </div>
+    <div class="tour-post-section">
+      <div class="tour-post-label">Find other bands for this tour</div>
+      <div class="tour-post-hint">Post a listing to the community board — accepted bands will appear beside their venue in your Tour Manager</div>
+      <div class="tour-post-btns">
+        <button class="tour-post-btn" onclick="postTourToCommForType('${tour.id}','tour_support')">
+          <svg viewBox="0 0 14 14" width="12" height="12" fill="none"><polygon points="7,2 13,12 1,12" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+          Find Opener
+        </button>
+        <button class="tour-post-btn" onclick="postTourToCommForType('${tour.id}','co_headlining')">
+          <svg viewBox="0 0 18 10" width="16" height="10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.2"/><circle cx="13" cy="5" r="4" stroke="currentColor" stroke-width="1.2"/></svg>
+          Find Co-Headliner
+        </button>
+      </div>
+    </div>
     <div class="tour-card-footer">
       <a href="tour.html" class="tour-footer-link">Add stops →</a>
       ${fullyBooked ? `<button class="tour-footer-link" onclick="downloadTourItinerary('${tour.id}')">↓ Itinerary</button>` : ''}
@@ -1909,6 +1923,31 @@ async function sendSharedItinerary(tourId) {
   });
 
   showToast('Itinerary sent to ' + coH.band_name + '!', 'success');
+}
+
+function postTourToCommForType(tourId, type) {
+  if (!currentUser) { openAuth('login'); return; }
+  const tour = _tours.find(t => String(t.id) === String(tourId));
+  if (!tour) return;
+
+  const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+  const showDates = stops.filter(s => s.venue_name).map(s => ({
+    city:           s.city || '',
+    venue_name:     s.venue_name,
+    venue_place_id: s.place_id || null,
+  }));
+  const genreList = (currentBandProfile?.genre || '').split(',').map(g => g.trim()).filter(Boolean);
+
+  const prefill = {
+    type,
+    title:          '',
+    description:    '',
+    genres:         genreList,
+    posting_dates:  showDates,
+    linked_tour_id: tour.id,
+  };
+  sessionStorage.setItem('comm_prefill', JSON.stringify(prefill));
+  window.location.href = 'community.html?fromtour=1';
 }
 
 function openSharedItinerary(msgId) {

@@ -711,6 +711,21 @@ function selectPostType(card) {
   document.querySelectorAll('#postTypeCards .comm-type-card').forEach(c => c.classList.remove('comm-type-card--active'));
   card.classList.add('comm-type-card--active');
   _postType = card.dataset.type;
+
+  const hint = document.getElementById('postTypeHint');
+  if (!hint) return;
+  const hints = {
+    tour_support:  'You\'re posting as a touring band seeking local openers. Accepted bands appear in your Tour Manager beside their venue stop.',
+    local_opener:  'You\'re posting as a local act looking to open for touring bands passing through your area.',
+    co_headlining: 'Equal billing, shared tour. When you accept a band, a mirrored tour is created for them automatically — and you can send them your itinerary directly via message.',
+  };
+  const msg = hints[_postType];
+  if (msg) {
+    hint.textContent = msg;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 
