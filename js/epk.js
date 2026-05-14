@@ -9,7 +9,9 @@ let currentEpkBand = null;
 let currentEpkData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const slug = new URLSearchParams(window.location.search).get('band');
+  const params      = new URLSearchParams(window.location.search);
+  const slug        = params.get('band');
+  const isPreview   = params.get('preview') === '1';
 
   if (!slug) {
     renderNotFound('No band specified.');
@@ -19,13 +21,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const nameSearch = slug.replace(/-/g, ' ');
 
-  // Load band data and auth session in parallel
+  // In preview mode skip auth so the iframe loads fast
   const [bandsRes] = await Promise.all([
     sb.from('bands')
       .select('id, band_name, genre, home_city, bio, website, email, spotify_url, youtube_url, soundcloud_url, apple_music_url, bandcamp_url, bandcamp_embed, instagram_url, tiktok_url, facebook_url, profile_photo_url, is_premium, review_count, stage_plot_url, epk_theme')
       .ilike('band_name', nameSearch)
       .limit(1),
-    initAuth(),
+    isPreview ? Promise.resolve() : initAuth(),
   ]);
 
   const band = bandsRes.data?.[0];
@@ -35,26 +37,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const isPremium = isBandPremium(band);
-  const isOwner   = currentBandProfile && currentBandProfile.id === band.id;
+  // In preview mode skip the premium gate — builder shows all themes regardless
+  if (!isPreview) {
+    const isPremium = isBandPremium(band);
+    const isOwner   = currentBandProfile && currentBandProfile.id === band.id;
 
-  if (!isPremium) {
-    renderNotFound(
-      isOwner
-        ? 'Upgrade to Community Premium or leave 3 reviews to unlock your EPK page.'
-        : `${band.band_name} hasn't unlocked their EPK page yet.`
-    );
-    document.body.style.visibility = 'visible';
-    return;
+    if (!isPremium) {
+      renderNotFound(
+        isOwner
+          ? 'Upgrade to Community Premium or leave 3 reviews to unlock your EPK page.'
+          : `${band.band_name} hasn't unlocked their EPK page yet.`
+      );
+      document.body.style.visibility = 'visible';
+      return;
+    }
+
+    if (isOwner) {
+      document.body.classList.add('epk-owner-view');
+      const findVenuesEl = document.getElementById('epkFindVenuesLink');
+      if (findVenuesEl) findVenuesEl.style.display = 'none';
+    }
+  } else {
+    // Hide all chrome in preview mode
+    const ownerBar = document.getElementById('epkOwnerBar');
+    const epkNav   = document.querySelector('.epk-nav');
+    if (ownerBar) ownerBar.style.display = 'none';
+    if (epkNav)   epkNav.style.display   = 'none';
+  }
+
+  // Load active epk_config theme (overrides bands.epk_theme if set)
+  const { data: activeConfig } = await sb.from('epk_configs')
+    .select('config')
+    .eq('band_id', band.id)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  if (activeConfig?.config?.theme) {
+    band.epk_theme = activeConfig.config.theme;
   }
 
   document.title = `${band.band_name} — EPK · Bandmate`;
-
-  // Show owner bar
-  if (isOwner) {
-    document.body.classList.add('epk-owner-view');
-    document.getElementById('epkFindVenuesLink').style.display = 'none';
-  }
 
   // Load all EPK data in parallel
   const [reviewsRes, photosRes, quotesRes, videosRes] = await Promise.all([
@@ -77,7 +100,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       .order('display_order'),
   ]);
 
-  // Fetch SoundCloud oEmbed if URL exists
   let soundcloudEmbed = null;
   if (band.soundcloud_url) {
     soundcloudEmbed = await fetchSoundcloudEmbed(band.soundcloud_url);
@@ -92,16 +114,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     soundcloudEmbed,
   };
 
-  // If owner has no theme set, show theme selector
-  if (isOwner && !band.epk_theme) {
+  // If owner has no theme set (and not in preview), show theme selector
+  if (!isPreview && currentBandProfile?.id === band.id && !band.epk_theme) {
     ['epkTpvNameClean','epkTpvNameBold','epkTpvNameVibrant','epkTpvNameStatic','epkTpvNameTorn','epkTpvNameSignal'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = band.band_name;
     });
-    document.getElementById('themeSelectOverlay').classList.add('open');
+    const overlay = document.getElementById('themeSelectOverlay');
+    if (overlay) overlay.classList.add('open');
   }
 
-  // Contact modal click-outside
   const contactModalEl = document.getElementById('contactModal');
   if (contactModalEl) {
     contactModalEl.addEventListener('click', function(e) {

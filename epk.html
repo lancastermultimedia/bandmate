@@ -27,12 +27,12 @@
 </div>
 <div class="page-band page-band--ink"></div>
 
-<!-- OWNER BAR (shown when viewing your own EPK) -->
+<!-- OWNER BAR (shown when viewing your own EPK, hidden in preview mode) -->
 <div class="epk-owner-bar" id="epkOwnerBar">
   <span class="epk-owner-bar-label">You're viewing your EPK</span>
   <div class="epk-owner-bar-btns">
+    <a href="epk-builder.html" class="epk-owner-bar-btn">EPK Builder</a>
     <a href="profile.html" class="epk-owner-bar-btn">Edit Profile</a>
-    <button class="epk-owner-bar-btn" onclick="openThemeSelectOverlay()">Change Theme</button>
     <button class="epk-owner-bar-btn" onclick="shareEPK()">Copy Link</button>
   </div>
 </div>
@@ -198,5 +198,14 @@
 <script src="js/auth.js"></script>
 <script src="js/epk.js"></script>
 <script src="js/feedback.js"></script>
+<script>
+// Preview mode: receive theme updates from EPK Builder iframe postMessage
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'epk-preview' && currentEpkBand) {
+    currentEpkBand.epk_theme = e.data.theme;
+    renderEPK(currentEpkBand, currentEpkData);
+  }
+});
+</script>
 </body>
 </html>

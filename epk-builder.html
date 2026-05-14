@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPK Builder — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/design-system.css">
+<link rel="stylesheet" href="css/styles.css?v=4">
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));</script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="epk-builder-page">
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo"><svg viewBox="0 0 26 26" width="22" height="22" fill="none"><circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/><ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></svg>
+    <span class="wordmark">Bandmate</span>
+    <span class="beta-badge">Beta</span></a>
+  <ul class="nav-links">
+    <li><a href="map.html">Find Venues</a></li>
+    <li><a href="map.html#leave-review">Leave a Review</a></li>
+    <li><a href="tour.html">Tour Planner</a></li>
+    <li><a href="community.html">Community</a></li>
+    <li><a href="epk-builder.html" style="color:var(--ink)">EPK Builder</a></li>
+    <li id="navAuthArea" style="display:contents">
+      <a href="#" style="font-family:'DM Sans',sans-serif;font-weight:300;font-size:8px;text-transform:uppercase;letter-spacing:0.2em;color:var(--grey);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
+    </li>
+  </ul>
+  <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="2" fill="var(--ink)"/><rect x="2" y="10" width="18" height="2" fill="var(--ink)"/><rect x="2" y="15" width="18" height="2" fill="var(--ink)"/></svg></button>
+</nav>
+
+<!-- MOBILE NAV OVERLAY -->
+<div class="mobile-nav-overlay" id="mobileNavOverlay">
+  <div class="mobile-nav-header">
+    <a href="index.html" class="mobile-nav-logo"><svg viewBox="0 0 26 26" width="18" height="18" fill="none" style="opacity:0.7"><circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/><ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></svg> Bandmate</a>
+    <button class="mobile-nav-close" onclick="closeMobileMenu()">✕</button>
+  </div>
+  <nav class="mobile-nav-links">
+    <a href="map.html" class="mobile-nav-link" onclick="closeMobileMenu()">Find Venues</a>
+    <a href="community.html" class="mobile-nav-link" onclick="closeMobileMenu()">Community</a>
+    <a href="tour.html" class="mobile-nav-link" onclick="closeMobileMenu()">Tour Planner</a>
+    <a href="epk-builder.html" class="mobile-nav-link active" onclick="closeMobileMenu()">EPK Builder</a>
+  </nav>
+  <div class="mobile-nav-footer" id="mobileNavFooter">
+    <a href="#" class="mobile-nav-login" onclick="closeMobileMenu();openAuth('login');return false">Log In</a>
+    <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();openAuth('signup');return false">Join Free</a>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- AUTH MODALS (injected by auth.js) -->
+
+<!-- BUILDER WRAP -->
+<div class="epk-builder-wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="epk-bl">
+
+    <div class="epk-bl-header">
+      <div class="epk-bl-title">EPK Builder</div>
+      <div class="epk-bl-band" id="epkBlBandName">—</div>
+    </div>
+
+    <!-- Saved EPKs -->
+    <div class="epk-configs-section">
+      <div class="epk-configs-top">
+        <div class="epk-configs-section-label">Your EPKs</div>
+        <button class="epk-new-config-btn" onclick="createNewConfig()">+ New</button>
+      </div>
+      <div class="epk-configs-strip" id="epkConfigsStrip">
+        <div style="font-size:10px;font-weight:300;color:var(--grey);padding:4px 0">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Name -->
+    <div class="epk-control-block">
+      <div class="epk-control-label">EPK Name</div>
+      <input type="text" class="epk-name-input" id="epkConfigNameInput" placeholder="e.g. Summer Tour 2026" maxlength="48" oninput="markDirty()">
+    </div>
+
+    <!-- Theme -->
+    <div class="epk-control-block">
+      <div class="epk-control-label">Theme</div>
+      <div class="epk-theme-grid" id="epkThemeGrid">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="epk-bl-actions">
+      <button class="epk-save-btn" onclick="saveCurrentConfig()">Save Changes</button>
+      <button class="epk-active-btn" id="epkSetActiveBtn" onclick="setConfigActive()">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="5.5,1 6.8,4.2 10.2,4.5 7.8,6.7 8.5,10 5.5,8.3 2.5,10 3.2,6.7 0.8,4.5 4.2,4.2" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        Set as Active EPK
+      </button>
+      <button class="epk-link-btn" onclick="copyEpkLink()">Copy EPK Link</button>
+      <a class="epk-view-link" id="epkViewLink" href="epk.html" target="_blank">Open Full EPK ↗</a>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL: live preview -->
+  <div class="epk-br">
+    <div class="epk-preview-bar">
+      <div class="epk-preview-modes">
+        <button class="epk-pm-btn active" id="epkPmDesktop" onclick="setPreviewMode('desktop')">Desktop</button>
+        <button class="epk-pm-btn" id="epkPmMobile" onclick="setPreviewMode('mobile')">Mobile</button>
+      </div>
+      <div class="epk-preview-label">Live Preview</div>
+      <a class="epk-preview-open-link" id="epkPreviewOpenLink" href="epk.html" target="_blank">Open in new tab ↗</a>
+    </div>
+    <div class="epk-preview-outer">
+      <div class="epk-preview-frame-wrap" id="epkPreviewFrameWrap">
+        <iframe class="epk-preview-iframe" id="epkPreviewIframe" src="" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NOT LOGGED IN / NO BAND GATE -->
+<div class="epk-builder-gate" id="epkBuilderGate">
+  <div class="epk-bl-title" style="margin-bottom:4px">EPK Builder</div>
+  <div class="epk-gate-title" id="epkGateTitle">Sign in to build your EPK</div>
+  <div class="epk-gate-sub" id="epkGateSub">Create an account or sign in to design and publish your Electronic Press Kit.</div>
+  <button class="epk-gate-btn" id="epkGateBtn" onclick="openAuth('login')">Sign In →</button>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/epk-builder.js"></script>
+</body>
+</html>
