@@ -7,6 +7,9 @@ const FREE_QUOTES_LIMIT = 5;
 // TOKEN_REFRESHED / periodic auth events never wipe unsaved edits.
 let formPopulated = false;
 
+// Only run profile-page DOM operations when on the actual profile page.
+const _IS_PROFILE_PAGE = !!document.getElementById('profilePage');
+
 // ── Save button helper — three states ─────────────────────────────────────────
 // Returns { saving(), success(), error(msg) } for a given button element.
 function saveBtnCtrl(btnId, defaultLabel) {
@@ -29,6 +32,36 @@ function saveBtnCtrl(btnId, defaultLabel) {
       setTimeout(() => { btn.textContent = defaultLabel; }, 5000);
     },
   };
+}
+
+// ── Populate content forms (used by both profile.html and epk-builder.html) ────
+
+function populateContentForms(bp) {
+  if (!bp) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+
+  set('profileBio',  bp.bio);
+  set('profileCity', bp.home_city);
+  const chipsEl = document.getElementById('profileGenreChips');
+  if (chipsEl) loadGenreChips('profileGenreChips').then(() => preselectGenres('profileGenreChips', bp.genre));
+
+  set('linkSpotify',    bp.spotify_url);
+  set('linkYoutube',    bp.youtube_url);
+  set('linkSoundcloud', bp.soundcloud_url);
+  set('linkAppleMusic', bp.apple_music_url);
+  set('linkBandcamp',   bp.bandcamp_url);
+  set('linkWebsite',    bp.website);
+  set('linkInstagram',  bp.instagram_url);
+  set('linkTiktok',     bp.tiktok_url);
+  set('linkFacebook',   bp.facebook_url);
+
+  if (bp.bandcamp_embed) {
+    set('linkBandcampEmbed', bp.bandcamp_embed);
+    const toggle = document.getElementById('bandcampEmbedToggle');
+    const field  = document.getElementById('bandcampEmbedField');
+    if (toggle) toggle.checked = true;
+    if (field)  field.style.display = 'block';
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -71,6 +104,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ── Main render ───────────────────────────────────────────────────────────────
 
 async function renderProfile() {
+  if (!_IS_PROFILE_PAGE) return;
+
   if (!currentUser || !currentBandProfile) {
     document.getElementById('profilePage').style.display      = 'none';
     document.getElementById('profileNotAuthed').style.display = 'block';
@@ -98,51 +133,14 @@ async function renderProfile() {
   }
 
   // ── Sections visibility ──
-  document.getElementById('editSection').style.display       = isPremium ? 'block' : 'none';
-  document.getElementById('musicLinksSection').style.display = isPremium ? 'block' : 'none';
-  document.getElementById('pressQuotesSection').style.display = isPremium ? 'block' : 'none';
-  document.getElementById('stagePlotSection').style.display  = isPremium ? 'block' : 'none';
-  document.getElementById('videosSection').style.display     = isPremium ? 'block' : 'none';
+  document.getElementById('editSection').style.display        = isPremium ? 'block' : 'none';
   document.getElementById('epkSettingsSection').style.display = isPremium ? 'block' : 'none';
 
   // ── Form fields — populate ONCE per session ──
   if (isPremium && !formPopulated) {
     formPopulated = true;
-
-    // Edit profile
-    document.getElementById('profileBio').value  = bp.bio       || '';
-    document.getElementById('profileCity').value = bp.home_city || '';
-    loadGenreChips('profileGenreChips').then(() => preselectGenres('profileGenreChips', bp.genre));
-
-    // Music & Links
-    document.getElementById('linkSpotify').value    = bp.spotify_url     || '';
-    document.getElementById('linkYoutube').value    = bp.youtube_url     || '';
-    document.getElementById('linkSoundcloud').value = bp.soundcloud_url  || '';
-    document.getElementById('linkAppleMusic').value = bp.apple_music_url || '';
-    document.getElementById('linkBandcamp').value   = bp.bandcamp_url    || '';
-    document.getElementById('linkWebsite').value    = bp.website         || '';
-    document.getElementById('linkInstagram').value  = bp.instagram_url   || '';
-    document.getElementById('linkTiktok').value     = bp.tiktok_url      || '';
-    document.getElementById('linkFacebook').value   = bp.facebook_url    || '';
-    // Bandcamp embed
-    if (bp.bandcamp_embed) {
-      document.getElementById('linkBandcampEmbed').value = bp.bandcamp_embed;
-      document.getElementById('bandcampEmbedToggle').checked = true;
-      document.getElementById('bandcampEmbedField').style.display = 'block';
-    }
+    populateContentForms(bp);
   }
-
-  // ── Dynamic sections (always refresh from DB) ──
-  if (isPremium) {
-    loadQuotes(bp.id);
-    renderStagePlotStatus();
-    loadVideos(bp.id);
-    updateEpkThemeStatus();
-  }
-
-  // ── Press photos ──
-  document.getElementById('pressPhotosSection').style.display = 'block';
-  renderPressPhotos();
 
   // ── Progress & upgrade (free only) ──
   if (!isPremium) {
@@ -343,8 +341,8 @@ async function saveProfileEdits() {
   currentBandProfile.home_city = city;
   currentBandProfile.genre     = genre;
 
-  document.getElementById('profileMeta').textContent =
-    [genre, city].filter(Boolean).join(' · ');
+  const metaEl = document.getElementById('profileMeta');
+  if (metaEl) metaEl.textContent = [genre, city].filter(Boolean).join(' · ');
 
   s.success();
   showToast('Profile saved', 'success');

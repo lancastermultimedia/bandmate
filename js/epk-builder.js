@@ -9,13 +9,14 @@ const THEMES = [
   { id: 'signal',  label: 'Signal',  desc: 'Art gallery calm' },
 ];
 
-let _band         = null;
-let _configs      = [];
-let _activeId     = null; // epk_config id with is_active=true
-let _currentId    = null; // the config being edited
-let _dirty        = false;
-let _previewReady = false;
-let _renameTimer  = null;
+let _band          = null;
+let _configs       = [];
+let _activeId      = null; // epk_config id with is_active=true
+let _currentId     = null; // the config being edited
+let _dirty         = false;
+let _previewReady  = false;
+let _renameTimer   = null;
+let _contentLoaded = false;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
@@ -297,6 +298,37 @@ function copyEpkLink() {
     document.execCommand('copy'); document.body.removeChild(el);
     showToast('EPK link copied!', 'success');
   }
+}
+
+// ── Panel / section switching ─────────────────────────────────────────────────
+
+function switchBuilderPanel(panel) {
+  const isContent = panel === 'content';
+  document.getElementById('epkContentPanel').style.display = isContent ? 'flex' : 'none';
+  document.getElementById('epkDesignPanel').style.display  = isContent ? 'none' : 'flex';
+  document.getElementById('epkPtContent').classList.toggle('active', isContent);
+  document.getElementById('epkPtDesign').classList.toggle('active', !isContent);
+  if (isContent && !_contentLoaded) initEpkContent();
+}
+
+function switchContentSection(section) {
+  document.querySelectorAll('.epk-content-section').forEach(s => { s.style.display = 'none'; });
+  const el = document.getElementById(`epkSection-${section}`);
+  if (el) el.style.display = 'block';
+  document.querySelectorAll('.epk-subnav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.section === section);
+  });
+}
+
+function initEpkContent() {
+  if (!_band || _contentLoaded) return;
+  _contentLoaded = true;
+  if (typeof populateContentForms === 'function') populateContentForms(_band);
+  if (typeof renderPressPhotos    === 'function') renderPressPhotos();
+  if (typeof loadQuotes           === 'function') loadQuotes(_band.id);
+  if (typeof loadVideos           === 'function') loadVideos(_band.id);
+  if (typeof renderStagePlotStatus === 'function') renderStagePlotStatus();
+  switchContentSection('bio');
 }
 
 // ── Dirty flag ────────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/design-system.css">
-<link rel="stylesheet" href="css/styles.css?v=4">
+<link rel="stylesheet" href="css/styles.css?v=5">
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));</script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -54,111 +54,234 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- AUTH MODALS (injected by auth.js) -->
-
 <!-- BUILDER WRAP -->
 <div class="epk-builder-wrap">
 
   <!-- LEFT PANEL -->
   <div class="epk-bl">
 
+    <!-- Header: always visible -->
     <div class="epk-bl-header">
       <div class="epk-bl-title">EPK Builder</div>
       <div class="epk-bl-band" id="epkBlBandName">—</div>
     </div>
 
-    <!-- Saved EPKs -->
-    <div class="epk-configs-section">
-      <div class="epk-configs-top">
-        <div class="epk-configs-section-label">Your EPKs</div>
-        <button class="epk-new-config-btn" onclick="createNewConfig()">+ New</button>
-      </div>
-      <div class="epk-configs-strip" id="epkConfigsStrip">
-        <div style="font-size:10px;font-weight:300;color:var(--grey);padding:4px 0">Loading…</div>
-      </div>
+    <!-- Content / Design toggle -->
+    <div class="epk-panel-toggle">
+      <button class="epk-pt-btn" id="epkPtContent" onclick="switchBuilderPanel('content')">Content</button>
+      <button class="epk-pt-btn active" id="epkPtDesign" onclick="switchBuilderPanel('design')">Design</button>
     </div>
 
-    <!-- Name -->
-    <div class="epk-control-block">
-      <div class="epk-control-label">EPK Name</div>
-      <input type="text" class="epk-name-input" id="epkConfigNameInput" placeholder="e.g. Summer Tour 2026" maxlength="48" oninput="markDirty()">
-    </div>
+    <!-- ══ CONTENT PANEL ══════════════════════════════════════════ -->
+    <div class="epk-content-panel" id="epkContentPanel" style="display:none">
 
-    <!-- Theme -->
-    <div class="epk-control-block">
-      <div class="epk-control-label">Theme</div>
-      <div class="epk-theme-grid" id="epkThemeGrid">
-        <!-- rendered by JS -->
+      <!-- Sub-nav -->
+      <div class="epk-content-subnav">
+        <button class="epk-subnav-btn active" data-section="bio"    onclick="switchContentSection('bio')">Bio</button>
+        <button class="epk-subnav-btn"         data-section="music"  onclick="switchContentSection('music')">Music</button>
+        <button class="epk-subnav-btn"         data-section="photos" onclick="switchContentSection('photos')">Photos</button>
+        <button class="epk-subnav-btn"         data-section="video"  onclick="switchContentSection('video')">Video</button>
+        <button class="epk-subnav-btn"         data-section="quotes" onclick="switchContentSection('quotes')">Quotes</button>
+        <button class="epk-subnav-btn"         data-section="stage"  onclick="switchContentSection('stage')">Stage</button>
       </div>
-    </div>
 
-    <!-- Typography -->
-    <div class="epk-control-block">
-      <div class="epk-control-label">Typography</div>
-      <div class="epk-control-row">
-        <div class="epk-control-row-label">Heading</div>
-        <select class="epk-select" id="epkHeadingFont" onchange="markDirty();updatePreview()">
-          <option value="default">Theme default</option>
-          <option value="bebas">Bebas Neue — Display</option>
-          <option value="anton">Anton — Poster</option>
-          <option value="dm-sans">DM Sans Light — Modern</option>
-          <option value="space-mono">Space Mono — Technical</option>
-          <option value="cormorant">Cormorant Garamond — Elegant</option>
-        </select>
+      <!-- Bio & Info -->
+      <div class="epk-content-section" id="epkSection-bio">
+        <div class="epk-content-section-title">Bio & Info</div>
+        <div class="profile-field">
+          <label>Bio</label>
+          <textarea id="profileBio" rows="5" placeholder="Tell bookers about your band — where you're from, your sound, your story…"></textarea>
+        </div>
+        <div class="profile-field">
+          <label>Genres</label>
+          <div class="genre-chips-wrap" id="profileGenreChips" data-max="3"><div class="genre-chips-loading">Loading…</div></div>
+          <div class="genre-custom-row">
+            <input type="text" id="profileGenreCustomInput" class="genre-custom-input" placeholder="Add your own…">
+            <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('profileGenreChips')">Add</button>
+          </div>
+          <div class="genre-chips-hint">Select up to 3 · Can't find yours? Add it below</div>
+        </div>
+        <div class="profile-field">
+          <label>Home City</label>
+          <input type="text" id="profileCity" placeholder="e.g. Nashville, TN">
+        </div>
+        <button class="profile-save-btn" id="profileSaveBtn" onclick="saveProfileEdits()">Save Bio & Info →</button>
       </div>
-      <div class="epk-control-row" style="margin-top:8px">
-        <div class="epk-control-row-label">Body</div>
-        <select class="epk-select" id="epkBodyFont" onchange="markDirty();updatePreview()">
-          <option value="default">Theme default</option>
-          <option value="dm-sans">DM Sans — Clean</option>
-          <option value="space-mono">Space Mono — Technical</option>
-          <option value="cormorant">Cormorant Garamond — Editorial</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Accent Color -->
-    <div class="epk-control-block">
-      <div class="epk-control-label">Accent Color</div>
-      <div class="epk-swatches" id="epkAccentSwatches">
-        <button class="epk-swatch epk-swatch--default selected" data-accent="default" onclick="selectAccent('default')" title="Theme default">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="2" x2="2" y2="12" stroke="currentColor" stroke-width="1.5"/></svg>
+      <!-- Music & Links -->
+      <div class="epk-content-section" id="epkSection-music" style="display:none">
+        <div class="epk-content-section-title">Music & Links</div>
+        <div class="pfl-grid">
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-spotify">SP</span> Spotify</label><input type="url" id="linkSpotify" placeholder="https://open.spotify.com/artist/…"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-youtube">YT</span> YouTube</label><input type="url" id="linkYoutube" placeholder="https://youtube.com/@yourchannel"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-sc">SC</span> SoundCloud</label><input type="url" id="linkSoundcloud" placeholder="https://soundcloud.com/yourband"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-apple">AM</span> Apple Music</label><input type="url" id="linkAppleMusic" placeholder="https://music.apple.com/…"></div>
+          <div class="profile-field pfl-field">
+            <label><span class="pfl-tag pfl-bc">BC</span> Bandcamp</label>
+            <input type="url" id="linkBandcamp" placeholder="https://yourband.bandcamp.com">
+            <div class="pfl-embed-toggle">
+              <input type="checkbox" id="bandcampEmbedToggle" onchange="toggleBandcampEmbed(this.checked)">
+              <label for="bandcampEmbedToggle" style="font-family:'Space Mono',monospace;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);cursor:pointer;margin:0;">Use embedded player instead</label>
+            </div>
+            <div id="bandcampEmbedField" style="display:none;margin-top:8px">
+              <textarea id="linkBandcampEmbed" class="pfl-embed-textarea" placeholder="Paste Bandcamp embed HTML here"></textarea>
+            </div>
+          </div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-web">WB</span> Website</label><input type="url" id="linkWebsite" placeholder="https://yourband.com"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-ig">IG</span> Instagram</label><input type="url" id="linkInstagram" placeholder="https://instagram.com/yourband"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-tt">TK</span> TikTok</label><input type="url" id="linkTiktok" placeholder="https://tiktok.com/@yourband"></div>
+          <div class="profile-field pfl-field"><label><span class="pfl-tag pfl-fb">FB</span> Facebook</label><input type="url" id="linkFacebook" placeholder="https://facebook.com/yourband"></div>
+        </div>
+        <button class="profile-save-btn" id="musicLinksSaveBtn" onclick="saveMusicLinks()">Save Links →</button>
+      </div>
+
+      <!-- Press Photos -->
+      <div class="epk-content-section" id="epkSection-photos" style="display:none">
+        <div class="epk-content-section-title">Press Photos</div>
+        <div class="profile-section-sub" style="margin-bottom:12px">High-res photos for venues and media</div>
+        <div class="press-photos-usage" id="pressPhotosUsage" style="margin-bottom:8px"></div>
+        <div class="press-upload-area" id="pressUploadArea">
+          <div class="press-upload-icon">+</div>
+          <div class="press-upload-label">Click or drag photos here</div>
+          <div class="press-upload-sub">JPG, PNG · Max 10 MB each</div>
+          <input type="file" id="pressPhotoInput" accept="image/*" multiple style="display:none" onchange="handlePressPhotoUpload(this)">
+        </div>
+        <div class="press-photos-grid" id="pressPhotosGrid"></div>
+      </div>
+
+      <!-- Live Video -->
+      <div class="epk-content-section" id="epkSection-video" style="display:none">
+        <div class="epk-content-section-title">Live Video</div>
+        <div class="profile-section-sub" style="margin-bottom:12px">Up to 3 YouTube or Vimeo videos</div>
+        <div id="videosContainer">
+          <div class="pf-video-row"><div class="profile-field pf-video-field"><label>Video 1</label><input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=…" oninput="previewVideoThumb(this,0)"></div><div class="pf-video-thumb" id="videoThumb0"></div></div>
+          <div class="pf-video-row"><div class="profile-field pf-video-field"><label>Video 2</label><input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=…" oninput="previewVideoThumb(this,1)"></div><div class="pf-video-thumb" id="videoThumb1"></div></div>
+          <div class="pf-video-row"><div class="profile-field pf-video-field"><label>Video 3</label><input type="url" class="pf-video-input" placeholder="https://youtube.com/watch?v=…" oninput="previewVideoThumb(this,2)"></div><div class="pf-video-thumb" id="videoThumb2"></div></div>
+        </div>
+        <button class="profile-save-btn" style="margin-top:16px" id="saveVideosBtn" onclick="saveVideos()">Save Videos →</button>
+      </div>
+
+      <!-- Press Quotes -->
+      <div class="epk-content-section" id="epkSection-quotes" style="display:none">
+        <div class="epk-content-section-title">Press Quotes</div>
+        <div class="profile-section-sub" style="margin-bottom:12px">Pull quotes from reviews, interviews, and coverage</div>
+        <div class="press-photos-usage" id="quotesUsage" style="margin-bottom:8px"></div>
+        <div id="quotesContainer"></div>
+        <button class="pf-add-btn" id="addQuoteBtn" onclick="addQuoteCard()" style="margin-top:8px">+ Add Quote</button>
+        <button class="profile-save-btn" style="margin-top:10px" id="saveQuotesBtn" onclick="saveQuotes()">Save Quotes →</button>
+      </div>
+
+      <!-- Stage Plot -->
+      <div class="epk-content-section" id="epkSection-stage" style="display:none">
+        <div class="epk-content-section-title">Stage Plot & Tech Rider</div>
+        <div class="profile-section-sub" style="margin-bottom:12px">Upload a PDF for venues and production teams</div>
+        <div id="stagePlotStatus"></div>
+        <div class="press-upload-area" id="stagePlotUploadArea" style="margin-top:12px">
+          <div class="press-upload-icon">↑</div>
+          <div class="press-upload-label">Click to upload PDF</div>
+          <div class="press-upload-sub">PDF only · Max 10 MB</div>
+          <input type="file" id="stagePlotInput" accept=".pdf,application/pdf" style="display:none" onchange="handleStagePlotUpload(this)">
+        </div>
+      </div>
+
+    </div>
+    <!-- end content panel -->
+
+    <!-- ══ DESIGN PANEL ══════════════════════════════════════════ -->
+    <div class="epk-design-panel" id="epkDesignPanel">
+
+      <!-- Saved EPKs -->
+      <div class="epk-configs-section">
+        <div class="epk-configs-top">
+          <div class="epk-configs-section-label">Your EPKs</div>
+          <button class="epk-new-config-btn" onclick="createNewConfig()">+ New</button>
+        </div>
+        <div class="epk-configs-strip" id="epkConfigsStrip">
+          <div style="font-size:10px;font-weight:300;color:var(--grey);padding:4px 0">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div class="epk-control-block">
+        <div class="epk-control-label">EPK Name</div>
+        <input type="text" class="epk-name-input" id="epkConfigNameInput" placeholder="e.g. Summer Tour 2026" maxlength="48" oninput="markDirty()">
+      </div>
+
+      <!-- Theme -->
+      <div class="epk-control-block">
+        <div class="epk-control-label">Theme</div>
+        <div class="epk-theme-grid" id="epkThemeGrid"></div>
+      </div>
+
+      <!-- Typography -->
+      <div class="epk-control-block">
+        <div class="epk-control-label">Typography</div>
+        <div class="epk-control-row">
+          <div class="epk-control-row-label">Heading</div>
+          <select class="epk-select" id="epkHeadingFont" onchange="markDirty();updatePreview()">
+            <option value="default">Theme default</option>
+            <option value="bebas">Bebas Neue — Display</option>
+            <option value="anton">Anton — Poster</option>
+            <option value="dm-sans">DM Sans Light — Modern</option>
+            <option value="space-mono">Space Mono — Technical</option>
+            <option value="cormorant">Cormorant Garamond — Elegant</option>
+          </select>
+        </div>
+        <div class="epk-control-row" style="margin-top:8px">
+          <div class="epk-control-row-label">Body</div>
+          <select class="epk-select" id="epkBodyFont" onchange="markDirty();updatePreview()">
+            <option value="default">Theme default</option>
+            <option value="dm-sans">DM Sans — Clean</option>
+            <option value="space-mono">Space Mono — Technical</option>
+            <option value="cormorant">Cormorant Garamond — Editorial</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Accent Color -->
+      <div class="epk-control-block">
+        <div class="epk-control-label">Accent Color</div>
+        <div class="epk-swatches" id="epkAccentSwatches">
+          <button class="epk-swatch epk-swatch--default selected" data-accent="default" onclick="selectAccent('default')" title="Theme default"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="2" x2="2" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></button>
+          <button class="epk-swatch" data-accent="#3a7a8a" onclick="selectAccent('#3a7a8a')" title="Teal"   style="background:#3a7a8a"></button>
+          <button class="epk-swatch" data-accent="#d94535" onclick="selectAccent('#d94535')" title="Red"    style="background:#d94535"></button>
+          <button class="epk-swatch" data-accent="#7a8a3a" onclick="selectAccent('#7a8a3a')" title="Olive"  style="background:#7a8a3a"></button>
+          <button class="epk-swatch" data-accent="#0f0f0c" onclick="selectAccent('#0f0f0c')" title="Ink"    style="background:#0f0f0c"></button>
+          <button class="epk-swatch" data-accent="#c4622a" onclick="selectAccent('#c4622a')" title="Rust"   style="background:#c4622a"></button>
+          <button class="epk-swatch" data-accent="#5a6a7a" onclick="selectAccent('#5a6a7a')" title="Slate"  style="background:#5a6a7a"></button>
+          <button class="epk-swatch" data-accent="#c4a84a" onclick="selectAccent('#c4a84a')" title="Gold"   style="background:#c4a84a"></button>
+          <button class="epk-swatch" data-accent="#3a5a2a" onclick="selectAccent('#3a5a2a')" title="Forest" style="background:#3a5a2a"></button>
+        </div>
+      </div>
+
+      <!-- Background -->
+      <div class="epk-control-block">
+        <div class="epk-control-label">Background</div>
+        <div class="epk-bg-options" id="epkBgOptions">
+          <button class="epk-bg-btn selected" data-bg="default" onclick="selectBg('default')">Default</button>
+          <button class="epk-bg-btn" data-bg="paper"  onclick="selectBg('paper')"  style="background:#f2efe6">Paper</button>
+          <button class="epk-bg-btn" data-bg="white"  onclick="selectBg('white')"  style="background:#ffffff">White</button>
+          <button class="epk-bg-btn" data-bg="dark"   onclick="selectBg('dark')"   style="background:#0f0f0c;color:#f2efe6">Dark</button>
+          <button class="epk-bg-btn" data-bg="slate"  onclick="selectBg('slate')"  style="background:#2a3a4a;color:#f2efe6">Slate</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="epk-bl-actions">
+        <button class="epk-save-btn" onclick="saveCurrentConfig()">Save Changes</button>
+        <button class="epk-active-btn" id="epkSetActiveBtn" onclick="setConfigActive()">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="5.5,1 6.8,4.2 10.2,4.5 7.8,6.7 8.5,10 5.5,8.3 2.5,10 3.2,6.7 0.8,4.5 4.2,4.2" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+          Set as Active EPK
         </button>
-        <button class="epk-swatch" data-accent="#3a7a8a" onclick="selectAccent('#3a7a8a')" title="Teal" style="background:#3a7a8a"></button>
-        <button class="epk-swatch" data-accent="#d94535" onclick="selectAccent('#d94535')" title="Red" style="background:#d94535"></button>
-        <button class="epk-swatch" data-accent="#7a8a3a" onclick="selectAccent('#7a8a3a')" title="Olive" style="background:#7a8a3a"></button>
-        <button class="epk-swatch" data-accent="#0f0f0c" onclick="selectAccent('#0f0f0c')" title="Ink" style="background:#0f0f0c"></button>
-        <button class="epk-swatch" data-accent="#c4622a" onclick="selectAccent('#c4622a')" title="Rust" style="background:#c4622a"></button>
-        <button class="epk-swatch" data-accent="#5a6a7a" onclick="selectAccent('#5a6a7a')" title="Slate" style="background:#5a6a7a"></button>
-        <button class="epk-swatch" data-accent="#c4a84a" onclick="selectAccent('#c4a84a')" title="Gold" style="background:#c4a84a"></button>
-        <button class="epk-swatch" data-accent="#3a5a2a" onclick="selectAccent('#3a5a2a')" title="Forest" style="background:#3a5a2a"></button>
+        <button class="epk-link-btn" onclick="copyEpkLink()">Copy EPK Link</button>
+        <a class="epk-view-link" id="epkViewLink" href="epk.html" target="_blank">Open Full EPK ↗</a>
       </div>
-    </div>
 
-    <!-- Background -->
-    <div class="epk-control-block">
-      <div class="epk-control-label">Background</div>
-      <div class="epk-bg-options" id="epkBgOptions">
-        <button class="epk-bg-btn selected" data-bg="default" onclick="selectBg('default')">Default</button>
-        <button class="epk-bg-btn" data-bg="paper" onclick="selectBg('paper')" style="background:#f2efe6">Paper</button>
-        <button class="epk-bg-btn" data-bg="white" onclick="selectBg('white')" style="background:#ffffff">White</button>
-        <button class="epk-bg-btn" data-bg="dark" onclick="selectBg('dark')" style="background:#0f0f0c;color:#f2efe6">Dark</button>
-        <button class="epk-bg-btn" data-bg="slate" onclick="selectBg('slate')" style="background:#2a3a4a;color:#f2efe6">Slate</button>
-      </div>
     </div>
-
-    <!-- Actions -->
-    <div class="epk-bl-actions">
-      <button class="epk-save-btn" onclick="saveCurrentConfig()">Save Changes</button>
-      <button class="epk-active-btn" id="epkSetActiveBtn" onclick="setConfigActive()">
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="5.5,1 6.8,4.2 10.2,4.5 7.8,6.7 8.5,10 5.5,8.3 2.5,10 3.2,6.7 0.8,4.5 4.2,4.2" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        Set as Active EPK
-      </button>
-      <button class="epk-link-btn" onclick="copyEpkLink()">Copy EPK Link</button>
-      <a class="epk-view-link" id="epkViewLink" href="epk.html" target="_blank">Open Full EPK ↗</a>
-    </div>
+    <!-- end design panel -->
 
   </div>
+  <!-- end left panel -->
 
   <!-- RIGHT PANEL: live preview -->
   <div class="epk-br">
@@ -178,8 +301,9 @@
   </div>
 
 </div>
+<!-- end builder wrap -->
 
-<!-- NOT LOGGED IN / NO BAND GATE -->
+<!-- NOT LOGGED IN GATE -->
 <div class="epk-builder-gate" id="epkBuilderGate">
   <div class="epk-bl-title" style="margin-bottom:4px">EPK Builder</div>
   <div class="epk-gate-title" id="epkGateTitle">Sign in to build your EPK</div>
@@ -188,6 +312,7 @@
 </div>
 
 <script src="js/auth.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/epk-builder.js"></script>
 </body>
 </html>
