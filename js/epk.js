@@ -132,6 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   renderEPK(band, currentEpkData);
+  if (activeConfig?.config) applyConfigOverrides(activeConfig.config);
   document.body.style.visibility = 'visible';
 });
 
@@ -605,6 +606,83 @@ async function fetchSoundcloudEmbed(url) {
     const data = await res.json();
     return data.html || null;
   } catch (_) { return null; }
+}
+
+// ── Config overrides (applied on top of any theme) ────────────────────────────
+
+const FONT_MAP = {
+  'bebas':      "'Bebas Neue', sans-serif",
+  'anton':      "'Anton', sans-serif",
+  'dm-sans':    "'DM Sans', sans-serif",
+  'space-mono': "'Space Mono', monospace",
+  'cormorant':  "'Cormorant Garamond', serif",
+};
+
+const BG_MAP = {
+  paper: { bg: '#f2efe6', text: '#0f0f0c', dark: false },
+  white: { bg: '#ffffff', text: '#0f0f0c', dark: false },
+  dark:  { bg: '#0f0f0c', text: '#f2efe6', dark: true  },
+  slate: { bg: '#2a3a4a', text: '#f2efe6', dark: true  },
+};
+
+function applyConfigOverrides(config) {
+  if (!config) return;
+  let el = document.getElementById('epk-overrides');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'epk-overrides';
+    document.head.appendChild(el);
+  }
+
+  const rules = [];
+
+  // Heading font
+  const hf = FONT_MAP[config.heading_font];
+  if (hf) {
+    rules.push(`.epkt-band-name, .epkt-book-title { font-family: ${hf} !important; }`);
+  }
+
+  // Body font
+  const bf = FONT_MAP[config.body_font];
+  if (bf) {
+    rules.push(`.epkt-bio, .epkt-quote-text, .epkt-review-text, .epkt-book-sub, .epkt-genre-city { font-family: ${bf} !important; }`);
+  }
+
+  // Accent color
+  const ac = config.accent;
+  if (ac && ac !== 'default') {
+    rules.push(`
+      .epkt-eyebrow { color: ${ac} !important; }
+      .epkt-hero-rule { background: ${ac} !important; }
+      .epkt-section-label { color: ${ac} !important; }
+      .epkt-book-btn, .epkt-link-btn { background: ${ac} !important; border-color: ${ac} !important; }
+      .epkt-music-link-btn { background: ${ac} !important; border-color: ${ac} !important; }
+      .epkt-pdf-btn { color: ${ac} !important; border-color: ${ac} !important; }
+      .epkt-footer a { color: ${ac} !important; }
+    `);
+  }
+
+  // Background
+  const bgKey = config.bg;
+  if (bgKey && bgKey !== 'default') {
+    const bgCfg = BG_MAP[bgKey];
+    if (bgCfg) {
+      rules.push(`
+        body[data-epk-theme] { background: ${bgCfg.bg} !important; }
+        .epkt-wrap { background: ${bgCfg.bg} !important; }
+        .epkt-section { background: ${bgCfg.bg} !important; }
+      `);
+      if (bgCfg.dark) {
+        rules.push(`
+          .epkt-band-name, .epkt-bio, .epkt-genre-city, .epkt-review-text,
+          .epkt-quote-text, .epkt-book-title, .epkt-book-sub,
+          .epkt-review-venue { color: ${bgCfg.text} !important; }
+        `);
+      }
+    }
+  }
+
+  el.textContent = rules.join('\n');
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

@@ -92,6 +92,61 @@
       </div>
     </div>
 
+    <!-- Typography -->
+    <div class="epk-control-block">
+      <div class="epk-control-label">Typography</div>
+      <div class="epk-control-row">
+        <div class="epk-control-row-label">Heading</div>
+        <select class="epk-select" id="epkHeadingFont" onchange="markDirty();updatePreview()">
+          <option value="default">Theme default</option>
+          <option value="bebas">Bebas Neue — Display</option>
+          <option value="anton">Anton — Poster</option>
+          <option value="dm-sans">DM Sans Light — Modern</option>
+          <option value="space-mono">Space Mono — Technical</option>
+          <option value="cormorant">Cormorant Garamond — Elegant</option>
+        </select>
+      </div>
+      <div class="epk-control-row" style="margin-top:8px">
+        <div class="epk-control-row-label">Body</div>
+        <select class="epk-select" id="epkBodyFont" onchange="markDirty();updatePreview()">
+          <option value="default">Theme default</option>
+          <option value="dm-sans">DM Sans — Clean</option>
+          <option value="space-mono">Space Mono — Technical</option>
+          <option value="cormorant">Cormorant Garamond — Editorial</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Accent Color -->
+    <div class="epk-control-block">
+      <div class="epk-control-label">Accent Color</div>
+      <div class="epk-swatches" id="epkAccentSwatches">
+        <button class="epk-swatch epk-swatch--default selected" data-accent="default" onclick="selectAccent('default')" title="Theme default">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="2" x2="2" y2="12" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+        <button class="epk-swatch" data-accent="#3a7a8a" onclick="selectAccent('#3a7a8a')" title="Teal" style="background:#3a7a8a"></button>
+        <button class="epk-swatch" data-accent="#d94535" onclick="selectAccent('#d94535')" title="Red" style="background:#d94535"></button>
+        <button class="epk-swatch" data-accent="#7a8a3a" onclick="selectAccent('#7a8a3a')" title="Olive" style="background:#7a8a3a"></button>
+        <button class="epk-swatch" data-accent="#0f0f0c" onclick="selectAccent('#0f0f0c')" title="Ink" style="background:#0f0f0c"></button>
+        <button class="epk-swatch" data-accent="#c4622a" onclick="selectAccent('#c4622a')" title="Rust" style="background:#c4622a"></button>
+        <button class="epk-swatch" data-accent="#5a6a7a" onclick="selectAccent('#5a6a7a')" title="Slate" style="background:#5a6a7a"></button>
+        <button class="epk-swatch" data-accent="#c4a84a" onclick="selectAccent('#c4a84a')" title="Gold" style="background:#c4a84a"></button>
+        <button class="epk-swatch" data-accent="#3a5a2a" onclick="selectAccent('#3a5a2a')" title="Forest" style="background:#3a5a2a"></button>
+      </div>
+    </div>
+
+    <!-- Background -->
+    <div class="epk-control-block">
+      <div class="epk-control-label">Background</div>
+      <div class="epk-bg-options" id="epkBgOptions">
+        <button class="epk-bg-btn selected" data-bg="default" onclick="selectBg('default')">Default</button>
+        <button class="epk-bg-btn" data-bg="paper" onclick="selectBg('paper')" style="background:#f2efe6">Paper</button>
+        <button class="epk-bg-btn" data-bg="white" onclick="selectBg('white')" style="background:#ffffff">White</button>
+        <button class="epk-bg-btn" data-bg="dark" onclick="selectBg('dark')" style="background:#0f0f0c;color:#f2efe6">Dark</button>
+        <button class="epk-bg-btn" data-bg="slate" onclick="selectBg('slate')" style="background:#2a3a4a;color:#f2efe6">Slate</button>
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="epk-bl-actions">
       <button class="epk-save-btn" onclick="saveCurrentConfig()">Save Changes</button>

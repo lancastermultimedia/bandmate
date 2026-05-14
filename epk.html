@@ -199,11 +199,13 @@
 <script src="js/epk.js"></script>
 <script src="js/feedback.js"></script>
 <script>
-// Preview mode: receive theme updates from EPK Builder iframe postMessage
+// Preview mode: receive config updates from EPK Builder via postMessage
 window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'epk-preview' && currentEpkBand) {
-    currentEpkBand.epk_theme = e.data.theme;
+  if (e.data && e.data.type === 'epk-preview' && currentEpkBand && currentEpkData) {
+    const config = e.data.config || { theme: e.data.theme || 'clean' };
+    currentEpkBand.epk_theme = config.theme;
     renderEPK(currentEpkBand, currentEpkData);
+    applyConfigOverrides(config);
   }
 });
 </script>

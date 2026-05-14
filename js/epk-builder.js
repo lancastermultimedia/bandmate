@@ -99,6 +99,7 @@ function _loadConfigIntoEditor(id) {
   _currentId = id;
   document.getElementById('epkConfigNameInput').value = cfg.name;
   _selectThemeCard(cfg.config?.theme || 'clean', false);
+  _restoreOverrideControls(cfg.config || {});
   renderConfigsStrip();
   updateActiveBtn();
   _dirty = false;
@@ -108,17 +109,17 @@ function _loadConfigIntoEditor(id) {
 async function saveCurrentConfig() {
   if (!_currentId) return;
 
-  const name  = document.getElementById('epkConfigNameInput').value.trim() || 'Untitled';
-  const theme = document.querySelector('.epk-theme-card.selected')?.dataset.theme || 'clean';
+  const name   = document.getElementById('epkConfigNameInput').value.trim() || 'Untitled';
+  const config = getCurrentConfig();
 
   const { error } = await sb.from('epk_configs')
-    .update({ name, config: { theme } })
+    .update({ name, config })
     .eq('id', _currentId);
 
   if (error) { showToast('Save failed — ' + error.message, 'error'); return; }
 
   const cfg = _configs.find(c => c.id === _currentId);
-  if (cfg) { cfg.name = name; cfg.config = { theme }; }
+  if (cfg) { cfg.name = name; cfg.config = config; }
   renderConfigsStrip();
   _dirty = false;
   showToast('Saved', 'success');
@@ -218,6 +219,47 @@ function updateActiveBtn() {
   if (starSvg) btn.prepend(starSvg);
 }
 
+// ── Override controls ─────────────────────────────────────────────────────────
+
+function selectAccent(value) {
+  document.querySelectorAll('.epk-swatch').forEach(s => s.classList.toggle('selected', s.dataset.accent === value));
+  markDirty();
+  updatePreview();
+}
+
+function selectBg(value) {
+  document.querySelectorAll('.epk-bg-btn').forEach(b => b.classList.toggle('selected', b.dataset.bg === value));
+  markDirty();
+  updatePreview();
+}
+
+function _restoreOverrideControls(config) {
+  // Heading font
+  const hf = document.getElementById('epkHeadingFont');
+  if (hf) hf.value = config.heading_font || 'default';
+
+  // Body font
+  const bf = document.getElementById('epkBodyFont');
+  if (bf) bf.value = config.body_font || 'default';
+
+  // Accent swatch
+  const accent = config.accent || 'default';
+  document.querySelectorAll('.epk-swatch').forEach(s => s.classList.toggle('selected', s.dataset.accent === accent));
+
+  // Background
+  const bg = config.bg || 'default';
+  document.querySelectorAll('.epk-bg-btn').forEach(b => b.classList.toggle('selected', b.dataset.bg === bg));
+}
+
+function getCurrentConfig() {
+  const theme       = document.querySelector('.epk-theme-card.selected')?.dataset.theme || 'clean';
+  const headingFont = document.getElementById('epkHeadingFont')?.value || 'default';
+  const bodyFont    = document.getElementById('epkBodyFont')?.value    || 'default';
+  const accent      = document.querySelector('.epk-swatch.selected')?.dataset.accent || 'default';
+  const bg          = document.querySelector('.epk-bg-btn.selected')?.dataset.bg     || 'default';
+  return { theme, heading_font: headingFont, body_font: bodyFont, accent, bg };
+}
+
 // ── Preview iframe ────────────────────────────────────────────────────────────
 
 function initPreviewIframe() {
@@ -233,8 +275,7 @@ function initPreviewIframe() {
 function updatePreview() {
   if (!_previewReady) return;
   const iframe = document.getElementById('epkPreviewIframe');
-  const theme  = document.querySelector('.epk-theme-card.selected')?.dataset.theme || 'clean';
-  iframe.contentWindow.postMessage({ type: 'epk-preview', theme }, '*');
+  iframe.contentWindow.postMessage({ type: 'epk-preview', config: getCurrentConfig() }, '*');
 }
 
 function setPreviewMode(mode) {
