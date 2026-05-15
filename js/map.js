@@ -17,6 +17,7 @@ let reviewVenueAutocomplete = null;
 // ─── Map init (Google Maps callback) ─────────────────────────────────────────
 
 function initMap() {
+  if (!document.getElementById('map')) return; // not on the map page
   map = new google.maps.Map(document.getElementById('map'), {
     zoom: 13,
     center: { lat: FALLBACK_LOCATION.lat, lng: FALLBACK_LOCATION.lng },
@@ -79,6 +80,11 @@ function initMap() {
 
   // Deep-link: ?place=PLACE_ID opens a specific venue directly
   const deepPlaceId = new URLSearchParams(window.location.search).get('place');
+  // Globe search: ?city=Nashville, TN pre-fills the search box
+  const deepCity    = new URLSearchParams(window.location.search).get('city');
+  // Globe search: ?venue=ID highlights a specific Supabase venue
+  const deepVenueId = new URLSearchParams(window.location.search).get('venue');
+
   if (deepPlaceId) {
     placesService.getDetails({ placeId: deepPlaceId, fields: ['place_id','name','formatted_address','vicinity','geometry'] }, (result, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && result) {
@@ -89,6 +95,35 @@ function initMap() {
         locateMe(true);
       }
     });
+  } else if (deepCity) {
+    const inp = document.getElementById('locationInput');
+    if (inp) inp.value = deepCity;
+    searchLocation();
+  } else if (deepVenueId) {
+    // Load venue from Supabase, center map on its city, and open its page
+    (async () => {
+      const { data: v } = await sb.from('venues').select('id, name, city, state, place_id').eq('id', deepVenueId).maybeSingle();
+      if (v) {
+        const q = [v.city, v.state].filter(Boolean).join(', ');
+        const inp = document.getElementById('locationInput');
+        if (inp) inp.value = q;
+        if (v.place_id) {
+          placesService.getDetails({ placeId: v.place_id, fields: ['place_id','name','formatted_address','vicinity','geometry'] }, (result, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && result) {
+              map.setCenter(result.geometry.location);
+              map.setZoom(16);
+              openVenuePage(result.place_id, result.name, result.formatted_address || result.vicinity || '');
+            } else {
+              searchLocation();
+            }
+          });
+        } else {
+          searchLocation();
+        }
+      } else {
+        locateMe(true);
+      }
+    })();
   } else {
     locateMe(true); // silent = true, no alert if geolocation denied
   }

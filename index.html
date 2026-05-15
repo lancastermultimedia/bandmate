@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/design-system.css">
-<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/styles.css?v=5">
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));</script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -525,9 +525,100 @@ a.cp { display: flex; }
   text-transform: uppercase; letter-spacing: 0.16em; color: var(--grey); text-align: right;
 }
 
-/* ── Map section (below fold) ── */
-.hero-to-map { display: none; }
-#map-section { padding-top: 0; height: calc(100vh + 220px); }
+/* ── Globe search ── */
+.globe-idle {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  position: relative; z-index: 2;
+  transition: opacity 0.3s ease, transform 0.36s ease;
+}
+.globe-stage.searching .globe-idle {
+  opacity: 0; transform: scale(0.82); pointer-events: none;
+}
+.globe-svg-wrap { transition: filter 0.22s ease; }
+.globe-svg-wrap:hover { filter: drop-shadow(0 0 14px rgba(58,122,138,0.3)); }
+.globe-prompt {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 6px 14px; transition: opacity 0.2s ease;
+}
+.globe-prompt:hover .globe-prompt-text { color: var(--paper); }
+.globe-prompt-text {
+  font-family: 'Space Mono', monospace; font-size: 7.5px;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  color: rgba(242,239,230,0.5); transition: color 0.2s ease;
+}
+.globe-prompt-cursor {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--teal); animation: blink 1.2s step-end infinite; line-height: 1;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Search overlay */
+.globe-search {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.88);
+  width: min(560px, 90vw);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s ease 0.06s, transform 0.4s cubic-bezier(0.34, 1.26, 0.64, 1) 0.02s;
+  z-index: 10;
+}
+.globe-stage.searching .globe-search {
+  opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto;
+}
+.gs-bar {
+  display: flex; align-items: center;
+  background: var(--paper); border: 1.5px solid var(--ink); overflow: hidden;
+}
+.gs-icon { padding: 0 14px; color: var(--grey); flex-shrink: 0; }
+.gs-input {
+  flex: 1; font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 300;
+  color: var(--ink); background: transparent; border: none; outline: none;
+  padding: 18px 0; letter-spacing: 0.01em;
+}
+.gs-input::placeholder { color: var(--grey); }
+.gs-close {
+  width: 52px; height: 56px; border: none;
+  border-left: 1px solid rgba(15,15,12,0.1);
+  background: transparent; cursor: pointer; color: var(--grey); font-size: 14px;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.gs-close:hover { background: rgba(15,15,12,0.06); color: var(--ink); }
+.gs-results {
+  background: var(--paper); border: 1.5px solid var(--ink); border-top: none;
+  max-height: 300px; overflow-y: auto; display: none;
+}
+.gs-results.open { display: block; }
+.gs-section-label {
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  text-transform: uppercase; letter-spacing: 0.18em; color: var(--grey);
+  padding: 10px 16px 6px; border-bottom: 1px solid rgba(15,15,12,0.06);
+}
+.gs-result {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; cursor: pointer;
+  border-bottom: 1px solid rgba(15,15,12,0.06); transition: background 0.12s;
+}
+.gs-result:last-child { border-bottom: none; }
+.gs-result:hover { background: rgba(58,122,138,0.07); }
+.gs-result-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: 1px solid rgba(15,15,12,0.1);
+  display: flex; align-items: center; justify-content: center; color: var(--grey);
+}
+.gs-result-icon--city { color: var(--teal); border-color: rgba(58,122,138,0.3); background: rgba(58,122,138,0.06); }
+.gs-result-body { flex: 1; min-width: 0; }
+.gs-result-name { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-result-sub { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 300; color: var(--grey); margin-top: 1px; }
+.gs-result-arrow { color: var(--grey); font-size: 12px; flex-shrink: 0; transition: transform 0.12s, color 0.12s; }
+.gs-result:hover .gs-result-arrow { transform: translateX(2px); color: var(--teal); }
+.gs-empty { padding: 18px 16px; font-size: 12px; font-weight: 300; color: var(--grey); font-family: 'DM Sans', sans-serif; }
+.gs-map-link {
+  display: block; text-align: center; margin-top: 14px;
+  font-family: 'Space Mono', monospace; font-size: 7px;
+  text-transform: uppercase; letter-spacing: 0.18em;
+  color: rgba(242,239,230,0.5); text-decoration: none; transition: color 0.2s ease;
+}
+.gs-map-link:hover { color: var(--paper); }
 
 /* ── Loading overlay ── */
 .loading-overlay {
@@ -558,8 +649,10 @@ a.cp { display: flex; }
   .lp-nav .lp-nav-links { display: none; }
   .poster-top { padding: 16px 20px 8px; }
   .poster-wordmark { font-size: clamp(2.5rem, 12vw, 4rem); }
-  .globe-stage { padding: 30px 0 24px; }
-  .globe-svg-wrap svg { width: 260px !important; }
+  .globe-stage { padding: 32px 0 28px; min-height: 300px; }
+  .globe-svg-wrap svg { width: 240px !important; }
+  .gs-input { font-size: 16px; padding: 16px 0; }
+  .gs-close { height: 52px; }
   .poster-info { grid-template-columns: repeat(2, 1fr); }
   .poster-dates { padding: 8px 20px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
@@ -691,8 +784,11 @@ a.cp { display: flex; }
   </div>
 
   <!-- Globe stage (stripes via CSS background, globe punches through) -->
-  <div class="globe-stage">
-    <div class="globe-svg-wrap">
+  <div class="globe-stage" id="globeStage">
+
+    <!-- Idle state: spinning globe + prompt -->
+    <div class="globe-idle" id="globeIdle">
+      <div class="globe-svg-wrap" onclick="openGlobeSearch()" role="button" aria-label="Search for a venue or city" style="cursor:pointer">
       <svg viewBox="0 0 340 250" width="480" xmlns="http://www.w3.org/2000/svg" style="display:block">
         <defs>
           <clipPath id="globeClip">
@@ -768,6 +864,32 @@ a.cp { display: flex; }
         <circle cx="170" cy="125" r="110" fill="none" stroke="#0f0f0c" stroke-width="1.5"/>
       </svg>
     </div>
+
+      <!-- Prompt below globe -->
+      <div class="globe-prompt" onclick="openGlobeSearch()">
+        <span class="globe-prompt-text">// Click the globe to find your next stage anywhere</span>
+        <span class="globe-prompt-cursor" aria-hidden="true">_</span>
+      </div>
+    </div>
+    <!-- end .globe-idle -->
+
+    <!-- Search state: expands over the globe on click -->
+    <div class="globe-search" id="globeSearch">
+      <div class="gs-bar">
+        <svg class="gs-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
+          <circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+        </svg>
+        <input class="gs-input" type="text" id="globeSearchInput"
+               placeholder="Venue name or city…"
+               autocomplete="off"
+               oninput="debounceGlobeSearch(this.value)"
+               onkeydown="handleGlobeKey(event)">
+        <button class="gs-close" onclick="closeGlobeSearch()" aria-label="Close">✕</button>
+      </div>
+      <div class="gs-results" id="globeSearchResults"></div>
+      <a href="map.html" class="gs-map-link">Explore the full map →</a>
+    </div>
+
   </div>
 
   <!-- Ticker — directly below globe -->
@@ -820,73 +942,6 @@ a.cp { display: flex; }
 
 </section>
 
-<!-- MAP SECTION (id kept for existing JS) -->
-<section class="hero" id="map-section">
-  <div class="hero-panel">
-    <div class="hero-eyebrow">For independent bands everywhere</div>
-    <h1 class="hero-title">Find your<br>next <em>stage.</em></h1>
-    <p class="hero-sub">Discover venues, plan your tour, and share your music — everything you need to play further.</p>
-    <div class="search-wrap">
-      <div class="search-input-row">
-        <input type="text" id="locationInput" placeholder="City, venue name, or neighborhood..."/>
-        <button class="search-btn" onclick="searchLocation()">Search →</button>
-      </div>
-    </div>
-    <button class="locate-btn" onclick="locateMe()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" opacity="0.15"/>
-      </svg>
-      Use My Location
-    </button>
-    <div class="filter-label">Filter by Genre</div>
-    <div class="filter-chips" id="genreChips">
-      <span class="chip active-rust" onclick="toggleChip(this)">All</span>
-      <span class="chip" onclick="toggleChip(this)">Indie / Alt</span>
-      <span class="chip" onclick="toggleChip(this)">Folk / Acoustic</span>
-      <span class="chip" onclick="toggleChip(this)">Punk / Metal</span>
-      <span class="chip" onclick="toggleChip(this)">Jazz / Blues</span>
-      <span class="chip" onclick="toggleChip(this)">Hip-Hop</span>
-      <span class="chip" onclick="toggleChip(this)">Country</span>
-    </div>
-    <div class="radius-row">
-      <span class="filter-label" style="margin-bottom:0">Search Radius</span>
-      <span class="radius-val" id="radiusVal">10 miles</span>
-    </div>
-    <input type="range" min="1" max="50" value="10" id="radiusSlider"
-           oninput="document.getElementById('radiusVal').textContent=this.value+' miles'; updateSearchRadius()">
-    <div class="status-bar" id="statusBar">
-      <div class="status-dot amber" id="statusDot"></div>
-      <span id="statusText">Locating you...</span>
-    </div>
-    <div class="add-venue-cta">
-      <div class="add-venue-cta-text">Know a house show or DIY space?</div>
-      <button class="add-venue-cta-btn" onclick="openAddVenueModal()">Add a Venue →</button>
-    </div>
-    <div class="nb-header" id="nearbyBandsHeader" style="display:none" onclick="toggleNearbyBands()">
-      <div class="nb-title">
-        <div class="fn-dot" style="background:var(--teal);width:6px;height:6px;display:inline-block;margin-right:6px;flex-shrink:0"></div>
-        Nearby Bands
-        <span class="nb-count" id="nearbyBandsCount"></span>
-      </div>
-      <div class="nb-chevron" id="nearbyBandsChevron">▾</div>
-    </div>
-    <div class="nb-panel" id="nearbyBandsPanel" style="display:none">
-      <div class="nb-list" id="nearbyBandsList"></div>
-    </div>
-    <div class="filter-label" id="resultsLabel">Venues Found</div>
-    <div class="venues-list" id="venuesList">
-      <div class="no-results">
-        <div class="no-results-icon">—</div>
-        <div class="no-results-title">Loading map...</div>
-        <div class="no-results-sub">Venues will appear here once the map loads.</div>
-      </div>
-    </div>
-  </div>
-  <div style="position:relative; overflow:hidden; height:100%;">
-    <div id="map"></div>
-  </div>
-</section>
 
 <!-- COLOUR BAND -->
 <div class="colour-band"><div class="cb1"></div><div class="cb2"></div><div class="cb3"></div><div class="cb4"></div></div>
@@ -1270,6 +1325,115 @@ a.cp { display: flex; }
 <script src="js/feedback.js"></script>
 
 <script>
+// ── Globe search ─────────────────────────────────────────────────────────────
+var _gsTimer = null;
+
+function openGlobeSearch() {
+  document.getElementById('globeStage').classList.add('searching');
+  setTimeout(function() {
+    var inp = document.getElementById('globeSearchInput');
+    if (inp) inp.focus();
+  }, 220);
+  document.addEventListener('keydown', _gsEscHandler);
+}
+
+function closeGlobeSearch() {
+  document.getElementById('globeStage').classList.remove('searching');
+  document.removeEventListener('keydown', _gsEscHandler);
+  _gsClearResults();
+  var inp = document.getElementById('globeSearchInput');
+  if (inp) inp.value = '';
+}
+
+function _gsEscHandler(e) { if (e.key === 'Escape') closeGlobeSearch(); }
+
+function debounceGlobeSearch(val) {
+  clearTimeout(_gsTimer);
+  if (!val || val.length < 2) { _gsClearResults(); return; }
+  _gsTimer = setTimeout(function() { _gsRun(val); }, 240);
+}
+
+function handleGlobeKey(e) {
+  if (e.key === 'Enter') {
+    var q = e.target.value.trim();
+    if (q) window.location.href = 'map.html?city=' + encodeURIComponent(q);
+  }
+}
+
+async function _gsRun(q) {
+  var box = document.getElementById('globeSearchResults');
+  if (!box) return;
+  box.innerHTML = '<div class="gs-empty">Searching…</div>';
+  box.classList.add('open');
+
+  var [vRes, cRes] = await Promise.all([
+    sb.from('venues').select('id, name, city, state').ilike('name', '%' + q + '%').limit(5),
+    sb.from('venues').select('city, state').ilike('city', '%' + q + '%').limit(8)
+  ]);
+
+  var venues = vRes.data || [];
+  var cityMap = {};
+  (cRes.data || []).forEach(function(r) {
+    var k = (r.city || '') + '||' + (r.state || '');
+    if (!cityMap[k]) cityMap[k] = r;
+  });
+  var cities = Object.values(cityMap).slice(0, 4);
+
+  if (!venues.length && !cities.length) {
+    box.innerHTML = '<div class="gs-empty">No results — try a different venue name or city</div>';
+    return;
+  }
+
+  // Build results using DOM to avoid XSS in onclick strings
+  box.innerHTML = '';
+  box.classList.add('open');
+
+  if (cities.length) {
+    var sl = document.createElement('div'); sl.className = 'gs-section-label'; sl.textContent = 'Cities'; box.appendChild(sl);
+    cities.forEach(function(c) {
+      var label = c.city + (c.state ? ', ' + c.state : '');
+      var el = document.createElement('div'); el.className = 'gs-result';
+      el.dataset.href = 'map.html?city=' + encodeURIComponent(label);
+      el.innerHTML =
+        '<div class="gs-result-icon gs-result-icon--city"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><circle cx="6" cy="5" r="3"/><line x1="6" y1="8" x2="6" y2="11"/></svg></div>' +
+        '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub">Browse venues in this city</div></div>' +
+        '<div class="gs-result-arrow">→</div>';
+      el.querySelector('.gs-result-name').textContent = label;
+      box.appendChild(el);
+    });
+  }
+
+  if (venues.length) {
+    var sl2 = document.createElement('div'); sl2.className = 'gs-section-label'; sl2.textContent = 'Venues'; box.appendChild(sl2);
+    venues.forEach(function(v) {
+      var sub = [v.city, v.state].filter(Boolean).join(', ');
+      var el = document.createElement('div'); el.className = 'gs-result';
+      el.dataset.href = 'map.html?venue=' + v.id + '&city=' + encodeURIComponent(sub);
+      el.innerHTML =
+        '<div class="gs-result-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="2" y="2" width="8" height="8"/><line x1="5" y1="2" x2="5" y2="10" stroke-width="0.7"/></svg></div>' +
+        '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub"></div></div>' +
+        '<div class="gs-result-arrow">→</div>';
+      el.querySelector('.gs-result-name').textContent = v.name;
+      el.querySelector('.gs-result-sub').textContent  = sub;
+      box.appendChild(el);
+    });
+  }
+}
+
+function _gsClearResults() {
+  var box = document.getElementById('globeSearchResults');
+  if (box) { box.innerHTML = ''; box.classList.remove('open'); }
+}
+
+// Delegated click for result rows
+document.addEventListener('DOMContentLoaded', function() {
+  var box = document.getElementById('globeSearchResults');
+  if (box) box.addEventListener('click', function(e) {
+    var r = e.target.closest('.gs-result');
+    if (r && r.dataset.href) window.location.href = r.dataset.href;
+  });
+});
+
 // ── Nav scroll transition ─────────────────────────────────────────────────────
 (function() {
   var nav = document.getElementById('lpNav');
