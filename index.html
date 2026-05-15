@@ -534,17 +534,47 @@ a.cp { display: flex; }
 .globe-stage.searching .globe-idle {
   opacity: 0; transform: scale(0.82); pointer-events: none;
 }
-.globe-svg-wrap { transition: filter 0.22s ease; }
-.globe-svg-wrap:hover { filter: drop-shadow(0 0 14px rgba(58,122,138,0.3)); }
+.globe-svg-wrap {
+  position: relative;
+  cursor: pointer;
+  transition: filter 0.22s ease;
+}
+.globe-svg-wrap:hover { filter: drop-shadow(0 0 20px rgba(58,122,138,0.38)); }
+/* Pulse ring affordance — two staggered rings radiating from globe edge */
+.globe-svg-wrap::before,
+.globe-svg-wrap::after {
+  content: '';
+  position: absolute;
+  width: 314px; height: 314px;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  clip-path: circle(50%);
+  border: 1.5px solid rgba(58,122,138,0.5);
+  pointer-events: none;
+  animation: globePulse 2.4s ease-out infinite;
+}
+.globe-svg-wrap::after {
+  animation-delay: 1.2s;
+  border-width: 1px;
+  border-color: rgba(58,122,138,0.32);
+}
+@keyframes globePulse {
+  0%   { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(1.22); }
+}
+.globe-stage.searching .globe-svg-wrap::before,
+.globe-stage.searching .globe-svg-wrap::after { display: none; }
 .globe-prompt {
   display: flex; align-items: center; gap: 6px; cursor: pointer;
-  padding: 6px 14px; transition: opacity 0.2s ease;
+  background: rgba(242,239,230,0.92); border: 1px solid rgba(58,122,138,0.3);
+  padding: 8px 16px; transition: border-color 0.2s ease;
 }
-.globe-prompt:hover .globe-prompt-text { color: var(--paper); }
+.globe-prompt:hover { border-color: var(--teal); }
+.globe-prompt:hover .globe-prompt-text { color: var(--teal); }
 .globe-prompt-text {
   font-family: 'Space Mono', monospace; font-size: 7.5px;
   text-transform: uppercase; letter-spacing: 0.2em;
-  color: rgba(242,239,230,0.5); transition: color 0.2s ease;
+  color: var(--ink); transition: color 0.2s ease;
 }
 .globe-prompt-cursor {
   font-family: 'Space Mono', monospace; font-size: 11px;
@@ -552,23 +582,29 @@ a.cp { display: flex; }
 }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* Search overlay */
+/* Search overlay — parting bars via clip-path transition */
 .globe-search {
   position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0.88);
+  transform: translate(-50%, -50%);
   width: min(560px, 90vw);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.28s ease 0.06s, transform 0.4s cubic-bezier(0.34, 1.26, 0.64, 1) 0.02s;
+  clip-path: inset(0 50%);
+  pointer-events: none;
+  transition: clip-path 0.44s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
   z-index: 10;
+  filter: drop-shadow(0 6px 24px rgba(58,122,138,0.2));
 }
 .globe-stage.searching .globe-search {
-  opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto;
+  clip-path: inset(0 0%);
+  pointer-events: auto;
 }
 .gs-bar {
   display: flex; align-items: center;
-  background: var(--paper); border: 1.5px solid var(--ink); overflow: hidden;
+  background: rgba(242,239,230,0.9);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(58,122,138,0.6);
+  overflow: hidden;
 }
-.gs-icon { padding: 0 14px; color: var(--grey); flex-shrink: 0; }
+.gs-icon { padding: 0 14px; color: var(--teal); flex-shrink: 0; }
 .gs-input {
   flex: 1; font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 300;
   color: var(--ink); background: transparent; border: none; outline: none;
@@ -577,21 +613,23 @@ a.cp { display: flex; }
 .gs-input::placeholder { color: var(--grey); }
 .gs-close {
   width: 52px; height: 56px; border: none;
-  border-left: 1px solid rgba(15,15,12,0.1);
-  background: transparent; cursor: pointer; color: var(--grey); font-size: 14px;
+  border-left: 1px solid rgba(58,122,138,0.2);
+  background: transparent; cursor: pointer; color: var(--teal); font-size: 14px;
   flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, color 0.15s;
 }
-.gs-close:hover { background: rgba(15,15,12,0.06); color: var(--ink); }
+.gs-close:hover { background: rgba(58,122,138,0.08); color: var(--teal-dark); }
 .gs-results {
-  background: var(--paper); border: 1.5px solid var(--ink); border-top: none;
+  background: rgba(242,239,230,0.92);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(58,122,138,0.4); border-top: none;
   max-height: 300px; overflow-y: auto; display: none;
 }
 .gs-results.open { display: block; }
 .gs-section-label {
   font-family: 'Space Mono', monospace; font-size: 7px;
-  text-transform: uppercase; letter-spacing: 0.18em; color: var(--grey);
-  padding: 10px 16px 6px; border-bottom: 1px solid rgba(15,15,12,0.06);
+  text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal);
+  padding: 10px 16px 6px; border-bottom: 1px solid rgba(58,122,138,0.12);
 }
 .gs-result {
   display: flex; align-items: center; gap: 12px;
@@ -616,7 +654,7 @@ a.cp { display: flex; }
   display: block; text-align: center; margin-top: 14px;
   font-family: 'Space Mono', monospace; font-size: 7px;
   text-transform: uppercase; letter-spacing: 0.18em;
-  color: rgba(242,239,230,0.5); text-decoration: none; transition: color 0.2s ease;
+  color: rgba(242,239,230,0.68); text-decoration: none; transition: color 0.2s ease;
 }
 .gs-map-link:hover { color: var(--paper); }
 
@@ -1327,6 +1365,7 @@ a.cp { display: flex; }
 <script>
 // ── Globe search ─────────────────────────────────────────────────────────────
 var _gsTimer = null;
+var _autoSvc = null;
 
 function openGlobeSearch() {
   document.getElementById('globeStage').classList.add('searching');
@@ -1360,40 +1399,63 @@ function handleGlobeKey(e) {
   }
 }
 
+function _getAutoSvc() {
+  if (_autoSvc) return _autoSvc;
+  try {
+    if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+      _autoSvc = new google.maps.places.AutocompleteService();
+      return _autoSvc;
+    }
+  } catch(e) {}
+  return null;
+}
+
 async function _gsRun(q) {
   var box = document.getElementById('globeSearchResults');
   if (!box) return;
   box.innerHTML = '<div class="gs-empty">Searching…</div>';
   box.classList.add('open');
 
-  var [vRes, cRes] = await Promise.all([
-    sb.from('venues').select('id, name, city, state').ilike('name', '%' + q + '%').limit(5),
-    sb.from('venues').select('city, state').ilike('city', '%' + q + '%').limit(8)
-  ]);
+  // Supabase venue name search runs in parallel with city lookup
+  var venuePromise = sb.from('venues').select('id, name, city, state').ilike('name', '%' + q + '%').limit(4);
 
-  var venues = vRes.data || [];
-  var cityMap = {};
-  (cRes.data || []).forEach(function(r) {
-    var k = (r.city || '') + '||' + (r.state || '');
-    if (!cityMap[k]) cityMap[k] = r;
-  });
-  var cities = Object.values(cityMap).slice(0, 4);
+  // Google Places city autocomplete; fallback to Supabase city dedup if API not ready
+  var svc = _getAutoSvc();
+  var cityPromise = svc
+    ? new Promise(function(resolve) {
+        svc.getPlacePredictions({ input: q, types: ['(cities)'] }, function(preds, status) {
+          resolve((status === 'OK' && preds) ? preds.slice(0, 5) : []);
+        });
+      })
+    : sb.from('venues').select('city, state').ilike('city', '%' + q + '%').limit(10).then(function(r) {
+        var seen = {};
+        return (r.data || []).filter(function(row) {
+          var k = (row.city || '').toLowerCase();
+          return k && !seen[k] && (seen[k] = true);
+        }).slice(0, 4).map(function(row) {
+          return { description: row.city + (row.state ? ', ' + row.state : ''), _city: row.city };
+        });
+      });
 
-  if (!venues.length && !cities.length) {
+  var results = await Promise.all([venuePromise, cityPromise]);
+  var venues = results[0].data || [];
+  var cityPreds = results[1];
+
+  if (!venues.length && !cityPreds.length) {
     box.innerHTML = '<div class="gs-empty">No results — try a different venue name or city</div>';
     return;
   }
 
-  // Build results using DOM to avoid XSS in onclick strings
   box.innerHTML = '';
   box.classList.add('open');
 
-  if (cities.length) {
+  if (cityPreds.length) {
     var sl = document.createElement('div'); sl.className = 'gs-section-label'; sl.textContent = 'Cities'; box.appendChild(sl);
-    cities.forEach(function(c) {
-      var label = c.city + (c.state ? ', ' + c.state : '');
+    cityPreds.forEach(function(pred) {
+      var label = pred.description || pred._city || '';
+      var cityParam = pred._city || pred.description || label;
       var el = document.createElement('div'); el.className = 'gs-result';
-      el.dataset.href = 'map.html?city=' + encodeURIComponent(label);
+      el.dataset.href = 'map.html?city=' + encodeURIComponent(cityParam);
       el.innerHTML =
         '<div class="gs-result-icon gs-result-icon--city"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><circle cx="6" cy="5" r="3"/><line x1="6" y1="8" x2="6" y2="11"/></svg></div>' +
         '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub">Browse venues in this city</div></div>' +
