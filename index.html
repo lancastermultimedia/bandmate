@@ -1416,30 +1416,48 @@ async function _gsRun(q) {
   box.innerHTML = '<div class="gs-empty">Searching…</div>';
   box.classList.add('open');
 
-  // Supabase venue name search runs in parallel with city lookup
-  var venuePromise = sb.from('venues').select('id, name, city, state').ilike('name', '%' + q + '%').limit(4);
-
-  // Google Places city autocomplete; fallback to Supabase city dedup if API not ready
   var svc = _getAutoSvc();
-  var cityPromise = svc
+
+  // Three parallel requests: venues by name, venues by city, city autocomplete
+  var googleCityPromise = svc
     ? new Promise(function(resolve) {
         svc.getPlacePredictions({ input: q, types: ['(cities)'] }, function(preds, status) {
-          resolve((status === 'OK' && preds) ? preds.slice(0, 5) : []);
+          resolve((status === 'OK' && preds) ? preds.slice(0, 4) : []);
         });
       })
-    : sb.from('venues').select('city, state').ilike('city', '%' + q + '%').limit(10).then(function(r) {
-        var seen = {};
-        return (r.data || []).filter(function(row) {
-          var k = (row.city || '').toLowerCase();
-          return k && !seen[k] && (seen[k] = true);
-        }).slice(0, 4).map(function(row) {
-          return { description: row.city + (row.state ? ', ' + row.state : ''), _city: row.city };
-        });
-      });
+    : Promise.resolve(null); // null signals: derive cities from Supabase results below
 
-  var results = await Promise.all([venuePromise, cityPromise]);
-  var venues = results[0].data || [];
-  var cityPreds = results[1];
+  var results = await Promise.all([
+    sb.from('venues').select('id, name, city, state').ilike('name', '%' + q + '%').limit(5),
+    sb.from('venues').select('id, name, city, state').ilike('city', '%' + q + '%').limit(5),
+    googleCityPromise
+  ]);
+
+  // Merge venue results — name matches first, then city matches, deduplicated by id
+  var seenIds = {};
+  var venues = [];
+  (results[0].data || []).forEach(function(v) {
+    if (!seenIds[v.id]) { seenIds[v.id] = true; venues.push(v); }
+  });
+  (results[1].data || []).forEach(function(v) {
+    if (!seenIds[v.id]) { seenIds[v.id] = true; venues.push(v); }
+  });
+  venues = venues.slice(0, 7);
+
+  // City suggestions: Google Places if loaded, else derive from Supabase city results
+  var googleCities = results[2];
+  var cityPreds;
+  if (googleCities !== null) {
+    cityPreds = googleCities;
+  } else {
+    var seenCities = {};
+    cityPreds = (results[1].data || []).filter(function(row) {
+      var k = (row.city || '').toLowerCase();
+      return k && !seenCities[k] && (seenCities[k] = true);
+    }).slice(0, 3).map(function(row) {
+      return { description: row.city + (row.state ? ', ' + row.state : ''), _city: row.city };
+    });
+  }
 
   if (!venues.length && !cityPreds.length) {
     box.innerHTML = '<div class="gs-empty">No results — try a different venue name or city</div>';
