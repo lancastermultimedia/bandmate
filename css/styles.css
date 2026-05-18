@@ -8454,25 +8454,36 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
     align-items: flex-start;
   }
 
-  /* Hero map layout — panel below, map first */
+  /* Hero map — tab toggle: full-height list OR full-height map */
   .hero {
     grid-template-columns: 1fr !important;
-    grid-template-rows: 50vh auto !important;
+    grid-template-rows: 1fr !important;
+    height: calc(100vh - 57px - 44px - 60px) !important;
+    overflow: hidden;
   }
-  .hero > div:last-child { order: -1; }
-  .hero #map { height: 50vh !important; }
 
-  .hero-panel {
-    height: auto !important;
+  /* List view (default) */
+  .hero.show-list .hero-panel {
+    display: flex !important;
+    height: 100% !important;
     max-height: none !important;
-    overflow-y: visible !important;
+    overflow-y: auto !important;
+  }
+  .hero.show-list > div:last-child { display: none !important; }
+  .hero.show-list .venues-list {
+    flex: 1 !important;
+    max-height: none !important;
+    overflow-y: auto;
   }
 
-  .venues-list {
-    max-height: 60vh;
-    overflow-y: auto;
-    flex: none !important;
+  /* Map view */
+  .hero.show-map .hero-panel { display: none !important; }
+  .hero.show-map > div:last-child {
+    display: block !important;
+    order: 0 !important;
+    height: 100% !important;
   }
+  .hero.show-map #map { height: 100% !important; }
 
   .filter-chips {
     display: flex;
@@ -8497,18 +8508,29 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   }
   .add-venue-cta-btn { width: 100%; }
 
-  /* Tour layout */
+  /* Tour layout — tab toggle */
   .tour-layout {
-    grid-template-columns: 1fr !important;
-    grid-template-rows: 60vh auto !important;
+    display: block !important;
+    height: calc(100vh - 57px - 44px - 60px) !important;
+    overflow: hidden;
   }
-  .tour-map-wrap { order: -1; height: 60vh; }
-  .tour-map-wrap #tourMap { height: 100% !important; }
 
-  .tour-panel {
-    height: auto !important;
-    overflow-y: visible !important;
+  /* Tour list view (default) */
+  .tour-layout.show-list .tour-panel {
+    display: flex !important;
+    height: 100% !important;
+    overflow-y: auto !important;
   }
+  .tour-layout.show-list .tour-map-wrap { display: none !important; }
+
+  /* Tour map view */
+  .tour-layout.show-map .tour-panel { display: none !important; }
+  .tour-layout.show-map .tour-map-wrap {
+    display: block !important;
+    height: 100% !important;
+  }
+  .tour-layout.show-map #tourMap { height: 100% !important; }
+
   .tour-city-search {
     position: sticky;
     top: 0;
@@ -10429,4 +10451,103 @@ input[type="range"] { accent-color: var(--teal) !important; }
   .epk-bl { width: 100%; border-right: none; border-bottom: 1.5px solid var(--ink); }
   .epk-br { height: 70vh; }
   .epk-preview-frame-wrap { height: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE POLISH — app-feel pass
+   All rules here are mobile-only (max-width: 767px) — no desktop impact.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Map / Tour tab bar ───────────────────────────────────────────────────── */
+.map-mobile-tabs {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  .map-mobile-tabs {
+    display: flex;
+    position: sticky;
+    top: 57px;
+    z-index: 200;
+    background: var(--paper);
+    border-bottom: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .map-tab {
+    flex: 1;
+    padding: 13px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    cursor: pointer;
+    color: var(--grey);
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1.5px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .map-tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+
+  /* ── EPK builder — stacked, full-width ──────────────────────────────────── */
+  .epk-builder-page { overflow: auto; height: auto; }
+  .epk-builder-wrap { flex-direction: column !important; height: auto !important; overflow: visible !important; }
+  .epk-bl { width: 100% !important; border-right: none !important; border-bottom: 1.5px solid var(--ink) !important; max-height: none !important; overflow-y: visible !important; }
+  .epk-bl-actions { position: sticky; bottom: 60px; background: var(--paper); z-index: 50; border-top: 1.5px solid var(--ink); }
+  .epk-br { height: 60vh !important; min-height: 340px; }
+  .epk-theme-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Chat panel (profile.html) — full-screen slide ──────────────────────── */
+  .inline-chat-panel {
+    width: 100vw !important;
+    border-left: none !important;
+    border-top: 1.5px solid var(--ink);
+  }
+
+  /* ── Community — tighten feed ───────────────────────────────────────────── */
+  .comm-feed { padding: 12px !important; }
+  .comm-card { margin-bottom: 10px; }
+  .comm-hero { padding: 20px 16px 16px !important; min-height: unset !important; }
+  .comm-hero-title { font-size: clamp(1.8rem, 8vw, 3rem) !important; }
+
+  /* ── Profile page — form tightening ────────────────────────────────────── */
+  .profile-wrap { padding: 16px !important; }
+  .profile-hero { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .profile-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .profile-tabs::-webkit-scrollbar { display: none; }
+
+  /* ── EPK viewer — all themes ────────────────────────────────────────────── */
+  .epk-static-grid { grid-template-columns: 1fr !important; }
+  .epk-clean-header { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+  .epk-vibrant-header { padding: 20px 16px !important; }
+  .epk-vibrant-name { font-size: clamp(2rem, 10vw, 4rem) !important; }
+  .epk-vibrant-links { flex-wrap: wrap; gap: 8px; }
+  .epk-section { padding: 20px 16px !important; }
+
+  /* ── Bottom nav — taller tap targets ───────────────────────────────────── */
+  .bottom-nav { height: 60px; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottom-nav-item { padding: 8px 0; gap: 3px; }
+  .bottom-nav-label { font-size: 8px; }
+
+  /* ── Global nav touch improvements ─────────────────────────────────────── */
+  .nav-cta, .lp-nav-cta { min-height: 40px; padding: 0 16px; display: flex; align-items: center; }
+  .mobile-menu-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+
+  /* ── Prevent body scroll behind fixed modals ────────────────────────────── */
+  body.modal-open { overflow: hidden; position: fixed; width: 100%; }
+
+  /* ── Tour panel header — compact ────────────────────────────────────────── */
+  .tour-eyebrow { font-size: 7px !important; }
+  .tour-heading { font-size: clamp(1.6rem, 7vw, 2.5rem) !important; margin-bottom: 8px !important; }
+  .tour-sub { font-size: 12px !important; margin-bottom: 12px !important; }
+
+  /* ── Venue card in results ──────────────────────────────────────────────── */
+  .venue-result-card { padding: 12px 14px; }
+  .vrc-name { font-size: 13px; }
 }

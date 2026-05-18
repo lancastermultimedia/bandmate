@@ -134,8 +134,14 @@
   </div>
 </div>
 
+<!-- Mobile tab bar (hidden on desktop) -->
+<div class="map-mobile-tabs" id="tourMobileTabs">
+  <button class="map-tab active" data-view="list" onclick="setTourTab('list')">Planner</button>
+  <button class="map-tab" data-view="map" onclick="setTourTab('map')">Map</button>
+</div>
+
 <!-- TOUR LAYOUT -->
-<div class="tour-layout">
+<div class="tour-layout show-list">
 
   <!-- LEFT PANEL -->
   <div class="tour-panel">
@@ -337,6 +343,19 @@
     s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=initTourMap';
     document.head.appendChild(s);
   })();
+</script>
+<script>
+function setTourTab(view) {
+  var layout = document.querySelector('.tour-layout');
+  layout.classList.toggle('show-map', view === 'map');
+  layout.classList.toggle('show-list', view === 'list');
+  document.querySelectorAll('#tourMobileTabs .map-tab').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  if (view === 'map' && typeof google !== 'undefined' && google.maps && window._tourMap) {
+    setTimeout(function() { google.maps.event.trigger(window._tourMap, 'resize'); }, 50);
+  }
+}
 </script>
 <script src="js/feedback.js"></script>
 

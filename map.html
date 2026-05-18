@@ -256,8 +256,14 @@
   </div>
 </div>
 
+<!-- Mobile tab bar (hidden on desktop) -->
+<div class="map-mobile-tabs" id="mapMobileTabs">
+  <button class="map-tab active" data-view="list" onclick="setMapTab('list')">List</button>
+  <button class="map-tab" data-view="map" onclick="setMapTab('map')">Map</button>
+</div>
+
 <!-- HERO: PANEL + MAP -->
-<section class="hero" id="map-section">
+<section class="hero show-list" id="map-section">
 
   <!-- LEFT PANEL -->
   <div class="hero-panel">
@@ -522,6 +528,22 @@
     s.src = 'https://maps.googleapis.com/maps/api/js?key=' + BANDMATE_MAPS_KEY + '&libraries=places&callback=initMap';
     document.head.appendChild(s);
   })();
+</script>
+<script>
+function setMapTab(view) {
+  var hero = document.getElementById('map-section');
+  hero.classList.toggle('show-map', view === 'map');
+  hero.classList.toggle('show-list', view === 'list');
+  document.querySelectorAll('.map-tab').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  // Trigger map resize when switching to map view so tiles render correctly
+  if (view === 'map' && typeof google !== 'undefined' && google.maps) {
+    setTimeout(function() {
+      google.maps.event.trigger(window._map || document.getElementById('map'), 'resize');
+    }, 50);
+  }
+}
 </script>
 <script src="js/feedback.js"></script>
 <script>
