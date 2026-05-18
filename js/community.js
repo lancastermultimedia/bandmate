@@ -255,6 +255,7 @@ function renderCard(p) {
   const band       = p.bands || {};
   const dates      = p.posting_dates || [];
   const isOwn      = currentBandProfile && currentBandProfile.id === band.id;
+  const isAdmin    = !!(currentBandProfile?.is_admin);
   const slug       = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   const hasEpk     = !!band.epk_theme && slug;
   const slots      = p.slots_needed || 1;
@@ -398,7 +399,7 @@ function renderCard(p) {
   const actionBtn = isOwn
     ? `<button class="comm-card-btn comm-card-btn--manage" onclick="openManageModal(${p.id})">Manage Responses</button>`
     : `<button class="comm-card-btn comm-card-btn--rust" onclick="openInterestModal(${p.id})">Express Interest</button>`;
-  const ownerTools = isOwn ? `
+  const ownerTools = (isOwn || isAdmin) ? `
     <button class="comm-card-btn comm-card-btn--outline" onclick="openEditModal(${p.id})" title="Edit">Edit</button>
     <button class="comm-card-btn comm-card-btn--delete" onclick="openDeleteModal(${p.id})" title="Delete">Delete</button>` : '';
 

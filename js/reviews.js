@@ -168,7 +168,12 @@ function toggleReviewForm() {
   }
 }
 
+var currentPlaceId   = null;
+var currentVenueName = null;
+
 async function loadVenueReviews(placeId, venueName) {
+  currentPlaceId   = placeId;
+  currentVenueName = venueName;
   const { data: reviews, error } = await sb
     .from('reviews')
     .select('*, bands(band_name, genre, home_city, profile_photo_url, epk_theme)')
@@ -209,6 +214,10 @@ async function loadVenueReviews(placeId, venueName) {
     const nameEl = epkHref
       ? `<a href="${epkHref}" class="ri-band ri-band-link">${escapeHtml(band.band_name || 'Anonymous Band')}</a>`
       : `<div class="ri-band">${escapeHtml(band.band_name || 'Anonymous Band')}</div>`;
+    const isAdmin = !!(window.currentBandProfile?.is_admin);
+    const adminDelete = isAdmin
+      ? `<button onclick="deleteReview(${r.id}, '${escapeHtml(currentPlaceId || '')}', '${escapeHtml(currentVenueName || '')}')" style="margin-top:8px;font-family:'DM Sans',sans-serif;font-size:0.6rem;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:none;border:1px solid var(--red);color:var(--red);padding:3px 8px;cursor:pointer;">Delete</button>`
+      : '';
     return `<div class="review-item">
       <div class="ri-header">
         ${avatarWrapped}
@@ -226,8 +235,16 @@ async function loadVenueReviews(placeId, venueName) {
         <div class="ri-score"><div class="ri-score-dot"></div>Merch <strong>${r.merch_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Parking <strong>${r.parking_rating}/5</strong></div>
       </div>
+      ${adminDelete}
     </div>`;
   }).join('');
+}
+
+async function deleteReview(reviewId, placeId, venueName) {
+  if (!confirm('Delete this review? This cannot be undone.')) return;
+  const { error } = await sb.from('reviews').delete().eq('id', reviewId);
+  if (error) { alert('Delete failed: ' + error.message); return; }
+  await loadVenueReviews(placeId || currentPlaceId, venueName || currentVenueName);
 }
 
 function setVrfStar(val) {
