@@ -565,19 +565,19 @@ a.cp { display: flex; }
 .globe-stage.searching .globe-svg-wrap::before,
 .globe-stage.searching .globe-svg-wrap::after { display: none; }
 .globe-prompt {
-  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
   background: rgba(242,239,230,0.92); border: 1px solid rgba(58,122,138,0.3);
-  padding: 8px 16px; transition: border-color 0.2s ease;
+  padding: 11px 26px; transition: border-color 0.22s ease;
 }
 .globe-prompt:hover { border-color: var(--teal); }
 .globe-prompt:hover .globe-prompt-text { color: var(--teal); }
 .globe-prompt-text {
-  font-family: 'Space Mono', monospace; font-size: 7.5px;
-  text-transform: uppercase; letter-spacing: 0.2em;
-  color: var(--ink); transition: color 0.2s ease;
+  font-family: 'DM Sans', sans-serif; font-weight: 200;
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.46em;
+  color: var(--ink); transition: color 0.22s ease;
 }
 .globe-prompt-cursor {
-  font-family: 'Space Mono', monospace; font-size: 11px;
+  font-family: 'Space Mono', monospace; font-size: 15px;
   color: var(--teal); animation: blink 1.2s step-end infinite; line-height: 1;
 }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
@@ -586,12 +586,12 @@ a.cp { display: flex; }
 .globe-search {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: min(560px, 90vw);
+  width: min(720px, 96vw);
   clip-path: inset(0 50%);
   pointer-events: none;
   transition: clip-path 0.44s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
   z-index: 10;
-  filter: drop-shadow(0 6px 24px rgba(58,122,138,0.2));
+  filter: drop-shadow(0 8px 32px rgba(58,122,138,0.22));
 }
 .globe-stage.searching .globe-search {
   clip-path: inset(0 0%);
@@ -599,30 +599,53 @@ a.cp { display: flex; }
 }
 .gs-bar {
   display: flex; align-items: center;
-  background: rgba(242,239,230,0.9);
+  background: rgba(242,239,230,0.92);
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  border: 1.5px solid rgba(58,122,138,0.6);
-  overflow: hidden;
+  border: 1.5px solid rgba(58,122,138,0.55);
+  border-radius: 999px !important;
+  overflow: visible;
+  height: 62px;
+  padding: 0 10px 0 6px;
 }
-.gs-icon { padding: 0 14px; color: var(--teal); flex-shrink: 0; }
+.gs-icon { padding: 0 12px 0 22px; color: var(--teal); flex-shrink: 0; }
 .gs-input {
   flex: 1; font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 300;
   color: var(--ink); background: transparent; border: none; outline: none;
-  padding: 18px 0; letter-spacing: 0.01em;
+  padding: 0; height: 100%; letter-spacing: 0.01em;
 }
 .gs-input::placeholder { color: var(--grey); }
+/* Overlapping category circles */
+.gs-circles {
+  display: flex; align-items: center; flex-shrink: 0; padding: 0 10px 0 6px;
+}
+.gs-circle {
+  width: 33px; height: 33px;
+  border-radius: 50% !important;
+  border: 2.5px solid rgba(242,239,230,0.7);
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.gs-circle + .gs-circle { margin-left: -10px; }
+.gs-circle--venue { background: var(--red);  z-index: 3; }
+.gs-circle--band  { background: var(--olive); z-index: 4; }
+.gs-circle--city  { background: var(--teal); z-index: 5; }
+.gs-circle--active { z-index: 10 !important; transform: scale(1.2) translateY(-4px); }
 .gs-close {
-  width: 52px; height: 56px; border: none;
-  border-left: 1px solid rgba(58,122,138,0.2);
-  background: transparent; cursor: pointer; color: var(--teal); font-size: 14px;
+  width: 34px; height: 34px; border: 1px solid rgba(58,122,138,0.2);
+  border-radius: 50% !important;
+  background: transparent; cursor: pointer; color: var(--teal); font-size: 13px;
   flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, color 0.15s;
+  margin-left: 4px;
 }
-.gs-close:hover { background: rgba(58,122,138,0.08); color: var(--teal-dark); }
+.gs-close:hover { background: rgba(58,122,138,0.1); color: var(--teal-dark); }
 .gs-results {
-  background: rgba(242,239,230,0.92);
+  background: rgba(242,239,230,0.94);
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  border: 1.5px solid rgba(58,122,138,0.4); border-top: none;
+  border: 1.5px solid rgba(58,122,138,0.4);
+  border-radius: 20px !important;
+  margin-top: 10px;
   max-height: 300px; overflow-y: auto; display: none;
 }
 .gs-results.open { display: block; }
@@ -906,7 +929,7 @@ a.cp { display: flex; }
 
       <!-- Prompt below globe -->
       <div class="globe-prompt" onclick="openGlobeSearch()">
-        <span class="globe-prompt-text">// Click the globe to find your next stage anywhere</span>
+        <span class="globe-prompt-text">Find Your Next Stage</span>
         <span class="globe-prompt-cursor" aria-hidden="true">_</span>
       </div>
     </div>
@@ -919,10 +942,15 @@ a.cp { display: flex; }
           <circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
         </svg>
         <input class="gs-input" type="text" id="globeSearchInput"
-               placeholder="Venue name or city…"
+               placeholder="Venue, city, or band…"
                autocomplete="off"
                oninput="debounceGlobeSearch(this.value)"
                onkeydown="handleGlobeKey(event)">
+        <div class="gs-circles" aria-hidden="true">
+          <div class="gs-circle gs-circle--venue" title="Venues"></div>
+          <div class="gs-circle gs-circle--band"  title="Bands"></div>
+          <div class="gs-circle gs-circle--city"  title="Cities"></div>
+        </div>
         <button class="gs-close" onclick="closeGlobeSearch()" aria-label="Close">✕</button>
       </div>
       <div class="gs-results" id="globeSearchResults"></div>
@@ -1479,6 +1507,7 @@ async function _gsRun(q) {
       var cityParam = pred._city || pred.description || label;
       var el = document.createElement('div'); el.className = 'gs-result';
       el.dataset.href = 'map.html?city=' + encodeURIComponent(cityParam);
+      el.dataset.type = 'city';
       el.innerHTML =
         '<div class="gs-result-icon gs-result-icon--city"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><circle cx="6" cy="5" r="3"/><line x1="6" y1="8" x2="6" y2="11"/></svg></div>' +
         '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub">Browse venues in this city</div></div>' +
@@ -1493,6 +1522,7 @@ async function _gsRun(q) {
     venues.forEach(function(v) {
       var el = document.createElement('div'); el.className = 'gs-result';
       el.dataset.href = 'map.html?place=' + encodeURIComponent(v.google_place_id);
+      el.dataset.type = 'venue';
       el.innerHTML =
         '<div class="gs-result-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="2" y="2" width="8" height="8"/><line x1="5" y1="2" x2="5" y2="10" stroke-width="0.7"/></svg></div>' +
         '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub">View reviews on the map</div></div>' +
@@ -1508,6 +1538,7 @@ async function _gsRun(q) {
       var sub = [b.genre, b.home_city].filter(Boolean).join(' · ');
       var el = document.createElement('div'); el.className = 'gs-result';
       el.dataset.href = 'epk.html?band=' + encodeURIComponent(_gsBandSlug(b.band_name));
+      el.dataset.type = 'band';
       el.innerHTML =
         '<div class="gs-result-icon gs-result-icon--band"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><circle cx="6" cy="3.5" r="2"/><path d="M2 10.5c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5"/></svg></div>' +
         '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub"></div></div>' +
@@ -1519,17 +1550,46 @@ async function _gsRun(q) {
   }
 }
 
+function _gsHighlightCircle(type) {
+  document.querySelectorAll('.gs-circle').forEach(function(c) {
+    c.classList.remove('gs-circle--active');
+  });
+  if (type) {
+    var c = document.querySelector('.gs-circle--' + type);
+    if (c) c.classList.add('gs-circle--active');
+  }
+}
+
 function _gsClearResults() {
   var box = document.getElementById('globeSearchResults');
   if (box) { box.innerHTML = ''; box.classList.remove('open'); }
 }
 
-// Delegated click for result rows
+// Delegated events for result rows + circle animation
 document.addEventListener('DOMContentLoaded', function() {
   var box = document.getElementById('globeSearchResults');
-  if (box) box.addEventListener('click', function(e) {
-    var r = e.target.closest('.gs-result');
-    if (r && r.dataset.href) window.location.href = r.dataset.href;
+  if (box) {
+    box.addEventListener('click', function(e) {
+      var r = e.target.closest('.gs-result');
+      if (r && r.dataset.href) window.location.href = r.dataset.href;
+    });
+    box.addEventListener('mouseover', function(e) {
+      var r = e.target.closest('.gs-result');
+      if (r && r.dataset.type) _gsHighlightCircle(r.dataset.type);
+    });
+    box.addEventListener('mouseleave', function() { _gsHighlightCircle(null); });
+  }
+
+  // Logo click → reload when already on home page
+  document.addEventListener('click', function(e) {
+    var logo = e.target.closest('.nav-logo');
+    if (logo) {
+      var p = location.pathname;
+      if (p === '/' || p.endsWith('/index.html') || p.endsWith('/bandmate/')) {
+        e.preventDefault();
+        location.reload();
+      }
+    }
   });
 });
 
