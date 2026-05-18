@@ -1524,8 +1524,10 @@ a.cp { display: flex; }
 var _gsTimer = null;
 var _autoSvc = null;
 var _gsFilter = null;
+var _gsAutoTimer = null;
 
 function openGlobeSearch() {
+  clearTimeout(_gsAutoTimer); // cancel auto-open if user gets there first
   document.getElementById('globeStage').classList.add('searching');
   setTimeout(function() {
     var inp = document.getElementById('globeSearchInput');
@@ -1533,6 +1535,14 @@ function openGlobeSearch() {
   }, 220);
   document.addEventListener('keydown', _gsEscHandler);
 }
+
+// Auto-open after 3.5s if the user hasn't already opened it
+_gsAutoTimer = setTimeout(function() {
+  var stage = document.getElementById('globeStage');
+  if (stage && !stage.classList.contains('searching')) {
+    openGlobeSearch();
+  }
+}, 3500);
 
 function closeGlobeSearch() {
   document.getElementById('globeStage').classList.remove('searching');
