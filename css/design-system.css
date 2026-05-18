@@ -30,13 +30,14 @@ body {
   font-weight: 300;
   background: var(--paper);
   color: var(--ink);
+  position: relative;
 }
 
 /* Real paper texture — scanned grain + wrinkles, fixed overlay */
 body::before {
   display: block !important;
   content: '';
-  position: fixed;
+  position: absolute;
   top: -4%;
   left: -4%;
   width: 108%;
