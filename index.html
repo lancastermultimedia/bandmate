@@ -6,7 +6,7 @@
 <title>Bandmate — Play Further. Play Smarter.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/design-system.css?v=3">
+<link rel="stylesheet" href="css/design-system.css?v=4">
 <link rel="stylesheet" href="css/styles.css?v=5">
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));</script>
 <script src="config.js"></script>
@@ -197,7 +197,7 @@ body.lp-body { background: var(--paper); }
   color: var(--ink);
   line-height: 1;
 }
-/* Globe stage — stripes as CSS background, globe punches through */
+/* Globe stage — fine grid background, globe punches through */
 .globe-stage {
   position: relative;
   display: flex;
@@ -205,26 +205,19 @@ body.lp-body { background: var(--paper); }
   align-items: center;
   overflow: hidden;
   padding: 52px 0 44px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(15,15,12,0.82) 0px,
-    rgba(15,15,12,0.82) 6px,
-    var(--paper) 6px,
-    var(--paper) 14px
-  );
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg,   rgba(15,15,12,0.14) 0px, rgba(15,15,12,0.14) 1px, transparent 1px, transparent 20px),
+    repeating-linear-gradient(90deg,  rgba(15,15,12,0.14) 0px, rgba(15,15,12,0.14) 1px, transparent 1px, transparent 20px);
 }
-/* Fade stripes at left and right edges */
+/* Fade grid at all four edges */
 .globe-stage::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    var(--paper) 0%,
-    transparent 14%,
-    transparent 86%,
-    var(--paper) 100%
-  );
+  background:
+    linear-gradient(90deg,  var(--paper) 0%, transparent 18%, transparent 82%, var(--paper) 100%),
+    linear-gradient(180deg, var(--paper) 0%, transparent 16%, transparent 84%, var(--paper) 100%);
   pointer-events: none;
   z-index: 1;
 }
