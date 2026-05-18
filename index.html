@@ -305,6 +305,103 @@ body.lp-body { background: var(--paper); }
   letter-spacing: 0.16em; color: var(--grey);
 }
 
+/* ── Feature cards ── */
+.fc-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+}
+.fc-card {
+  cursor: pointer;
+  border-right: 1px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  transition: filter 0.22s ease;
+  text-decoration: none;
+}
+.fc-card:last-child { border-right: none; }
+.fc-card:hover { filter: brightness(1.06); }
+.fc-head {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(15,15,12,0.18);
+  background: var(--paper);
+}
+.fc-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.fc-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 36px 24px 32px;
+  min-height: 300px;
+}
+.fc-card--venue .fc-body { background: var(--red); }
+.fc-card--tour  .fc-body { background: var(--olive); }
+.fc-card--epk   .fc-body { background: var(--teal); }
+.fc-card--comm  .fc-body { background: #c8a53a; }
+.fc-anim { display: flex; align-items: center; justify-content: center; }
+.fc-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(248,245,238,0.88);
+  text-align: center;
+  max-width: 190px;
+}
+.fc-card--comm .fc-desc { color: rgba(15,15,12,0.72); }
+
+/* Card animations */
+@keyframes fcPinBounce {
+  0%, 55%, 100% { transform: translateY(0); }
+  30%  { transform: translateY(-16px); }
+  42%  { transform: translateY(-10px); }
+}
+@keyframes fcDraw1 {
+  0%, 8%    { stroke-dashoffset: 65; }
+  45%, 100% { stroke-dashoffset: 0; }
+}
+@keyframes fcDraw2 {
+  0%, 48%   { stroke-dashoffset: 65; }
+  85%, 100% { stroke-dashoffset: 0; }
+}
+@keyframes fcLineIn {
+  0%, 12%   { opacity: 0; transform: translateX(-5px); }
+  40%, 72%  { opacity: 1; transform: translateX(0); }
+  90%, 100% { opacity: 0; }
+}
+@keyframes fcConnectL {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(11px); }
+}
+@keyframes fcConnectR {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-11px); }
+}
+
+@media (max-width: 720px) {
+  .fc-row { grid-template-columns: 1fr 1fr; }
+  .fc-card:nth-child(2) { border-right: none; }
+  .fc-card:nth-child(3) { border-top: 1px solid var(--ink); }
+  .fc-card:nth-child(4) { border-top: 1px solid var(--ink); border-right: none; }
+  .fc-body { min-height: 220px; padding: 28px 16px 24px; }
+}
+@media (max-width: 440px) {
+  .fc-row { grid-template-columns: 1fr; }
+  .fc-card { border-right: none; border-top: 1px solid var(--ink); }
+  .fc-body { min-height: 180px; }
+}
+
 /* ── Ticker ── */
 .ticker {
   background: var(--teal-pale);
@@ -974,92 +1071,93 @@ a.cp { display: flex; }
     </div>
   </div>
 
-  <!-- Info strip -->
-  <div class="poster-info">
-    <div class="pi-block">
-      <div class="pi-label">What it is</div>
-      <div class="pi-value">Venue reviews, tour planning, and EPK tools for independent bands</div>
-    </div>
-    <div class="pi-block">
-      <div class="pi-label">How it works</div>
-      <div class="pi-value">Review 3 venues to unlock the Tour Planner and EPK Builder free</div>
-    </div>
-    <div class="pi-block">
-      <div class="pi-label">Who it's for</div>
-      <div class="pi-value">Independent bands ready to play beyond their hometown</div>
-    </div>
-    <div class="pi-block">
-      <div class="pi-label">Where to start</div>
-      <div class="pi-value">Search any city. Find venues. Read real band reviews.</div>
-    </div>
-  </div>
-
-  <!-- Flow strip -->
-  <div class="poster-dates">
-    <div class="pd-left">
-      <span>Find Venues</span>
-      <svg width="32" height="10" viewBox="0 0 32 10">
-        <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" stroke-width="1"/>
-        <polygon points="24,1 32,5 24,9" fill="currentColor"/>
-      </svg>
-      <span>Plan Your Tour</span>
-      <svg width="32" height="10" viewBox="0 0 32 10">
-        <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" stroke-width="1"/>
-        <polygon points="24,1 32,5 24,9" fill="currentColor"/>
-      </svg>
-      <span>Share Your EPK</span>
-    </div>
-    <div class="pd-right">@bandmateapp</div>
-  </div>
 
 </section>
 
 
-<!-- COLOUR BAND -->
-<div class="colour-band"><div class="cb1"></div><div class="cb2"></div><div class="cb3"></div><div class="cb4"></div></div>
+<!-- FEATURE CARDS -->
+<div class="fc-row" id="find-venues">
 
-<!-- STATS -->
-<div class="stats" id="find-venues">
-  <div class="stat">
-    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="8" stroke="#0f0f0c" stroke-width="1"/>
-      <circle cx="10" cy="10" r="3" stroke="#0f0f0c" stroke-width="1"/>
-      <line x1="10" y1="0" x2="10" y2="5" stroke="#0f0f0c" stroke-width="1"/>
-      <line x1="10" y1="15" x2="10" y2="20" stroke="#0f0f0c" stroke-width="1"/>
-      <line x1="0" y1="10" x2="5" y2="10" stroke="#0f0f0c" stroke-width="1"/>
-      <line x1="15" y1="10" x2="20" y2="10" stroke="#0f0f0c" stroke-width="1"/>
-    </svg>
-    <div class="stat-num">2,400+</div>
-    <div class="stat-label">Venues Indexed</div>
-  </div>
-  <div class="stat">
-    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="7" cy="6" r="3" stroke="#0f0f0c" stroke-width="1"/>
-      <circle cx="14" cy="6" r="3" stroke="#0f0f0c" stroke-width="1"/>
-      <path d="M2 18v-1a5 5 0 0 1 10 0v1" stroke="#0f0f0c" stroke-width="1"/>
-      <path d="M12 17v-0.5a5 5 0 0 1 6 0V17" stroke="#0f0f0c" stroke-width="1"/>
-    </svg>
-    <div class="stat-num">47</div>
-    <div class="stat-label">States Covered</div>
-  </div>
-  <div class="stat">
-    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="2" y="2" width="16" height="16" stroke="#0f0f0c" stroke-width="1"/>
-      <line x1="2" y1="8" x2="18" y2="8" stroke="#0f0f0c" stroke-width="0.7"/>
-      <line x1="2" y1="14" x2="18" y2="14" stroke="#0f0f0c" stroke-width="0.7"/>
-      <line x1="8" y1="2" x2="8" y2="18" stroke="#0f0f0c" stroke-width="0.7"/>
-      <line x1="14" y1="2" x2="14" y2="18" stroke="#0f0f0c" stroke-width="0.7"/>
-    </svg>
-    <div class="stat-num">Free</div>
-    <div class="stat-label">To Start</div>
-  </div>
-  <div class="stat">
-    <svg class="stat-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <polygon points="10,2 12.5,7.5 18.5,7.5 13.8,11.2 15.6,17.2 10,13.8 4.4,17.2 6.2,11.2 1.5,7.5 7.5,7.5" stroke="#0f0f0c" stroke-width="1" fill="none"/>
-    </svg>
-    <div class="stat-num">Real</div>
-    <div class="stat-label">Band Reviews</div>
-  </div>
+  <!-- Find & Review -->
+  <a href="map.html" class="fc-card fc-card--venue">
+    <div class="fc-head"><div class="fc-title">Find &amp; Review</div></div>
+    <div class="fc-body">
+      <div class="fc-anim">
+        <svg viewBox="0 0 50 72" width="50" height="72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g style="animation: fcPinBounce 2.6s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 25px 68px;">
+            <circle cx="25" cy="22" r="14" stroke="rgba(248,245,238,0.75)" stroke-width="1.5"/>
+            <circle cx="25" cy="22" r="5" fill="rgba(248,245,238,0.75)"/>
+            <line x1="25" y1="36" x2="25" y2="60" stroke="rgba(248,245,238,0.75)" stroke-width="1.5"/>
+          </g>
+          <ellipse cx="25" cy="63" rx="7" ry="2" fill="rgba(248,245,238,0.2)"/>
+        </svg>
+      </div>
+      <div class="fc-desc">Search any city. Find venues with real reviews from bands who've played there.</div>
+    </div>
+  </a>
+
+  <!-- Plan Tour -->
+  <a href="tour.html" class="fc-card fc-card--tour">
+    <div class="fc-head"><div class="fc-title">Plan Tour</div></div>
+    <div class="fc-body">
+      <div class="fc-anim">
+        <svg viewBox="0 0 110 70" width="110" height="70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="15" cy="52" r="6" stroke="rgba(248,245,238,0.7)" stroke-width="1.4"/>
+          <circle cx="55" cy="18" r="6" stroke="rgba(248,245,238,0.7)" stroke-width="1.4"/>
+          <circle cx="95" cy="52" r="6" stroke="rgba(248,245,238,0.7)" stroke-width="1.4"/>
+          <path d="M21 50 C33 32 44 22 49 20" stroke="rgba(248,245,238,0.65)" stroke-width="1.3"
+                stroke-dasharray="65" stroke-dashoffset="65"
+                style="animation: fcDraw1 2.8s linear infinite;"/>
+          <path d="M61 20 C66 20 82 34 89 50" stroke="rgba(248,245,238,0.65)" stroke-width="1.3"
+                stroke-dasharray="65" stroke-dashoffset="65"
+                style="animation: fcDraw2 2.8s linear infinite;"/>
+        </svg>
+      </div>
+      <div class="fc-desc">Build a multi-city route, add tour stops, and plan your next run city by city.</div>
+    </div>
+  </a>
+
+  <!-- Build EPK -->
+  <a href="profile.html" class="fc-card fc-card--epk">
+    <div class="fc-head"><div class="fc-title">Build EPK</div></div>
+    <div class="fc-body">
+      <div class="fc-anim">
+        <svg viewBox="0 0 60 78" width="60" height="78" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="48" height="66" stroke="rgba(248,245,238,0.6)" stroke-width="1.3"/>
+          <line x1="14" y1="24" x2="46" y2="24" stroke="rgba(248,245,238,0.85)" stroke-width="1.6"
+                style="animation: fcLineIn 3.6s ease infinite 0s;"/>
+          <line x1="14" y1="36" x2="40" y2="36" stroke="rgba(248,245,238,0.65)" stroke-width="1"
+                style="animation: fcLineIn 3.6s ease infinite 0.5s;"/>
+          <line x1="14" y1="46" x2="44" y2="46" stroke="rgba(248,245,238,0.65)" stroke-width="1"
+                style="animation: fcLineIn 3.6s ease infinite 1s;"/>
+          <line x1="14" y1="56" x2="34" y2="56" stroke="rgba(248,245,238,0.65)" stroke-width="1"
+                style="animation: fcLineIn 3.6s ease infinite 1.5s;"/>
+        </svg>
+      </div>
+      <div class="fc-desc">Create a shareable press kit with your bio, photos, and links. Unlock free after 3 reviews.</div>
+    </div>
+  </a>
+
+  <!-- Connect -->
+  <a href="community.html" class="fc-card fc-card--comm">
+    <div class="fc-head"><div class="fc-title">Connect</div></div>
+    <div class="fc-body">
+      <div class="fc-anim">
+        <svg viewBox="0 0 90 62" width="90" height="62" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g style="animation: fcConnectL 2.5s ease-in-out infinite;">
+            <circle cx="26" cy="19" r="10" stroke="rgba(15,15,12,0.55)" stroke-width="1.4"/>
+            <path d="M8 55c0-10 8-15 18-15" stroke="rgba(15,15,12,0.55)" stroke-width="1.4"/>
+          </g>
+          <g style="animation: fcConnectR 2.5s ease-in-out infinite;">
+            <circle cx="64" cy="19" r="10" stroke="rgba(15,15,12,0.55)" stroke-width="1.4"/>
+            <path d="M82 55c0-10-8-15-18-15" stroke="rgba(15,15,12,0.55)" stroke-width="1.4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="fc-desc">Find openers, co-headliners, and tour partners. Post what you need and connect with bands.</div>
+    </div>
+  </a>
+
 </div>
 
 <!-- COMMUNITY SECTION -->
