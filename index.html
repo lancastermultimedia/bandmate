@@ -184,11 +184,10 @@ body.lp-body { background: var(--paper); }
   overflow: hidden;
 }
 .poster-top {
-  padding: 24px 40px 14px;
+  padding: 24px 40px 0;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  border-bottom: 1px solid rgba(15,15,12,0.08);
 }
 .poster-wordmark {
   font-family: 'Bebas Neue', sans-serif;
@@ -200,15 +199,14 @@ body.lp-body { background: var(--paper); }
 /* Rotating tagline under wordmark */
 .poster-tagline {
   display: grid;
-  padding: 7px 40px 9px;
-  border-bottom: 1px solid rgba(15,15,12,0.06);
+  padding: 0 40px 20px;
 }
 .pt-phrase {
   grid-area: 1 / 1; /* stack all three in same cell */
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 200;
-  font-size: 13px;
-  letter-spacing: 0.1em;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+  letter-spacing: 0.06em;
+  line-height: 1;
   opacity: 0;
   animation: ptFade 24s ease-in-out infinite;
 }
@@ -231,6 +229,7 @@ body.lp-body { background: var(--paper); }
   align-items: center;
   overflow: hidden;
   padding: 52px 0 44px;
+  border-top: 1px solid rgba(15,15,12,0.08);
   background-color: var(--paper);
   background-image:
     repeating-linear-gradient(0deg,   rgba(15,15,12,0.14) 0px, rgba(15,15,12,0.14) 1px, transparent 1px, transparent 20px),
