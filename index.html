@@ -197,6 +197,32 @@ body.lp-body { background: var(--paper); }
   color: var(--ink);
   line-height: 1;
 }
+/* Rotating tagline under wordmark */
+.poster-tagline {
+  display: grid;
+  padding: 7px 40px 9px;
+  border-bottom: 1px solid rgba(15,15,12,0.06);
+}
+.pt-phrase {
+  grid-area: 1 / 1; /* stack all three in same cell */
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  animation: ptFade 24s ease-in-out infinite;
+}
+.pt-phrase:nth-child(1) { color: var(--teal);  animation-delay: 0s; }
+.pt-phrase:nth-child(2) { color: var(--olive);  animation-delay: 8s; }
+.pt-phrase:nth-child(3) { color: var(--red);    animation-delay: 16s; }
+@keyframes ptFade {
+  0%   { opacity: 0; }
+  6%   { opacity: 1; }
+  27%  { opacity: 1; }
+  33%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
 /* Globe stage — fine grid background, globe punches through */
 .globe-stage {
   position: relative;
@@ -940,7 +966,14 @@ a.cp { display: flex; }
     <div class="poster-wordmark">Bandmate</div>
   </div>
 
-  <!-- Globe stage (stripes via CSS background, globe punches through) -->
+  <!-- Rotating tagline -->
+  <div class="poster-tagline">
+    <span class="pt-phrase">Bands helping bands</span>
+    <span class="pt-phrase">Artists helping artists</span>
+    <span class="pt-phrase">Musicians helping musicians</span>
+  </div>
+
+  <!-- Globe stage (grid background, globe punches through) -->
   <div class="globe-stage" id="globeStage">
 
     <!-- Idle state: spinning globe + prompt -->
