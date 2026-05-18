@@ -599,47 +599,52 @@ a.cp { display: flex; }
 }
 .gs-bar {
   display: flex; align-items: center;
-  background: rgba(242,239,230,0.92);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  border: 1.5px solid rgba(58,122,138,0.55);
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(15,15,12,0.1);
   border-radius: 999px !important;
   overflow: visible;
-  height: 62px;
-  padding: 0 10px 0 6px;
+  height: 64px;
+  padding: 0 5px 0 6px;
+  position: relative;
 }
-.gs-icon { padding: 0 12px 0 22px; color: var(--teal); flex-shrink: 0; }
+.gs-icon { padding: 0 12px 0 22px; color: var(--grey); flex-shrink: 0; }
 .gs-input {
   flex: 1; font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 300;
   color: var(--ink); background: transparent; border: none; outline: none;
   padding: 0; height: 100%; letter-spacing: 0.01em;
 }
 .gs-input::placeholder { color: var(--grey); }
-/* Overlapping category circles */
-.gs-circles {
-  display: flex; align-items: center; flex-shrink: 0; padding: 0 10px 0 6px;
-}
+/* Overlapping filter circles — 54px in 64px bar, nearly flush with edges */
+.gs-circles { display: flex; align-items: center; flex-shrink: 0; padding: 0 5px; }
 .gs-circle {
-  width: 33px; height: 33px;
+  width: 54px; height: 54px;
   border-radius: 50% !important;
-  border: 2.5px solid rgba(242,239,230,0.7);
-  position: relative;
-  flex-shrink: 0;
-  transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 3px solid rgba(255,255,255,0.9);
+  position: relative; flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
 }
-.gs-circle + .gs-circle { margin-left: -10px; }
-.gs-circle--venue { background: var(--red);  z-index: 3; }
-.gs-circle--band  { background: var(--olive); z-index: 4; }
-.gs-circle--city  { background: var(--teal); z-index: 5; }
-.gs-circle--active { z-index: 10 !important; transform: scale(1.2) translateY(-4px); }
+.gs-circle + .gs-circle { margin-left: -18px; }
+.gs-circle--venue { background: var(--red);   z-index: 3; }
+.gs-circle--band  { background: var(--olive);  z-index: 4; }
+.gs-circle--city  { background: var(--teal);   z-index: 5; }
+.gs-circle:hover:not(.gs-circle--active) { transform: scale(1.08) translateY(-3px); z-index: 8 !important; }
+.gs-circle--active { z-index: 10 !important; transform: scale(1.18) translateY(-5px); }
+.gs-circles.has-filter .gs-circle:not(.gs-circle--active) { opacity: 0.3; transform: none !important; }
+/* Close button sits outside the pill */
 .gs-close {
-  width: 34px; height: 34px; border: 1px solid rgba(58,122,138,0.2);
+  position: absolute; right: -44px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px;
   border-radius: 50% !important;
-  background: transparent; cursor: pointer; color: var(--teal); font-size: 13px;
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: rgba(242,239,230,0.88);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  cursor: pointer; color: var(--ink); font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, color 0.15s;
-  margin-left: 4px;
 }
-.gs-close:hover { background: rgba(58,122,138,0.1); color: var(--teal-dark); }
+.gs-close:hover { background: var(--ink); color: var(--paper); }
 .gs-results {
   background: rgba(242,239,230,0.94);
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
@@ -946,10 +951,10 @@ a.cp { display: flex; }
                autocomplete="off"
                oninput="debounceGlobeSearch(this.value)"
                onkeydown="handleGlobeKey(event)">
-        <div class="gs-circles" aria-hidden="true">
-          <div class="gs-circle gs-circle--venue" title="Venues"></div>
-          <div class="gs-circle gs-circle--band"  title="Bands"></div>
-          <div class="gs-circle gs-circle--city"  title="Cities"></div>
+        <div class="gs-circles" id="gsCircles">
+          <div class="gs-circle gs-circle--venue" title="Venues" onclick="_gsSetFilter('venue')"></div>
+          <div class="gs-circle gs-circle--band"  title="Bands"  onclick="_gsSetFilter('band')"></div>
+          <div class="gs-circle gs-circle--city"  title="Cities" onclick="_gsSetFilter('city')"></div>
         </div>
         <button class="gs-close" onclick="closeGlobeSearch()" aria-label="Close">✕</button>
       </div>
@@ -1395,6 +1400,7 @@ a.cp { display: flex; }
 // ── Globe search ─────────────────────────────────────────────────────────────
 var _gsTimer = null;
 var _autoSvc = null;
+var _gsFilter = null;
 
 function openGlobeSearch() {
   document.getElementById('globeStage').classList.add('searching');
@@ -1410,7 +1416,31 @@ function closeGlobeSearch() {
   document.removeEventListener('keydown', _gsEscHandler);
   _gsClearResults();
   var inp = document.getElementById('globeSearchInput');
-  if (inp) inp.value = '';
+  if (inp) { inp.value = ''; inp.placeholder = 'Venue, city, or band…'; }
+  _gsFilter = null;
+  var circlesEl = document.getElementById('gsCircles');
+  if (circlesEl) {
+    circlesEl.classList.remove('has-filter');
+    circlesEl.querySelectorAll('.gs-circle').forEach(function(c) { c.classList.remove('gs-circle--active'); });
+  }
+}
+
+function _gsSetFilter(type) {
+  _gsFilter = (_gsFilter === type) ? null : type;
+  var circlesEl = document.getElementById('gsCircles');
+  document.querySelectorAll('.gs-circle').forEach(function(c) { c.classList.remove('gs-circle--active'); });
+  if (_gsFilter) {
+    var c = document.querySelector('.gs-circle--' + _gsFilter);
+    if (c) c.classList.add('gs-circle--active');
+    if (circlesEl) circlesEl.classList.add('has-filter');
+  } else {
+    if (circlesEl) circlesEl.classList.remove('has-filter');
+  }
+  var placeholders = { venue: 'Search venues…', band: 'Search bands…', city: 'Search cities…' };
+  var inp = document.getElementById('globeSearchInput');
+  if (inp) inp.placeholder = _gsFilter ? placeholders[_gsFilter] : 'Venue, city, or band…';
+  if (inp && inp.value.length >= 2) _gsRun(inp.value);
+  else _gsClearResults();
 }
 
 function _gsEscHandler(e) { if (e.key === 'Escape') closeGlobeSearch(); }
@@ -1449,8 +1479,12 @@ async function _gsRun(q) {
   box.innerHTML = '<div class="gs-empty">Searching…</div>';
   box.classList.add('open');
 
+  var wantVenue = !_gsFilter || _gsFilter === 'venue';
+  var wantBand  = !_gsFilter || _gsFilter === 'band';
+  var wantCity  = !_gsFilter || _gsFilter === 'city';
+
   var svc = _getAutoSvc();
-  var googleCityPromise = svc
+  var googleCityPromise = (wantCity && svc)
     ? new Promise(function(resolve) {
         svc.getPlacePredictions({ input: q, types: ['(cities)'] }, function(preds, status) {
           resolve((status === 'OK' && preds) ? preds.slice(0, 3) : []);
@@ -1460,8 +1494,8 @@ async function _gsRun(q) {
 
   // Query reviews by venue_name (covers every reviewed venue), bands by name, cities in parallel
   var results = await Promise.all([
-    sb.from('reviews').select('venue_name, google_place_id').ilike('venue_name', '%' + q + '%').limit(12),
-    sb.from('bands').select('id, band_name, genre, home_city').ilike('band_name', '%' + q + '%').limit(4),
+    wantVenue ? sb.from('reviews').select('venue_name, google_place_id').ilike('venue_name', '%' + q + '%').limit(12) : Promise.resolve({ data: [] }),
+    wantBand  ? sb.from('bands').select('id, band_name, genre, home_city').ilike('band_name', '%' + q + '%').limit(4) : Promise.resolve({ data: [] }),
     googleCityPromise
   ]);
 
@@ -1551,6 +1585,7 @@ async function _gsRun(q) {
 }
 
 function _gsHighlightCircle(type) {
+  if (_gsFilter) return; // filter pinned — don't override on hover
   document.querySelectorAll('.gs-circle').forEach(function(c) {
     c.classList.remove('gs-circle--active');
   });
@@ -1577,7 +1612,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var r = e.target.closest('.gs-result');
       if (r && r.dataset.type) _gsHighlightCircle(r.dataset.type);
     });
-    box.addEventListener('mouseleave', function() { _gsHighlightCircle(null); });
+    box.addEventListener('mouseleave', function() { if (!_gsFilter) _gsHighlightCircle(null); });
   }
 
   // Logo click → reload when already on home page
