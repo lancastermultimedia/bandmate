@@ -313,10 +313,14 @@
       const btn = document.getElementById('crSubmitBtn');
 
       try {
-        // If auth hasn't settled yet, wait up to 3s for the profile to load
+        // Auth globals may not be settled yet — get the session directly
+        if (!currentUser) {
+          const { data: { session } } = await sb.auth.getSession();
+          if (session?.user) {
+            currentUser = session.user;
+          }
+        }
         if (currentUser && !currentBandProfile) {
-          btn.disabled = true;
-          btn.textContent = 'Loading…';
           await loadBandProfile();
         }
 
