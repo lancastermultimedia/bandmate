@@ -310,66 +310,86 @@
 
     async function submitRoute() {
       clearError();
-      if (!currentUser || !currentBandProfile) { openAuth('login'); return; }
-
-      const title       = document.getElementById('crTitle').value.trim();
-      const tagline     = document.getElementById('crTagline').value.trim();
-      const description = document.getElementById('crDescription').value.trim();
-      const days        = document.getElementById('crDays').value.trim();
-      const miles       = document.getElementById('crMiles').value.trim();
-      const bullets     = getBullets();
-
-      const selectedGenres = getSelectedGenres('crGenreChips');
-
-      if (!title)                       { showError('Please add a route title.'); return; }
-      if (!description)                 { showError('Please write an "About this route" description.'); return; }
-      if (selectedGenres.length === 0)  { showError('Please select at least one genre.'); return; }
-      if (bullets.length === 0)         { showError('Please add at least one "What to Expect" tip.'); return; }
-
       const btn = document.getElementById('crSubmitBtn');
-      btn.disabled = true;
-      btn.textContent = 'Submitting…';
 
-      let headerPhotoUrl = null;
-      if (_photoFile) {
-        const ext  = (_photoFile.name.split('.').pop() || 'jpg').toLowerCase();
-        const path = `${currentBandProfile.id}/${Date.now()}.${ext}`;
-        const { error: upErr } = await sb.storage.from('route-headers').upload(path, _photoFile, { upsert: true });
-        if (upErr) {
-          showError('Photo upload failed: ' + upErr.message + ' — submitting without photo.');
-        } else {
-          const { data: urlData } = sb.storage.from('route-headers').getPublicUrl(path);
-          headerPhotoUrl = urlData?.publicUrl || null;
+      try {
+        // If auth hasn't settled yet, wait up to 3s for the profile to load
+        if (currentUser && !currentBandProfile) {
+          btn.disabled = true;
+          btn.textContent = 'Loading…';
+          await loadBandProfile();
         }
-      }
 
-      const { error } = await sb.from('curated_routes').insert({
-        band_id:          currentBandProfile.id,
-        saved_tour_id:    _tourData?.tourId || null,
-        title,
-        tagline,
-        description,
-        genres:           selectedGenres,
-        what_to_expect:   bullets,
-        cities:           _tourData?.cities || [],
-        estimated_days:   days,
-        total_miles:      miles,
-        accent_color:     _selectedColor,
-        header_photo_url: headerPhotoUrl,
-        is_published:     false,
-      });
+        if (!currentUser || !currentBandProfile) {
+          showError('You must be logged in to submit a route. Please sign in via your Profile page.');
+          btn.disabled = false;
+          btn.textContent = 'Submit for Review →';
+          return;
+        }
 
-      if (error) {
-        showError('Submission failed: ' + error.message);
+        const title          = document.getElementById('crTitle').value.trim();
+        const tagline        = document.getElementById('crTagline').value.trim();
+        const description    = document.getElementById('crDescription').value.trim();
+        const days           = document.getElementById('crDays').value.trim();
+        const miles          = document.getElementById('crMiles').value.trim();
+        const bullets        = getBullets();
+        const selectedGenres = getSelectedGenres('crGenreChips');
+
+        if (!title)                      { showError('Please add a route title.'); return; }
+        if (!description)                { showError('Please write an "About this route" description.'); return; }
+        if (selectedGenres.length === 0) { showError('Please select at least one genre.'); return; }
+        if (bullets.length === 0)        { showError('Please add at least one "What to Expect" tip.'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Submitting…';
+
+        let headerPhotoUrl = null;
+        if (_photoFile) {
+          const ext  = (_photoFile.name.split('.').pop() || 'jpg').toLowerCase();
+          const path = `${currentBandProfile.id}/${Date.now()}.${ext}`;
+          const { error: upErr } = await sb.storage.from('route-headers').upload(path, _photoFile, { upsert: true });
+          if (upErr) {
+            showError('Photo upload failed: ' + upErr.message + ' — submitting without photo.');
+          } else {
+            const { data: urlData } = sb.storage.from('route-headers').getPublicUrl(path);
+            headerPhotoUrl = urlData?.publicUrl || null;
+          }
+        }
+
+        const { error } = await sb.from('curated_routes').insert({
+          band_id:          currentBandProfile.id,
+          saved_tour_id:    _tourData?.tourId || null,
+          title,
+          tagline,
+          description,
+          genres:           selectedGenres,
+          what_to_expect:   bullets,
+          cities:           _tourData?.cities || [],
+          estimated_days:   days,
+          total_miles:      miles,
+          accent_color:     _selectedColor,
+          header_photo_url: headerPhotoUrl,
+          is_published:     false,
+        });
+
+        if (error) {
+          showError('Submission failed: ' + error.message);
+          btn.disabled = false;
+          btn.textContent = 'Submit for Review →';
+          return;
+        }
+
+        localStorage.removeItem('bandmate_create_route');
+        document.getElementById('crForm').style.display = 'none';
+        document.getElementById('crSuccess').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('[submitRoute]', err);
+        showError('Something went wrong: ' + (err.message || err));
         btn.disabled = false;
         btn.textContent = 'Submit for Review →';
-        return;
       }
-
-      localStorage.removeItem('bandmate_create_route');
-      document.getElementById('crForm').style.display = 'none';
-      document.getElementById('crSuccess').style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
 </body>
