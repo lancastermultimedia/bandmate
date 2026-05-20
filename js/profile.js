@@ -1528,7 +1528,10 @@ function renderTourCard(tour) {
         <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="#f2efe6" stroke-width="0.5" opacity="0.3" transform="rotate(-60 13 13)"/>
       </svg>
       <span class="tour-booked-text">Tour Fully Booked!</span>
-      <button class="tour-download-btn" onclick="downloadTourItinerary('${tour.id}')">↓ Download Itinerary</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="tour-download-btn" onclick="downloadTourItinerary('${tour.id}')">↓ Download Itinerary</button>
+        <button class="tour-download-btn tour-download-btn--route" onclick="startCreateRoute('${tour.id}')">+ Create Curated Route</button>
+      </div>
     </div>` : '';
 
   return `<div class="tour-card${fullyBooked ? ' tour-card--booked' : ''}" id="tour-card-${tour.id}">
@@ -1775,6 +1778,23 @@ async function saveStopNotes(stopId, tourId) {
       return { ...t, tour_stops: (t.tour_stops || []).map(s => String(s.id) === String(stopId) ? { ...s, notes: val } : s) };
     });
   }
+}
+
+function startCreateRoute(tourId) {
+  const tour = _tours.find(t => String(t.id) === String(tourId));
+  if (!tour) return;
+  const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
+  const cities = stops
+    .map(s => [s.city, s.state].filter(Boolean).join(', '))
+    .filter(Boolean);
+  try {
+    localStorage.setItem('bandmate_create_route', JSON.stringify({
+      tourId:   tour.id,
+      tourName: tour.name,
+      cities,
+    }));
+  } catch {}
+  window.location.href = 'create-route.html';
 }
 
 function downloadTourItinerary(tourId) {

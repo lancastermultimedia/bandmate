@@ -1161,12 +1161,75 @@ const CURATED_TOURS = [
 
 // ── Open / close curated tours list modal ────────────────────────────────────
 
-function openCuratedToursModal() {
+const COLOR_GRADIENTS = {
+  '#3a7a8a': 'linear-gradient(135deg, #3a7a8a 0%, #1e4a55 50%, #0f2d36 100%)',
+  '#7a8a3a': 'linear-gradient(135deg, #7a8a3a 0%, #4a5520 50%, #2a3010 100%)',
+  '#d94535': 'linear-gradient(135deg, #d94535 0%, #a8321f 50%, #6e1f10 100%)',
+  '#c8a53a': 'linear-gradient(135deg, #c8a53a 0%, #8a6e1f 50%, #5a450a 100%)',
+};
+
+let _communityRoutes = [];
+let _pendingRoutes   = [];
+
+function _dbRouteToDisplay(r) {
+  const color = r.accent_color || '#3a7a8a';
+  const cities = Array.isArray(r.cities) ? r.cities : (r.cities || []);
+  return {
+    id:           'community-' + r.id,
+    _supaId:      r.id,
+    _isCommunity: true,
+    name:         r.title || 'Untitled Route',
+    tagline:      r.tagline || '',
+    color,
+    gradient:     COLOR_GRADIENTS[color] || COLOR_GRADIENTS['#3a7a8a'],
+    cities,
+    stats: {
+      cities: cities.length,
+      days:   r.estimated_days || '—',
+      genres: (r.genres || []).join(' / ') || '—',
+      miles:  r.total_miles || '—',
+    },
+    description:  r.description || '',
+    expect:       r.what_to_expect || [],
+    venues:       [],
+    _bandName:    r.bands?.band_name || '',
+    _bandPhoto:   r.bands?.profile_photo_url || null,
+    _headerPhoto: r.header_photo_url || null,
+  };
+}
+
+async function openCuratedToursModal() {
   const overlay = document.getElementById('curatedToursModal');
   if (!overlay) return;
-  renderCuratedToursGrid();
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  renderCuratedToursGrid(null, null);
+  await _fetchCommunityRoutes();
+}
+
+async function _fetchCommunityRoutes() {
+  const { data, error } = await sb
+    .from('curated_routes')
+    .select('*, bands(band_name, profile_photo_url)')
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+
+  if (!error && data) {
+    _communityRoutes = data.map(_dbRouteToDisplay);
+  }
+
+  let pending = [];
+  if (currentBandProfile?.is_admin) {
+    const { data: pd } = await sb
+      .from('curated_routes')
+      .select('*, bands(band_name, profile_photo_url)')
+      .eq('is_published', false)
+      .order('created_at', { ascending: false });
+    pending = pd || [];
+  }
+  _pendingRoutes = pending;
+
+  renderCuratedToursGrid(_communityRoutes, _pendingRoutes);
 }
 
 function closeCuratedToursModal() {
@@ -1175,33 +1238,92 @@ function closeCuratedToursModal() {
   document.body.style.overflow = '';
 }
 
-function renderCuratedToursGrid() {
-  const grid = document.getElementById('curatedToursGrid');
-  if (!grid) return;
-  grid.innerHTML = CURATED_TOURS.map(tour => `
+function _renderCuratedCard(tour) {
+  const headerStyle = tour._headerPhoto
+    ? `background:${tour.gradient};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
+    : `background:${tour.gradient}`;
+  const badge = tour._isCommunity ? `<div class="ct-card-eyebrow" style="background:rgba(0,0,0,0.22);display:inline-block;padding:2px 7px;font-size:6px;letter-spacing:0.18em">Community</div>` : `<div class="ct-card-eyebrow">Curated Route</div>`;
+  return `
     <div class="ct-card" onclick="openTourDetail('${tour.id}')">
-      <div class="ct-card-header" style="background:${tour.gradient}">
-        <div class="ct-card-eyebrow">Curated Route</div>
-        <div class="ct-card-name">${tour.name}</div>
-        <div class="ct-card-tagline">${tour.tagline}</div>
+      <div class="ct-card-header" style="${headerStyle}">
+        ${badge}
+        <div class="ct-card-name">${escTourStr(tour.name)}</div>
+        <div class="ct-card-tagline">${escTourStr(tour.tagline)}</div>
       </div>
       <div class="ct-card-body">
         <div class="ct-card-stats">
           <div class="ct-card-stat"><span class="ct-stat-num">${tour.stats.cities}</span><span class="ct-stat-label">Cities</span></div>
-          <div class="ct-card-stat"><span class="ct-stat-num">${tour.stats.days.split(' ')[0]}</span><span class="ct-stat-label">Days</span></div>
-          <div class="ct-card-stat ct-stat-wide"><span class="ct-stat-label">${tour.stats.genres}</span></div>
-          <div class="ct-card-stat"><span class="ct-stat-num" style="font-size:0.8rem">${tour.stats.miles}</span><span class="ct-stat-label">Est. Miles</span></div>
+          <div class="ct-card-stat"><span class="ct-stat-num">${(tour.stats.days || '—').split(' ')[0]}</span><span class="ct-stat-label">Days</span></div>
+          <div class="ct-card-stat ct-stat-wide"><span class="ct-stat-label">${escTourStr(tour.stats.genres)}</span></div>
+          <div class="ct-card-stat"><span class="ct-stat-num" style="font-size:0.8rem">${escTourStr(tour.stats.miles)}</span><span class="ct-stat-label">Est. Miles</span></div>
         </div>
+        ${tour._isCommunity && tour._bandName ? `<div style="font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:var(--grey);padding:4px 0 2px">by ${escTourStr(tour._bandName)}</div>` : ''}
         <button class="ct-card-btn" style="border-color:${tour.color};color:${tour.color}" onclick="event.stopPropagation();openTourDetail('${tour.id}')">View This Route →</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+}
+
+function renderCuratedToursGrid(communityRoutes, pendingRoutes) {
+  const grid = document.getElementById('curatedToursGrid');
+  if (!grid) return;
+
+  const hardcoded = CURATED_TOURS.map(t => _renderCuratedCard(t)).join('');
+  const community = (communityRoutes || []).map(t => _renderCuratedCard(t)).join('');
+
+  let pendingSection = '';
+  if (pendingRoutes?.length) {
+    pendingSection = `
+      <div style="grid-column:1/-1;border-top:1.5px solid var(--red);margin:8px 0 4px;padding-top:12px">
+        <div style="font-size:7px;letter-spacing:0.24em;text-transform:uppercase;color:var(--red);margin-bottom:10px">Pending Review (Admin)</div>
+        ${pendingRoutes.map(r => `
+          <div style="background:var(--white);border:1px solid rgba(15,15,12,0.1);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-size:0.82rem;font-weight:400">${escTourStr(r.title)}</div>
+              <div style="font-size:0.65rem;color:var(--grey);margin-top:2px">${escTourStr(r.bands?.band_name || '')} · ${(r.cities || []).length} cities</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0">
+              <button onclick="previewPendingRoute('${r.id}')" style="font-family:'DM Sans',sans-serif;font-size:7px;letter-spacing:0.12em;text-transform:uppercase;background:none;border:1px solid rgba(15,15,12,0.15);color:var(--grey);padding:4px 10px;cursor:pointer">Preview</button>
+              <button onclick="approveRoute('${r.id}')" style="font-family:'DM Sans',sans-serif;font-size:7px;letter-spacing:0.12em;text-transform:uppercase;background:var(--teal);border:none;color:#f8f5ee;padding:4px 10px;cursor:pointer">Approve</button>
+              <button onclick="rejectRoute('${r.id}')" style="font-family:'DM Sans',sans-serif;font-size:7px;letter-spacing:0.12em;text-transform:uppercase;background:none;border:1px solid var(--red);color:var(--red);padding:4px 10px;cursor:pointer">Reject</button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  grid.innerHTML = pendingSection + (community ? community + hardcoded : hardcoded);
+}
+
+async function approveRoute(supaId) {
+  const { error } = await sb.from('curated_routes').update({ is_published: true }).eq('id', supaId);
+  if (error) { showToast('Approve failed: ' + error.message, 'error'); return; }
+  showToast('Route approved and published', 'success');
+  await _fetchCommunityRoutes();
+}
+
+async function rejectRoute(supaId) {
+  if (!confirm('Delete this pending route submission? This cannot be undone.')) return;
+  const { error } = await sb.from('curated_routes').delete().eq('id', supaId);
+  if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+  showToast('Route removed', 'success');
+  await _fetchCommunityRoutes();
+}
+
+function previewPendingRoute(supaId) {
+  const r = _pendingRoutes.find(p => String(p.id) === String(supaId));
+  if (!r) return;
+  openTourDetail('community-' + r.id, _dbRouteToDisplay(r));
+}
+
+function _findTour(tourId, hint) {
+  if (hint) return hint;
+  const all = [...CURATED_TOURS, ..._communityRoutes];
+  return all.find(t => t.id === tourId) || null;
 }
 
 // ── Open / close individual tour detail overlay ───────────────────────────────
 
-function openTourDetail(tourId) {
-  const tour = CURATED_TOURS.find(t => t.id === tourId);
+function openTourDetail(tourId, hintTour) {
+  const tour = _findTour(tourId, hintTour);
   if (!tour) return;
 
   const overlay = document.getElementById('tourDetailOverlay');
@@ -1230,19 +1352,35 @@ function openTourDetail(tourId) {
     </div>
   `).join('');
 
+  const heroStyle = tour._headerPhoto
+    ? `background:${tour.gradient};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
+    : `background:${tour.gradient}`;
+
+  const curatedByHtml = tour._isCommunity ? `
+    <div class="ct-curated-by">
+      ${tour._bandPhoto
+        ? `<img src="${escTourStr(tour._bandPhoto)}" class="ct-curated-avatar" alt="">`
+        : `<div class="ct-curated-avatar ct-curated-avatar--init">${escTourStr((tour._bandName || 'B').charAt(0).toUpperCase())}</div>`}
+      <div>
+        <div class="ct-curated-label">Community Curated Route</div>
+        <div class="ct-curated-name">by ${escTourStr(tour._bandName || 'a Bandmate band')}</div>
+      </div>
+    </div>` : '';
+
   content.innerHTML = `
-    <div class="ct-detail-hero" style="background:${tour.gradient}">
+    <div class="ct-detail-hero" style="${heroStyle}">
       <div class="ct-detail-hero-inner">
         <div class="ct-detail-eyebrow">Curated Tour Route</div>
-        <h1 class="ct-detail-name">${tour.name}</h1>
-        <div class="ct-detail-tagline">${tour.tagline}</div>
+        <h1 class="ct-detail-name">${escTourStr(tour.name)}</h1>
+        <div class="ct-detail-tagline">${escTourStr(tour.tagline)}</div>
         <div class="ct-detail-stats-row">
           <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.cities}</div><div class="ct-detail-stat-label">Cities</div></div>
-          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.days}</div><div class="ct-detail-stat-label">Estimated</div></div>
-          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${tour.stats.miles}</div><div class="ct-detail-stat-label">Total Miles</div></div>
+          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${escTourStr(tour.stats.days)}</div><div class="ct-detail-stat-label">Estimated</div></div>
+          <div class="ct-detail-stat"><div class="ct-detail-stat-num">${escTourStr(tour.stats.miles)}</div><div class="ct-detail-stat-label">Total Miles</div></div>
         </div>
       </div>
     </div>
+    ${curatedByHtml}
 
     <div class="ct-detail-body">
 
@@ -1253,13 +1391,13 @@ function openTourDetail(tourId) {
 
       <div class="ct-detail-section">
         <div class="ct-detail-section-label">About This Route</div>
-        <p class="ct-detail-desc">${tour.description}</p>
+        <p class="ct-detail-desc">${escTourStr(tour.description)}</p>
       </div>
 
       <div class="ct-detail-section">
         <div class="ct-detail-section-label">Genres</div>
         <div class="ct-genres-wrap">
-          ${tour.stats.genres.split(' / ').map(g => `<span class="ct-genre-pill" style="border-color:${tour.color};color:${tour.color}">${g}</span>`).join('')}
+          ${(tour.stats.genres || '').split(' / ').filter(Boolean).map(g => `<span class="ct-genre-pill" style="border-color:${tour.color};color:${tour.color}">${escTourStr(g)}</span>`).join('')}
         </div>
       </div>
 
@@ -1268,11 +1406,11 @@ function openTourDetail(tourId) {
         <div class="ct-expect-list">${expectHtml}</div>
       </div>
 
-      <div class="ct-detail-section">
+      ${tour.venues?.length ? `<div class="ct-detail-section">
         <div class="ct-detail-section-label">Great Venues on This Route</div>
         <div class="ct-detail-venues-note">A few well-known spots to anchor your booking conversations. More data coming as the Bandmate community grows.</div>
         <div class="ct-venues-list">${venuesHtml}</div>
-      </div>
+      </div>` : ''}
 
       <div class="ct-detail-cta">
         <div class="ct-detail-cta-title">Ready to plan this tour?</div>
@@ -1296,7 +1434,7 @@ function closeTourDetail() {
 // ── Load a curated route into the tour planner ───────────────────────────────
 
 async function loadCuratedRoute(tourId) {
-  const tour = CURATED_TOURS.find(t => t.id === tourId);
+  const tour = _findTour(tourId);
   if (!tour) return;
 
   closeTourDetail();

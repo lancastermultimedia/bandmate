@@ -10137,6 +10137,32 @@ input[type="range"] { accent-color: var(--teal) !important; }
   padding: 7px 14px; cursor: pointer; transition: transform 0.2s, background 0.2s;
 }
 .tour-download-btn:hover { transform: translateY(-1px); background: var(--teal-dark); }
+.tour-download-btn--route { background: var(--olive); }
+.tour-download-btn--route:hover { background: #4a5520; }
+
+/* ── Curated-by strip (community routes) ────────────────── */
+.ct-curated-by {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 48px; background: var(--paper);
+  border-bottom: 1px solid rgba(15,15,12,0.08);
+}
+.ct-curated-avatar {
+  width: 36px; height: 36px; object-fit: cover;
+  border-radius: 50% !important; flex-shrink: 0;
+}
+.ct-curated-avatar--init {
+  width: 36px; height: 36px; background: var(--teal-pale);
+  color: var(--teal-dark); font-size: 0.75rem; font-weight: 400;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border-radius: 50% !important;
+}
+.ct-curated-label {
+  font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--grey); margin-bottom: 2px;
+}
+.ct-curated-name {
+  font-size: 0.8rem; font-weight: 300; color: var(--ink);
+}
 
 /* ── Fully Booked Celebration ────────────────────────────── */
 @keyframes globeSpin { to { transform: rotate(360deg); } }
