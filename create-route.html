@@ -38,6 +38,10 @@
     .cr-cities { display: flex; flex-wrap: wrap; gap: 6px; }
     .cr-city-chip { font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; background: var(--teal-pale); color: var(--teal-dark); padding: 4px 9px; border: 1px solid rgba(58,122,138,0.2); }
     .cr-no-cities { font-size: 0.72rem; color: var(--grey); font-style: italic; }
+    .cr-venue-name { flex: 1; font-size: 0.82rem; font-weight: 300; padding: 4px 0; color: var(--ink); }
+    .cr-add-row { display: flex; gap: 8px; margin-top: 8px; }
+    .cr-add-row .cr-bullet-input { flex: 1; }
+    .cr-add-row .cr-bullet-add { margin-top: 0; flex-shrink: 0; white-space: nowrap; }
 
     .cr-genres { display: flex; flex-wrap: wrap; gap: 6px; }
     .cr-genre-chip { font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid rgba(15,15,12,0.15); color: var(--grey); padding: 5px 12px; cursor: pointer; transition: all 0.12s; background: none; font-family: 'DM Sans', sans-serif; }
@@ -141,10 +145,15 @@
         <div class="cr-section-label">The Route</div>
         <div class="cr-field">
           <label class="cr-label">Cities</label>
-          <div class="cr-cities" id="crCitiesDisplay">
-            <span class="cr-no-cities">Loading…</span>
+          <div class="cr-cities" id="crCitiesDisplay"></div>
+          <div id="crCityManual" style="display:none">
+            <div class="cr-bullets" id="crCityList"></div>
+            <div class="cr-add-row">
+              <input class="cr-bullet-input" id="crCityAddInput" type="text" placeholder="e.g. Nashville, TN" maxlength="80">
+              <button class="cr-bullet-add" onclick="addCityItem()">+ Add City</button>
+            </div>
           </div>
-          <div class="cr-hint">Pulled from your saved tour stops. Edit the tour in Tour Manager to change stops.</div>
+          <div class="cr-hint" id="crCityHint">Pulled from your saved tour stops.</div>
         </div>
         <div class="cr-row">
           <div class="cr-field">
@@ -186,6 +195,17 @@
         <button class="cr-bullet-add" onclick="addBullet('')">+ Add Tip</button>
       </div>
 
+      <!-- Venues -->
+      <div class="cr-section">
+        <div class="cr-section-label">Venues on This Route</div>
+        <div class="cr-hint" style="margin-bottom:12px">Help other bands book the exact same spots. Remove any you'd rather not share, or add venues manually.</div>
+        <div class="cr-bullets" id="crVenuesList"></div>
+        <div class="cr-add-row">
+          <input class="cr-bullet-input" id="crVenueAddInput" type="text" placeholder="e.g. The Basement — Nashville, TN" maxlength="120">
+          <button class="cr-bullet-add" onclick="addVenueItem()">+ Add Venue</button>
+        </div>
+      </div>
+
       <!-- Header Photo -->
       <div class="cr-section">
         <div class="cr-section-label">Header Photo (Optional)</div>
@@ -194,7 +214,7 @@
           <input type="file" id="crPhotoInput" accept="image/*" onchange="previewPhoto(this)">
           <div class="cr-photo-zone-label" id="crPhotoZoneLabel">
             Click to upload · JPG or PNG · Max 5MB<br>
-            <span style="font-size:0.62rem;opacity:0.65">Live show or venue photos work best. Replaces the color gradient header.</span>
+            <span style="font-size:0.62rem;opacity:0.65">Band photos, live shots, backstage — anything that captures the vibe of the tour. Replaces the color gradient header.</span>
           </div>
         </div>
         <button class="cr-photo-clear" id="crPhotoClear" onclick="clearPhoto()">Remove photo</button>
@@ -232,20 +252,28 @@
     (function init() {
       try { _tourData = JSON.parse(localStorage.getItem('bandmate_create_route') || 'null'); } catch {}
 
-      const citiesEl = document.getElementById('crCitiesDisplay');
-      if (_tourData?.cities?.length) {
+      const citiesEl  = document.getElementById('crCitiesDisplay');
+      const cityHint  = document.getElementById('crCityHint');
+
+      if (_tourData === null) {
+        citiesEl.innerHTML = '<span class="cr-no-cities">No tour data found — go back to Tour Manager.</span>';
+      } else if (_tourData.cities?.length) {
         citiesEl.innerHTML = _tourData.cities.map(c => `<span class="cr-city-chip">${escHtml(c)}</span>`).join('');
-        if (_tourData.tourName) document.getElementById('crTitle').value = _tourData.tourName;
-        if (_tourData.estimatedDays) document.getElementById('crDays').value = _tourData.estimatedDays;
-        if (_tourData.estimatedMiles) document.getElementById('crMiles').value = _tourData.estimatedMiles;
+        cityHint.textContent = 'Pulled from your saved tour stops.';
+        if (_tourData.tourName)      document.getElementById('crTitle').value = _tourData.tourName;
+        if (_tourData.estimatedDays) document.getElementById('crDays').value  = _tourData.estimatedDays;
+        if (_tourData.estimatedMiles)document.getElementById('crMiles').value = _tourData.estimatedMiles;
       } else {
-        citiesEl.innerHTML = '<span class="cr-no-cities">No tour data found — go back to Tour Manager and click "Create Curated Route" from a saved tour.</span>';
+        // Blank form — show manual city entry
+        citiesEl.style.display = 'none';
+        document.getElementById('crCityManual').style.display = 'block';
+        cityHint.textContent = 'Add each city on your route.';
       }
 
-      // Use the shared genre chip system (loads from Supabase genres table)
-      loadGenreChips('crGenreChips');
+      // Pre-populate venues from tour stops
+      (_tourData?.venues || []).forEach(v => addVenueItem(v));
 
-      // Start with two bullet fields
+      loadGenreChips('crGenreChips');
       addBullet('');
       addBullet('');
     })();
@@ -254,6 +282,41 @@
       document.querySelectorAll('.cr-color-opt').forEach(c => c.classList.remove('selected'));
       el.classList.add('selected');
       _selectedColor = el.dataset.color;
+    }
+
+    function addCityItem() {
+      const input = document.getElementById('crCityAddInput');
+      const v = input.value.trim();
+      if (!v) return;
+      input.value = '';
+      const container = document.getElementById('crCityList');
+      const row = document.createElement('div');
+      row.className = 'cr-bullet-row cr-city-item';
+      row.dataset.city = v;
+      row.innerHTML = `<span class="cr-venue-name">${escHtml(v)}</span><button class="cr-bullet-remove" onclick="this.parentElement.remove()">×</button>`;
+      container.appendChild(row);
+    }
+
+    function addVenueItem(name) {
+      const v = (name || document.getElementById('crVenueAddInput')?.value || '').trim();
+      if (!v) return;
+      const inputEl = document.getElementById('crVenueAddInput');
+      if (inputEl && !name) inputEl.value = '';
+      const container = document.getElementById('crVenuesList');
+      const row = document.createElement('div');
+      row.className = 'cr-bullet-row cr-venue-item';
+      row.dataset.venue = v;
+      row.innerHTML = `<span class="cr-venue-name">${escHtml(v)}</span><button class="cr-bullet-remove" onclick="this.parentElement.remove()">×</button>`;
+      container.appendChild(row);
+    }
+
+    function getCities() {
+      if (_tourData?.cities?.length) return _tourData.cities;
+      return Array.from(document.querySelectorAll('.cr-city-item')).map(el => el.dataset.city).filter(Boolean);
+    }
+
+    function getVenues() {
+      return Array.from(document.querySelectorAll('.cr-venue-item')).map(el => el.dataset.venue).filter(Boolean);
     }
 
     function addBullet(value) {
@@ -368,7 +431,8 @@
           description,
           genres:           selectedGenres,
           what_to_expect:   bullets,
-          cities:           _tourData?.cities || [],
+          cities:           getCities(),
+          venues:           getVenues(),
           estimated_days:   days,
           total_miles:      miles,
           accent_color:     _selectedColor,

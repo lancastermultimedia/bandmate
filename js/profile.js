@@ -1472,8 +1472,10 @@ async function loadTourManager(bandId) {
         <button class="resp-btn resp-btn--accept" onclick="migrateLocalTour()">Save Tour →</button>
        </div>` : '';
 
+  const createRouteBtn = `<div style="text-align:right;padding:0 0 12px"><button class="tour-download-btn tour-download-btn--route" onclick="openBlankRouteForm()" style="font-size:8px;letter-spacing:0.14em">+ Create Curated Route</button></div>`;
+
   if (!_tours.length) {
-    list.innerHTML = migrateHtml + `<div class="tour-empty">
+    list.innerHTML = migrateHtml + createRouteBtn + `<div class="tour-empty">
       <div class="tour-empty-text">No saved tours yet.</div>
       <button class="profile-action-btn profile-action-btn-primary" onclick="openCreateTourModal()">+ Create Your First Tour</button>
       <a href="tour.html" class="profile-action-btn profile-action-btn-secondary" style="text-decoration:none;display:inline-block;margin-top:4px">Build a Route →</a>
@@ -1481,7 +1483,7 @@ async function loadTourManager(bandId) {
     return;
   }
 
-  list.innerHTML = migrateHtml + _tours.map(t => renderTourCard(t)).join('');
+  list.innerHTML = migrateHtml + createRouteBtn + _tours.map(t => renderTourCard(t)).join('');
 }
 
 function _getLocalStorageTour() {
@@ -1780,11 +1782,23 @@ async function saveStopNotes(stopId, tourId) {
   }
 }
 
+function openBlankRouteForm() {
+  try {
+    localStorage.setItem('bandmate_create_route', JSON.stringify({
+      tourId: null, tourName: '', cities: [], venues: [], estimatedDays: '', estimatedMiles: '',
+    }));
+  } catch {}
+  window.location.href = 'create-route.html';
+}
+
 function startCreateRoute(tourId) {
   const tour = _tours.find(t => String(t.id) === String(tourId));
   if (!tour) return;
   const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
   const cities = stops.map(s => [s.city, s.state].filter(Boolean).join(', ')).filter(Boolean);
+  const venues = stops
+    .filter(s => s.place_id && s.venue_name && s.venue_name !== s.city)
+    .map(s => `${s.venue_name} — ${[s.city, s.state].filter(Boolean).join(', ')}`);
 
   // Estimate duration from actual show dates
   let estimatedDays = '';
@@ -1806,6 +1820,7 @@ function startCreateRoute(tourId) {
       tourId: tour.id,
       tourName: tour.name,
       cities,
+      venues,
       estimatedDays,
       estimatedMiles,
     }));

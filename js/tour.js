@@ -1191,7 +1191,7 @@ function _dbRouteToDisplay(r) {
     },
     description:  r.description || '',
     expect:       r.what_to_expect || [],
-    venues:       [],
+    venues:       Array.isArray(r.venues) ? r.venues : [],
     _bandName:    r.bands?.band_name || '',
     _bandPhoto:   r.bands?.profile_photo_url || null,
     _headerPhoto: r.header_photo_url || null,
@@ -1240,7 +1240,7 @@ function closeCuratedToursModal() {
 
 function _renderCuratedCard(tour) {
   const headerStyle = tour._headerPhoto
-    ? `background:${tour.gradient};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
+    ? `background-color:${tour.color};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
     : `background:${tour.gradient}`;
   const badge = tour._isCommunity ? `<div class="ct-card-eyebrow" style="background:rgba(0,0,0,0.22);display:inline-block;padding:2px 7px;font-size:6px;letter-spacing:0.18em">Community</div>` : `<div class="ct-card-eyebrow">Curated Route</div>`;
   return `
@@ -1325,6 +1325,7 @@ function _findTour(tourId, hint) {
 function openTourDetail(tourId, hintTour) {
   const tour = _findTour(tourId, hintTour);
   if (!tour) return;
+  closeCuratedToursModal();
 
   const overlay = document.getElementById('tourDetailOverlay');
   const content = document.getElementById('tourDetailContent');
@@ -1353,7 +1354,7 @@ function openTourDetail(tourId, hintTour) {
   `).join('');
 
   const heroStyle = tour._headerPhoto
-    ? `background:${tour.gradient};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
+    ? `background-color:${tour.color};background-image:url('${tour._headerPhoto}');background-size:cover;background-position:center`
     : `background:${tour.gradient}`;
 
   const curatedByHtml = tour._isCommunity ? `
