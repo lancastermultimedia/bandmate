@@ -170,8 +170,12 @@
       <!-- Genres -->
       <div class="cr-section">
         <div class="cr-section-label">Genres *</div>
-        <div class="cr-genres" id="crGenres"></div>
-        <div class="cr-hint" style="margin-top:8px">Select all that apply to this route's venue circuit.</div>
+        <div class="genre-chips-wrap" id="crGenreChips" data-max="8"><div class="genre-chips-loading">Loading…</div></div>
+        <div class="genre-custom-row" style="display:flex;gap:8px;margin-top:10px">
+          <input type="text" id="crGenreCustomInput" class="genre-custom-input" placeholder="Add your own genre…">
+          <button type="button" class="genre-custom-btn" onclick="addCustomGenreFromInput('crGenreChips')">Add</button>
+        </div>
+        <div class="genre-chips-hint">Select all that apply · Can't find yours? Add it above</div>
       </div>
 
       <!-- What to Expect -->
@@ -213,13 +217,12 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    const GENRE_OPTIONS = ['Indie','Alt','Rock','Folk','Country','Blues','Jazz','Hip-Hop','Electronic','Punk','Metal','Pop','R&B','Soul','Americana'];
-    let _selectedGenres = [];
-    let _selectedColor  = '#3a7a8a';
-    let _tourData       = null;
-    let _photoFile      = null;
+    let _selectedColor = '#3a7a8a';
+    let _tourData      = null;
+    let _photoFile     = null;
 
     function escHtml(s) {
       if (!s) return '';
@@ -233,14 +236,14 @@
       if (_tourData?.cities?.length) {
         citiesEl.innerHTML = _tourData.cities.map(c => `<span class="cr-city-chip">${escHtml(c)}</span>`).join('');
         if (_tourData.tourName) document.getElementById('crTitle').value = _tourData.tourName;
+        if (_tourData.estimatedDays) document.getElementById('crDays').value = _tourData.estimatedDays;
+        if (_tourData.estimatedMiles) document.getElementById('crMiles').value = _tourData.estimatedMiles;
       } else {
         citiesEl.innerHTML = '<span class="cr-no-cities">No tour data found — go back to Tour Manager and click "Create Curated Route" from a saved tour.</span>';
       }
 
-      // Genre chips
-      document.getElementById('crGenres').innerHTML = GENRE_OPTIONS.map(g =>
-        `<button class="cr-genre-chip" onclick="toggleGenre(this,'${g}')">${g}</button>`
-      ).join('');
+      // Use the shared genre chip system (loads from Supabase genres table)
+      loadGenreChips('crGenreChips');
 
       // Start with two bullet fields
       addBullet('');
@@ -251,16 +254,6 @@
       document.querySelectorAll('.cr-color-opt').forEach(c => c.classList.remove('selected'));
       el.classList.add('selected');
       _selectedColor = el.dataset.color;
-    }
-
-    function toggleGenre(el, genre) {
-      if (_selectedGenres.includes(genre)) {
-        _selectedGenres = _selectedGenres.filter(g => g !== genre);
-        el.classList.remove('selected');
-      } else {
-        _selectedGenres.push(genre);
-        el.classList.add('selected');
-      }
     }
 
     function addBullet(value) {
@@ -326,10 +319,12 @@
       const miles       = document.getElementById('crMiles').value.trim();
       const bullets     = getBullets();
 
-      if (!title)                      { showError('Please add a route title.'); return; }
-      if (!description)                { showError('Please write an "About this route" description.'); return; }
-      if (_selectedGenres.length === 0){ showError('Please select at least one genre.'); return; }
-      if (bullets.length === 0)        { showError('Please add at least one "What to Expect" tip.'); return; }
+      const selectedGenres = getSelectedGenres('crGenreChips');
+
+      if (!title)                       { showError('Please add a route title.'); return; }
+      if (!description)                 { showError('Please write an "About this route" description.'); return; }
+      if (selectedGenres.length === 0)  { showError('Please select at least one genre.'); return; }
+      if (bullets.length === 0)         { showError('Please add at least one "What to Expect" tip.'); return; }
 
       const btn = document.getElementById('crSubmitBtn');
       btn.disabled = true;
@@ -354,7 +349,7 @@
         title,
         tagline,
         description,
-        genres:           _selectedGenres,
+        genres:           selectedGenres,
         what_to_expect:   bullets,
         cities:           _tourData?.cities || [],
         estimated_days:   days,

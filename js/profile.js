@@ -1784,14 +1784,30 @@ function startCreateRoute(tourId) {
   const tour = _tours.find(t => String(t.id) === String(tourId));
   if (!tour) return;
   const stops = (tour.tour_stops || []).slice().sort((a, b) => a.position - b.position);
-  const cities = stops
-    .map(s => [s.city, s.state].filter(Boolean).join(', '))
-    .filter(Boolean);
+  const cities = stops.map(s => [s.city, s.state].filter(Boolean).join(', ')).filter(Boolean);
+
+  // Estimate duration from actual show dates
+  let estimatedDays = '';
+  const dated = stops.filter(s => s.show_date).sort((a, b) => new Date(a.show_date) - new Date(b.show_date));
+  if (dated.length >= 2) {
+    const first = new Date(dated[0].show_date);
+    const last  = new Date(dated[dated.length - 1].show_date);
+    const days  = Math.round((last - first) / (1000 * 60 * 60 * 24)) + 1;
+    estimatedDays = `${days} days`;
+  } else if (stops.length) {
+    estimatedDays = `${stops.length * 2}–${stops.length * 3} days`;
+  }
+
+  // Rough mileage estimate: average US tour leg ~180 mi
+  const estimatedMiles = stops.length > 1 ? `~${Math.round((stops.length - 1) * 180)} mi` : '';
+
   try {
     localStorage.setItem('bandmate_create_route', JSON.stringify({
-      tourId:   tour.id,
+      tourId: tour.id,
       tourName: tour.name,
       cities,
+      estimatedDays,
+      estimatedMiles,
     }));
   } catch {}
   window.location.href = 'create-route.html';
