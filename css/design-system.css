@@ -83,3 +83,6 @@ img[class*="avatar"],
 img[class*="photo"] {
   border-radius: 50% !important;
 }
+
+/* Cover images that contain "photo" in class but must stay square */
+img.comm-card-photo-img { border-radius: 0 !important; }
