@@ -6496,16 +6496,95 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 
 /* ── Cards ─────────────────────────────────────────────── */
 .comm-card {
-  background: #fff;
+  background: var(--paper);
   border: 1.5px solid rgba(14,13,11,0.12);
-  box-shadow: 3px 3px 0 rgba(14,13,11,0.08);
-  padding: 20px 24px 16px;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  padding: 0;
+  overflow: hidden;
+  transition: border-color 0.2s;
 }
 .comm-card:hover {
-  border-color: var(--rust);
-  box-shadow: 3px 3px 0 rgba(201,75,42,0.15);
+  border-color: var(--teal);
 }
+
+/* Photo header zone */
+.comm-card-photo {
+  position: relative;
+  height: 190px;
+  overflow: hidden;
+}
+.comm-card-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.comm-card-photo-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(242,239,230,0) 25%, var(--paper) 100%);
+  pointer-events: none;
+}
+.comm-card-photo-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+.comm-card-photo-badges-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.comm-card-photo-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 16px 12px;
+}
+.comm-card-photo-band {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.65rem;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+.comm-card-photo-band-link {
+  color: var(--ink);
+  text-decoration: none;
+}
+.comm-card-photo-band-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.comm-card-photo-meta {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 0.68rem;
+  color: var(--grey);
+  margin-top: 1px;
+}
+.comm-card-photo-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.84rem;
+  color: var(--ink);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+.comm-card-trust {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--teal);
+  margin-top: 3px;
+}
+
+/* Card body */
+.comm-card-body {
+  padding: 14px 18px 16px;
+}
+
+/* Keep legacy selectors that may be used elsewhere */
 .comm-card-header {
   display: flex;
   align-items: flex-start;
@@ -6773,6 +6852,97 @@ body[data-epk-theme="signal"] .epkt-footer a:hover { color: var(--epkt-fg); }
 }
 .comm-delete-btn:hover,
 .comm-card-btn--delete:hover { background: rgba(196,16,16,0.06); }
+
+/* ── Photo form in post modal ──────────────────────────── */
+.comm-photo-tabs {
+  display: flex;
+  border: 1px solid rgba(15,15,12,0.15);
+  margin-bottom: 12px;
+}
+.comm-photo-tab {
+  flex: 1;
+  padding: 8px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--grey);
+  transition: background 0.15s, color 0.15s;
+}
+.comm-photo-tab + .comm-photo-tab { border-left: 1px solid rgba(15,15,12,0.15); }
+.comm-photo-tab--active {
+  background: var(--ink);
+  color: var(--paper);
+}
+.comm-photo-file-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.comm-photo-file-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 7px 14px;
+  border: 1.5px solid rgba(15,15,12,0.2);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.comm-photo-file-hint {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--grey);
+  font-weight: 300;
+}
+.comm-photo-preview-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+  margin-top: 10px;
+}
+.comm-photo-clear {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 300;
+  background: none;
+  border: 1px solid rgba(15,15,12,0.15);
+  padding: 4px 10px;
+  cursor: pointer;
+  margin-top: 6px;
+  display: inline-block;
+  color: var(--grey);
+}
+.comm-epk-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.comm-epk-photo-thumb {
+  cursor: pointer;
+  border: 2px solid transparent;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.comm-epk-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.comm-epk-photo-thumb.selected { border-color: var(--teal); }
+.comm-epk-photo-thumb:hover { border-color: rgba(58,122,138,0.4); }
 
 /* ── Modal community styles ────────────────────────────── */
 .comm-modal { padding: 32px; }
@@ -8570,7 +8740,9 @@ a.comm-venue-name:hover { color: var(--rust); text-decoration: underline; text-u
   .comm-sidebar { display: none; }
   .comm-filters-btn { display: flex; }
 
-  .comm-card { padding: 16px; }
+  .comm-card { padding: 0; }
+  .comm-card-body { padding: 12px 14px 14px; }
+  .comm-card-photo { height: 160px; }
   .comm-card-footer { flex-direction: column; gap: 8px; }
   .comm-card-footer .comm-epk-btn,
   .comm-card-footer .comm-manage-btn,

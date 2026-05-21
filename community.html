@@ -232,6 +232,27 @@
       </div>
     </div>
 
+    <!-- Section 2b: Header Photo -->
+    <div class="comm-modal-section">
+      <div class="comm-modal-label">Header Photo <span style="font-weight:300;color:var(--muted)">(optional)</span></div>
+      <div class="comm-photo-tabs">
+        <button class="comm-photo-tab comm-photo-tab--active" onclick="setPhotoMode('upload', this)">Upload new photo</button>
+        <button class="comm-photo-tab" onclick="setPhotoMode('epk', this)">Use EPK press photo</button>
+      </div>
+      <div id="photoUploadMode">
+        <label class="comm-photo-file-label">
+          <input type="file" id="postPhotoFile" accept="image/*" style="display:none" onchange="previewPostPhoto()">
+          <span class="comm-photo-file-btn">Choose photo…</span>
+          <span class="comm-photo-file-hint">JPG, PNG, WEBP — shown as card header for all browsers</span>
+        </label>
+        <div id="postPhotoPreview"></div>
+      </div>
+      <div id="photoEpkMode" style="display:none">
+        <div class="comm-epk-photos-grid" id="epkPhotosGrid"></div>
+        <div id="noEpkPhotos" style="display:none;font-size:0.8rem;color:var(--muted);padding:8px 0">No press photos yet. <a href="profile.html" style="color:var(--teal)">Add them in your profile →</a></div>
+      </div>
+    </div>
+
     <!-- Section 3: Dates -->
     <div class="comm-modal-section">
       <div class="comm-modal-label">Dates &amp; Locations</div>

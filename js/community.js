@@ -11,7 +11,9 @@ let _postType          = null;
 let _slotsNeeded       = 1;
 let _editingPostingId  = null; // null = new post, number = editing existing
 let _postTours         = [];   // saved tours for the tour-link dropdown
-let _deletePostingId   = null;
+let _deletePostingId     = null;
+let _postHeaderPhotoUrl  = null; // EPK or existing photo URL selected for form
+let _postHeaderPhotoFile = null; // new file upload for form
 let _interestPostingId = null;
 let _interestDates     = [];
 let _managePostingId   = null;
@@ -147,7 +149,7 @@ function _showFeedToast() {
 async function fetchPostings() {
   const { data, error } = await sb
     .from('tour_postings')
-    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme), posting_dates(id, date, city, venue_name, venue_place_id, venue_address)`)
+    .select(`*, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, review_count, band_photos(photo_url)), posting_dates(id, date, city, venue_name, venue_place_id, venue_address)`)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
@@ -252,23 +254,24 @@ function renderFeed(postings) {
 }
 
 function renderCard(p) {
-  const band       = p.bands || {};
-  const dates      = p.posting_dates || [];
-  const isOwn      = currentBandProfile && currentBandProfile.id === band.id;
-  const isAdmin    = !!(currentBandProfile?.is_admin);
-  const slug       = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-  const hasEpk     = !!band.epk_theme && slug;
-  const slots      = p.slots_needed || 1;
-  const confirmed  = _acceptedByPosting[p.id] || [];
+  const band      = p.bands || {};
+  const dates     = p.posting_dates || [];
+  const isOwn     = currentBandProfile && currentBandProfile.id === band.id;
+  const isAdmin   = !!(currentBandProfile?.is_admin);
+  const slug      = (band.band_name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const hasEpk    = !!band.epk_theme && slug;
+  const slots     = p.slots_needed || 1;
+  const confirmed = _acceptedByPosting[p.id] || [];
 
-  // Avatar
-  const initials  = (band.band_name || 'B').substring(0,2).toUpperCase();
-  const avatarEl  = band.profile_photo_url
-    ? `<img src="${band.profile_photo_url}" class="comm-avatar comm-avatar-img" alt="">`
-    : `<div class="comm-avatar comm-avatar-init">${initials}</div>`;
-  const avatarWrapped = hasEpk
-    ? `<a href="epk.html?band=${slug}" target="_blank" class="comm-avatar-link">${avatarEl}</a>`
-    : avatarEl;
+  // ── Photo header ──────────────────────────────────────────────────────────
+  const pressPhotos  = Array.isArray(band.band_photos) ? band.band_photos : [];
+  const pressPhotoUrl = pressPhotos.length
+    ? pressPhotos[Math.floor(Math.random() * pressPhotos.length)].photo_url
+    : null;
+  const photoUrl = p.header_photo_url || pressPhotoUrl || band.profile_photo_url || null;
+
+  const TYPE_COLORS = { tour_support: '#3a7a8a', local_opener: '#7a8a3a', co_headlining: '#d94535' };
+  const fallbackColor = TYPE_COLORS[p.type] || '#3a7a8a';
 
   // Type badge
   const badgeClass = { tour_support: 'comm-badge--support', local_opener: 'comm-badge--opener', co_headlining: 'comm-badge--cohead' }[p.type] || '';
@@ -276,30 +279,48 @@ function renderCard(p) {
 
   // Trust score
   const rc = band.review_count || 0;
-  const trustHtml = rc > 0
-    ? `<div class="comm-trust">★ ${rc} review${rc !== 1 ? 's' : ''}</div>`
-    : '';
+  const trustHtml = rc > 0 ? `<div class="comm-card-trust">★ ${rc} review${rc !== 1 ? 's' : ''}</div>` : '';
 
-  // Tour route
+  // Posted ago + New badge
+  const diffMs    = Date.now() - new Date(p.created_at).getTime();
+  const diffDay   = Math.floor(diffMs / 86400000);
+  const postedAgo = diffDay < 1 ? 'Today' : diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
+  const isNew     = diffMs < 48 * 3600000;
+
+  // Best Match + Similar
+  const matchScore  = currentBandProfile && !isOwn ? _scorePosting(p) : 0;
+  const isBestMatch = matchScore >= 70;
+  const bp          = currentBandProfile;
+  const isSimilar   = !isOwn && bp?.genre && (p.genres || []).some(g => {
+    const myGenres = bp.genre.split(',').map(x => x.trim().toLowerCase());
+    return myGenres.some(mg => g.toLowerCase().includes(mg) || mg.includes(g.toLowerCase()));
+  });
+
+  const bandNameEl = hasEpk
+    ? `<a href="epk.html?band=${slug}" target="_blank" class="comm-card-photo-band-link">${escapeHtml(band.band_name || 'Unknown Band')}</a>`
+    : escapeHtml(band.band_name || 'Unknown Band');
+
+  // ── Body content ──────────────────────────────────────────────────────────
   const cityNames  = dates.map(d => (d.city || '').split(',')[0].trim()).filter(Boolean);
   const routeParts = cityNames.slice(0, 3);
   const moreCount  = cityNames.length > 3 ? cityNames.length - 3 : 0;
   const routeHtml  = routeParts.join(' <span class="comm-route-arrow">→</span> ') + (moreCount ? ` <span class="comm-route-more">+${moreCount} more</span>` : '');
 
-  // Date range
   const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const dateRange = dates.length
-    ? dates.length === 1
-      ? fmt(dates[0].date)
-      : `${fmt(dates[0].date)} – ${fmt(dates[dates.length-1].date)}`
+    ? dates.length === 1 ? fmt(dates[0].date) : `${fmt(dates[0].date)} – ${fmt(dates[dates.length-1].date)}`
     : '';
 
-  // Genre tags
   const genreTagsHtml = (p.genres || []).map(g =>
     `<span class="vrc-tag" style="border-color:var(--rust);color:var(--rust)">${escapeHtml(g)}</span>`
   ).join('');
 
-  // Description truncation
+  const interestCount = p.interest_count || 0;
+
+  const slotsHtml = slots > 1
+    ? `<div class="comm-slots-indicator">Looking for ${slots} band${slots > 1 ? 's' : ''} · ${slots - confirmed.length} spot${slots - confirmed.length !== 1 ? 's' : ''} remaining</div>`
+    : '';
+
   const desc = p.description || '';
   const truncated = desc.length > 200;
   const descShort = truncated ? desc.substring(0, 200).trim() + '…' : desc;
@@ -308,10 +329,9 @@ function renderCard(p) {
     ${truncated ? `<button class="comm-read-more" onclick="expandDesc(${p.id},${JSON.stringify(desc)})">Read more</button>` : ''}
   </div>`;
 
-  // Dates list (max 3 shown)
-  const shownDates  = dates.slice(0, 3);
-  const extraDates  = dates.length > 3 ? dates.length - 3 : 0;
-  const datesHtml   = shownDates.map(d => {
+  const shownDates = dates.slice(0, 3);
+  const extraDates = dates.length > 3 ? dates.length - 3 : 0;
+  const datesHtml  = shownDates.map(d => {
     const key     = `${p.id}_${d.id}`;
     const status  = _myInterests[key];
     const active  = !!status;
@@ -319,24 +339,17 @@ function renderCard(p) {
     const btnCls  = active ? 'comm-interested-btn comm-interested-btn--active' : 'comm-interested-btn';
     const fmtDate = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const interestClick = isOwn ? '' : `onclick="handleInterested(${p.id},${d.id})"`;
-
-    // Venue info
     let venueHtml = '';
     if (d.venue_name) {
-      const rating   = d.venue_place_id ? _venueRatings[d.venue_place_id] : null;
+      const rating    = d.venue_place_id ? _venueRatings[d.venue_place_id] : null;
       const starsHtml = rating
-        ? (() => {
-            const full  = Math.round(rating.avg);
-            const stars = '★'.repeat(full) + '☆'.repeat(5 - full);
-            return `<span class="comm-venue-stars">${stars}</span><span class="comm-venue-count">${rating.avg.toFixed(1)} (${rating.count})</span>`;
-          })()
+        ? (() => { const full = Math.round(rating.avg); return `<span class="comm-venue-stars">${'★'.repeat(full)}${'☆'.repeat(5-full)}</span><span class="comm-venue-count">${rating.avg.toFixed(1)} (${rating.count})</span>`; })()
         : '<span class="comm-venue-no-reviews">No reviews yet</span>';
       const venueLink = d.venue_place_id
         ? `<a class="comm-venue-name" href="map.html?place=${encodeURIComponent(d.venue_place_id)}" target="_blank">${escapeHtml(d.venue_name)}</a>`
         : `<span class="comm-venue-name">${escapeHtml(d.venue_name)}</span>`;
       venueHtml = `<div class="comm-venue-row">${venueLink}<div class="comm-venue-rating">${starsHtml}</div></div>`;
     }
-
     return `<div class="comm-date-row">
       <div class="comm-date-row-left">
         <span class="comm-date-label">${fmtDate} · ${escapeHtml(d.city)}</span>
@@ -346,7 +359,6 @@ function renderCard(p) {
     </div>`;
   }).join('');
 
-  // Confirmed bands strip
   const typeWord = { tour_support: 'opener', local_opener: 'touring support', co_headlining: 'co-headliner' }[p.type] || 'band';
   const confirmedHtml = confirmed.length ? `
     <div class="comm-confirmed-strip">
@@ -357,9 +369,7 @@ function renderCard(p) {
           const av = b.profile_photo_url
             ? `<img src="${b.profile_photo_url}" class="comm-confirmed-avatar" title="${escapeHtml(b.band_name)}" alt="">`
             : `<div class="comm-confirmed-avatar comm-confirmed-avatar-init" title="${escapeHtml(b.band_name)}">${bInit}</div>`;
-          return b.epk_theme && bSlug
-            ? `<a href="epk.html?band=${bSlug}" target="_blank" class="comm-confirmed-link">${av}</a>`
-            : av;
+          return b.epk_theme && bSlug ? `<a href="epk.html?band=${bSlug}" target="_blank" class="comm-confirmed-link">${av}</a>` : av;
         }).join('')}
       </div>
       <div class="comm-confirmed-text">
@@ -371,31 +381,7 @@ function renderCard(p) {
       </div>
     </div>` : '';
 
-  // Posted ago + New badge
-  const diffMs  = Date.now() - new Date(p.created_at).getTime();
-  const diffDay = Math.floor(diffMs / 86400000);
-  const postedAgo = diffDay < 1 ? 'Today' : diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
-  const isNew     = diffMs < 48 * 3600000; // < 48 hours
-
-  // Best Match badge + Similar tag
-  const matchScore   = currentBandProfile && !isOwn ? _scorePosting(p) : 0;
-  const isBestMatch  = matchScore >= 70;
-  const bp           = currentBandProfile;
-  const isSimilar    = !isOwn && bp?.genre && (p.genres || []).some(g => {
-    const myGenres = bp.genre.split(',').map(x => x.trim().toLowerCase());
-    return myGenres.some(mg => g.toLowerCase().includes(mg) || mg.includes(g.toLowerCase()));
-  });
-  const interestCount = p.interest_count || 0;
-
-  // Slots indicator (only show if looking for more than 1)
-  const slotsHtml = slots > 1
-    ? `<div class="comm-slots-indicator">Looking for ${slots} band${slots > 1 ? 's' : ''} · ${slots - confirmed.length} spot${slots - confirmed.length !== 1 ? 's' : ''} remaining</div>`
-    : '';
-
-  // Footer actions
-  const epkBtn = hasEpk
-    ? `<a class="comm-card-btn comm-card-btn--outline" href="epk.html?band=${slug}" target="_blank">View EPK</a>`
-    : '';
+  const epkBtn = hasEpk ? `<a class="comm-card-btn comm-card-btn--outline" href="epk.html?band=${slug}" target="_blank">View EPK</a>` : '';
   const actionBtn = isOwn
     ? `<button class="comm-card-btn comm-card-btn--manage" onclick="openManageModal(${p.id})">Manage Responses</button>`
     : `<button class="comm-card-btn comm-card-btn--rust" onclick="openInterestModal(${p.id})">Express Interest</button>`;
@@ -404,42 +390,43 @@ function renderCard(p) {
     <button class="comm-card-btn comm-card-btn--delete" onclick="openDeleteModal(${p.id})" title="Delete">Delete</button>` : '';
 
   return `<article class="comm-card${isBestMatch ? ' comm-card--best-match' : ''}" id="comm-card-${p.id}">
-    <div class="comm-card-header">
-      <div class="comm-card-band">
-        ${avatarWrapped}
-        <div class="comm-band-info">
-          <div class="comm-band-name">${escapeHtml(band.band_name || 'Unknown Band')}</div>
-          <div class="comm-band-meta">${escapeHtml([band.genre, band.home_city].filter(Boolean).join(' · '))}</div>
-          ${trustHtml}
-        </div>
-      </div>
-      <div class="comm-card-badges">
+
+    <!-- Photo header zone -->
+    <div class="comm-card-photo" style="background-color:${fallbackColor}">
+      ${photoUrl ? `<img src="${photoUrl}" class="comm-card-photo-img" alt="" onerror="this.style.display='none'">` : ''}
+      <div class="comm-card-photo-gradient"></div>
+      <div class="comm-card-photo-badge">${badge}</div>
+      <div class="comm-card-photo-badges-right">
         ${isBestMatch ? '<span class="comm-best-match-badge">Best Match</span>' : ''}
         ${isNew       ? '<span class="comm-new-badge">New</span>' : ''}
-        ${badge}
+      </div>
+      <div class="comm-card-photo-overlay">
+        <div class="comm-card-photo-band">${bandNameEl}</div>
+        <div class="comm-card-photo-meta">${escapeHtml([band.genre, band.home_city].filter(Boolean).join(' · '))}</div>
+        <div class="comm-card-photo-title">${escapeHtml(p.title)}</div>
+        ${trustHtml}
       </div>
     </div>
 
-    ${isSimilar ? '<div class="comm-similar-tag">Similar to your sound</div>' : ''}
-    ${dates.length ? `<div class="comm-tour-route">${routeHtml}</div>` : ''}
-    ${dateRange     ? `<div class="comm-date-range">${dateRange}</div>` : ''}
-    ${slotsHtml}
-    ${genreTagsHtml ? `<div class="comm-genre-tags">${genreTagsHtml}</div>` : ''}
-
-    <div class="comm-card-title">${escapeHtml(p.title)}</div>
-    ${descHtml}
-
-    ${dates.length ? `<div class="comm-dates-list">
-      ${datesHtml}
-      ${extraDates ? `<div class="comm-view-all-dates" onclick="openInterestModal(${p.id})">View all ${dates.length} dates →</div>` : ''}
-    </div>` : ''}
-
-    ${confirmedHtml}
-
-    <div class="comm-card-footer">
-      <span class="comm-posted-ago">${postedAgo}${interestCount > 0 ? ` · ${interestCount} interested` : ''}</span>
-      <div class="comm-card-actions">${epkBtn}${actionBtn}${ownerTools}</div>
+    <!-- Card body -->
+    <div class="comm-card-body">
+      ${isSimilar ? '<div class="comm-similar-tag">Similar to your sound</div>' : ''}
+      ${dates.length ? `<div class="comm-tour-route">${routeHtml}</div>` : ''}
+      ${dateRange    ? `<div class="comm-date-range">${dateRange}</div>` : ''}
+      ${slotsHtml}
+      ${genreTagsHtml ? `<div class="comm-genre-tags">${genreTagsHtml}</div>` : ''}
+      ${descHtml}
+      ${dates.length ? `<div class="comm-dates-list">
+        ${datesHtml}
+        ${extraDates ? `<div class="comm-view-all-dates" onclick="openInterestModal(${p.id})">View all ${dates.length} dates →</div>` : ''}
+      </div>` : ''}
+      ${confirmedHtml}
+      <div class="comm-card-footer">
+        <span class="comm-posted-ago">${postedAgo}${interestCount > 0 ? ` · ${interestCount} interested` : ''}</span>
+        <div class="comm-card-actions">${epkBtn}${actionBtn}${ownerTools}</div>
+      </div>
     </div>
+
   </article>`;
 }
 
@@ -587,8 +574,22 @@ function openEditModal(postingId) {
 
 function _openPostForm(prefill) {
   // Reset state
-  _postType    = prefill?.type || null;
-  _slotsNeeded = prefill?.slots_needed || 1;
+  _postType            = prefill?.type || null;
+  _slotsNeeded         = prefill?.slots_needed || 1;
+  _postHeaderPhotoUrl  = null;
+  _postHeaderPhotoFile = null;
+
+  // Photo form reset
+  const photoFileEl = document.getElementById('postPhotoFile');
+  if (photoFileEl) photoFileEl.value = '';
+  const photoPrevEl = document.getElementById('postPhotoPreview');
+  if (photoPrevEl) photoPrevEl.innerHTML = '';
+  const firstPhotoTab = document.querySelector('.comm-photo-tab');
+  if (firstPhotoTab) setPhotoMode('upload', firstPhotoTab);
+  if (prefill?.header_photo_url) {
+    _postHeaderPhotoUrl = prefill.header_photo_url;
+    if (photoPrevEl) photoPrevEl.innerHTML = `<img src="${escapeHtml(prefill.header_photo_url)}" class="comm-photo-preview-img" alt=""><button class="comm-photo-clear" onclick="clearPostPhoto()">✕ Remove photo</button>`;
+  }
 
   document.querySelectorAll('#postTypeCards .comm-type-card').forEach(c => {
     c.classList.toggle('comm-type-card--active', prefill && c.dataset.type === prefill.type);
@@ -706,6 +707,74 @@ function closePostModal() {
     modal.innerHTML = modal._originalContent;
     modal._originalContent = null;
   }
+}
+
+// ── Post photo helpers ────────────────────────────────────────────────────────
+
+function setPhotoMode(mode, btn) {
+  document.querySelectorAll('.comm-photo-tab').forEach(b => b.classList.remove('comm-photo-tab--active'));
+  if (btn) btn.classList.add('comm-photo-tab--active');
+  const uploadEl = document.getElementById('photoUploadMode');
+  const epkEl    = document.getElementById('photoEpkMode');
+  if (uploadEl) uploadEl.style.display = mode === 'upload' ? 'block' : 'none';
+  if (epkEl)    epkEl.style.display    = mode === 'epk'    ? 'block' : 'none';
+  if (mode === 'epk') loadEpkPhotos();
+}
+
+function previewPostPhoto() {
+  const file = document.getElementById('postPhotoFile').files[0];
+  if (!file) return;
+  _postHeaderPhotoFile = file;
+  _postHeaderPhotoUrl  = null;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('postPhotoPreview');
+    if (prev) prev.innerHTML = `<img src="${e.target.result}" class="comm-photo-preview-img" alt=""><button class="comm-photo-clear" onclick="clearPostPhoto()">✕ Remove photo</button>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPostPhoto() {
+  _postHeaderPhotoFile = null;
+  _postHeaderPhotoUrl  = null;
+  const fileEl = document.getElementById('postPhotoFile');
+  if (fileEl) fileEl.value = '';
+  const prev = document.getElementById('postPhotoPreview');
+  if (prev) prev.innerHTML = '';
+  document.querySelectorAll('.comm-epk-photo-thumb').forEach(el => el.classList.remove('selected'));
+}
+
+async function loadEpkPhotos() {
+  if (!currentBandProfile) return;
+  const grid     = document.getElementById('epkPhotosGrid');
+  const noPhotos = document.getElementById('noEpkPhotos');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:8px 0">Loading press photos…</div>';
+  const { data: photos } = await sb
+    .from('band_photos')
+    .select('photo_url')
+    .eq('band_id', currentBandProfile.id)
+    .limit(12);
+  if (!photos || photos.length === 0) {
+    grid.innerHTML = '';
+    if (noPhotos) noPhotos.style.display = 'block';
+    return;
+  }
+  if (noPhotos) noPhotos.style.display = 'none';
+  grid.innerHTML = photos.map(ph =>
+    `<div class="comm-epk-photo-thumb${_postHeaderPhotoUrl === ph.photo_url ? ' selected' : ''}" onclick="selectEpkPhoto('${ph.photo_url.replace(/'/g,'\'')}', this)">
+      <img src="${ph.photo_url}" alt="">
+    </div>`
+  ).join('');
+}
+
+function selectEpkPhoto(url, el) {
+  _postHeaderPhotoUrl  = url;
+  _postHeaderPhotoFile = null;
+  document.querySelectorAll('.comm-epk-photo-thumb').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  const prev = document.getElementById('postPhotoPreview');
+  if (prev) prev.innerHTML = `<img src="${url}" class="comm-photo-preview-img" alt=""><button class="comm-photo-clear" onclick="clearPostPhoto()">✕ Remove photo</button>`;
 }
 
 function selectPostType(card) {
@@ -884,6 +953,28 @@ async function submitPosting() {
   const btn = document.getElementById('postSubmitBtn');
   btn.disabled = true; btn.textContent = _editingPostingId ? 'Saving…' : 'Posting…';
 
+  // ── Photo upload ──────────────────────────────────────────────────────────
+  let headerPhotoUrl = null;
+  if (_editingPostingId) {
+    const existing = _allPostings.find(x => x.id === _editingPostingId);
+    headerPhotoUrl = existing?.header_photo_url || null;
+  }
+  if (_postHeaderPhotoFile) {
+    const ext  = (_postHeaderPhotoFile.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${currentBandProfile.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage
+      .from('posting-headers')
+      .upload(path, _postHeaderPhotoFile, { upsert: true });
+    if (upErr) {
+      console.warn('[community] photo upload failed:', upErr.message);
+    } else {
+      const { data: { publicUrl } } = sb.storage.from('posting-headers').getPublicUrl(path);
+      headerPhotoUrl = publicUrl;
+    }
+  } else if (_postHeaderPhotoUrl) {
+    headerPhotoUrl = _postHeaderPhotoUrl;
+  }
+
   const postPayload = {
     type:               _postType,
     title,
@@ -894,6 +985,7 @@ async function submitPosting() {
     contact_email:      contactPref === 'email' ? contactEmail : null,
     linked_tour_id:     linkedTourId,
     linked_stop_ids:    linkedStopIds,
+    header_photo_url:   headerPhotoUrl,
   };
 
   let postingId;
