@@ -1,6 +1,36 @@
 // Supabase config — credentials come from config.js (gitignored)
 const sb = supabase.createClient(BANDMATE_SUPABASE_URL, BANDMATE_SUPABASE_KEY);
 
+// ── Instagram in-app browser detection ───────────────────────────────────────
+// Instagram's IAB blocks Google Maps JS API and geolocation silently.
+// Show a sticky banner prompting users to open in their real browser.
+(function() {
+  if (!/Instagram/.test(navigator.userAgent)) return;
+  const banner = document.createElement('div');
+  banner.id = 'iab-banner';
+  banner.innerHTML = `
+    <div style="
+      position:fixed;top:0;left:0;right:0;z-index:99999;
+      background:var(--ink,#0f0f0c);color:var(--paper,#f2efe6);
+      font-family:'DM Sans',sans-serif;font-weight:300;font-size:12px;
+      letter-spacing:0.06em;padding:10px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      border-bottom:1px solid rgba(255,255,255,0.1);">
+      <span>For venue search &amp; maps, open in your browser</span>
+      <a href="${window.location.href}"
+         target="_blank"
+         style="font-family:'DM Sans',sans-serif;font-weight:400;font-size:11px;
+                letter-spacing:0.12em;text-transform:uppercase;color:var(--paper,#f2efe6);
+                border:1px solid rgba(255,255,255,0.4);padding:5px 10px;
+                text-decoration:none;white-space:nowrap;flex-shrink:0;">
+        Open →
+      </a>
+    </div>`;
+  document.body.insertAdjacentElement('afterbegin', banner);
+  // Push page content down so banner doesn't overlap nav
+  document.body.style.paddingTop = '42px';
+})();
+
 // Development logging — only active when BANDMATE_DEV=true in config.js
 function devLog(...args) {
   if (typeof BANDMATE_DEV !== 'undefined' && BANDMATE_DEV) console.log(...args);
