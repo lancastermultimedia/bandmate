@@ -168,8 +168,7 @@ function toggleReviewForm() {
   }
 }
 
-var currentPlaceId   = null;
-var currentVenueName = null;
+var currentPlaceId = null;
 
 async function loadVenueReviews(placeId, venueName) {
   currentPlaceId   = placeId;
