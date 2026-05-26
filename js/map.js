@@ -376,11 +376,13 @@ function searchVenuesNearby(center) {
 }
 
 async function processResults(results) {
+  // Don't re-filter by type — nearbySearch/textSearch already filtered at the API
+  // level, and Google's type strings have changed across API versions.
+  const geoOnlyTypes = ['locality','administrative_area_level_1','administrative_area_level_2',
+                        'administrative_area_level_3','country','postal_code'];
   const newVenues = results.filter(p => {
-    const name  = (p.name || '').toLowerCase();
     const types = p.types || [];
-    return types.includes('bar') || types.includes('night_club') ||
-           VENUE_KEYWORDS.some(kw => name.includes(kw));
+    return !types.some(t => geoOnlyTypes.includes(t));
   });
   newVenues.forEach(place => addMarker(place));
 
@@ -431,8 +433,15 @@ function addMarker(place) {
     <text x="18" y="22" text-anchor="middle" font-size="11" font-family="Space Mono,monospace" font-weight="700" fill="${color}">${rating ? rating.toFixed(1) : '?'}</text>
   </svg>`;
 
+  const rawPos = place.geometry?.location ?? place.location;
+  if (!rawPos) return; // no position data — skip marker
+  const markerPos = {
+    lat: typeof rawPos.lat === 'function' ? rawPos.lat() : rawPos.lat,
+    lng: typeof rawPos.lng === 'function' ? rawPos.lng() : rawPos.lng,
+  };
+
   const marker = new google.maps.Marker({
-    position: { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() },
+    position: markerPos,
     map,
     title: place.name,
     icon: {
