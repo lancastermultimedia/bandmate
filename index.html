@@ -347,7 +347,7 @@ body.lp-body { background: var(--paper); }
 }
 .fc-title {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   font-size: 9px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -827,11 +827,12 @@ a.cp { display: flex; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  .lp-hero { min-height: calc(100svh - 56px); display: flex; flex-direction: column; }
   .lp-nav { padding: 0 20px; }
   .lp-nav .lp-nav-links { display: none; }
   .poster-top { padding: 16px 20px 8px; }
   .poster-wordmark { font-size: clamp(2.5rem, 12vw, 4rem); }
-  .globe-stage { padding: 32px 0 28px; min-height: 300px; }
+  .globe-stage { padding: 32px 0 28px; min-height: 300px; flex: 1; }
   .globe-svg-wrap svg { width: 240px !important; }
   .gs-input { font-size: 16px; padding: 16px 0; }
   .gs-close { height: 52px; }
