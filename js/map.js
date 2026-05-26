@@ -38,20 +38,23 @@ function initMap() {
   // searches ("The Basement East") in a single input with a live dropdown.
   const searchInput  = document.getElementById('locationInput');
   const autocomplete = new google.maps.places.Autocomplete(searchInput, {
-    fields: ['place_id', 'geometry', 'name', 'types', 'formatted_address', 'vicinity']
+    fields: ['place_id', 'geometry', 'location', 'name', 'types', 'formatted_address', 'vicinity']
   });
 
   autocomplete.addListener('place_changed', () => {
     const place = autocomplete.getPlace();
-    if (!place.geometry) {
+
+    // Support both old API (place.geometry.location) and new API (place.location)
+    const rawLocation = place.geometry?.location ?? place.location;
+    if (!rawLocation) {
       // User pressed Enter without selecting — fall back to geocoder
       searchLocation();
       return;
     }
 
     const loc = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng()
+      lat: typeof rawLocation.lat === 'function' ? rawLocation.lat() : rawLocation.lat,
+      lng: typeof rawLocation.lng === 'function' ? rawLocation.lng() : rawLocation.lng
     };
 
     // Detect whether the result is a geographic area (city, region, postal code)
