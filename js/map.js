@@ -47,19 +47,37 @@ function initMap() {
     // Support both old API (place.geometry.location) and new API (place.location)
     const rawLocation = place.geometry?.location ?? place.location;
     if (!rawLocation) {
-      // User pressed Enter without selecting — fall back to geocoder
-      searchLocation();
+      if (place.place_id) {
+        // Autocomplete returned a place_id but no geometry — fetch full details
+        placesService.getDetails(
+          { placeId: place.place_id, fields: ['place_id', 'geometry', 'name', 'types', 'formatted_address', 'vicinity'] },
+          (result, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && result) {
+              handleAutocompletePlace(result);
+            } else {
+              searchLocation();
+            }
+          }
+        );
+      } else {
+        // User pressed Enter without selecting — fall back to geocoder
+        searchLocation();
+      }
       return;
     }
+
+    handleAutocompletePlace(place);
+  });
+
+  function handleAutocompletePlace(place) {
+    const rawLocation = place.geometry?.location ?? place.location;
+    if (!rawLocation) { searchLocation(); return; }
 
     const loc = {
       lat: typeof rawLocation.lat === 'function' ? rawLocation.lat() : rawLocation.lat,
       lng: typeof rawLocation.lng === 'function' ? rawLocation.lng() : rawLocation.lng
     };
 
-    // Detect whether the result is a geographic area (city, region, postal code)
-    // vs a specific place. Inverted logic: geography types are stable; venue
-    // types vary across Google API versions so we check for NOT-geography instead.
     const geoTypes = ['locality','administrative_area_level_1','administrative_area_level_2',
                       'administrative_area_level_3','country','postal_code',
                       'neighborhood','sublocality','sublocality_level_1','route',
@@ -69,12 +87,10 @@ function initMap() {
     const isVenue = !isGeo && place.place_id;
 
     if (isVenue) {
-      // Zoom to venue and open its full review page
       map.setCenter(loc);
       map.setZoom(16);
       openVenuePage(place.place_id, place.name, place.formatted_address || place.vicinity || '');
     } else {
-      // Treat as a location — search for venues nearby
       currentCenter = loc;
       map.setCenter(loc);
       map.setZoom(13);
@@ -83,7 +99,7 @@ function initMap() {
       _currentCityLabel = place.name.split(',')[0].trim();
       loadNearbyBands(_currentCityLabel);
     }
-  });
+  }
 
   initAuth();
 
