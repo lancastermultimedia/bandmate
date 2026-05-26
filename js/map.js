@@ -54,12 +54,18 @@ function initMap() {
       lng: place.geometry.location.lng()
     };
 
-    // Detect whether the autocomplete result is a specific establishment
-    // (bar, club, restaurant, etc.) vs a city / region / postal code
-    const establishmentTypes = ['bar','night_club','restaurant','food','point_of_interest','establishment'];
-    const isVenue = place.types && place.types.some(t => establishmentTypes.includes(t));
+    // Detect whether the result is a geographic area (city, region, postal code)
+    // vs a specific place. Inverted logic: geography types are stable; venue
+    // types vary across Google API versions so we check for NOT-geography instead.
+    const geoTypes = ['locality','administrative_area_level_1','administrative_area_level_2',
+                      'administrative_area_level_3','country','postal_code',
+                      'neighborhood','sublocality','sublocality_level_1','route',
+                      'street_address','intersection','natural_feature','airport'];
+    const isGeo   = place.types?.some(t => geoTypes.includes(t)) &&
+                    !place.types?.includes('establishment');
+    const isVenue = !isGeo && place.place_id;
 
-    if (isVenue && place.place_id) {
+    if (isVenue) {
       // Zoom to venue and open its full review page
       map.setCenter(loc);
       map.setZoom(16);
