@@ -296,7 +296,8 @@ async function submitReview() {
   }
 
   const text  = document.getElementById('vrfText').value.trim();
-  const genre = getSelectedGenres('vrfGenreChips')[0] || null;
+  const genres = getSelectedGenres('vrfGenreChips');
+  const genre  = genres.length ? genres.join(', ') : null;
   if (!vrfStarRating)    { showToast('Please select a star rating', 'error'); return; }
   if (text.length < 50)  { showToast('Please write at least 50 characters', 'error'); return; }
 

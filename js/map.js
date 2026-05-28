@@ -428,7 +428,10 @@ async function enrichAndRenderVenues(venues) {
     (reviews || []).forEach(r => {
       if (!r.genre_played) return;
       if (!genreByVenue[r.google_place_id]) genreByVenue[r.google_place_id] = [];
-      genreByVenue[r.google_place_id].push(r.genre_played.toLowerCase().trim());
+      r.genre_played.split(',').forEach(g => {
+        const trimmed = g.toLowerCase().trim();
+        if (trimmed) genreByVenue[r.google_place_id].push(trimmed);
+      });
     });
   } catch (_) { /* non-fatal — fall back to rating sort */ }
 
