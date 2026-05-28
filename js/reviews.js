@@ -326,8 +326,8 @@ function updateTipCount() {
   const el  = document.getElementById('vrfTip');
   const cnt = document.getElementById('vrfTipCount');
   if (!el || !cnt) return;
-  const remaining = 120 - el.value.length;
-  cnt.textContent = remaining < 30 ? `${remaining} left` : '';
+  const remaining = 240 - el.value.length;
+  cnt.textContent = remaining < 40 ? `${remaining} left` : '';
 }
 
 function updateSubmitBtn() {
