@@ -9247,6 +9247,132 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .star-btn.active { color: var(--teal) !important; transform: scale(1.08) !important; }
 .vrf-val { color: var(--teal) !important; }
 
+/* ── Would you play here again — form buttons ── */
+.vrf-return-btns {
+  display: flex;
+  gap: 0;
+}
+.vrf-return-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid rgba(15,15,12,0.15);
+  border-right: none;
+  color: var(--grey);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.vrf-return-btn:last-child { border-right: 1px solid rgba(15,15,12,0.15); }
+.vrf-return-btn--active[data-val="yes"]   { background: rgba(58,122,138,0.12); color: var(--teal); border-color: var(--teal); }
+.vrf-return-btn--active[data-val="maybe"] { background: rgba(122,138,58,0.12); color: var(--olive); border-color: var(--olive); }
+.vrf-return-btn--active[data-val="no"]    { background: rgba(217,69,53,0.1);   color: var(--red);   border-color: var(--red); }
+
+/* ── Would you play here again — venue page aggregate ── */
+.vp-return-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin: 0 0 4px;
+  background: rgba(58,122,138,0.06);
+  border: 1px solid rgba(58,122,138,0.15);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink);
+}
+.vp-return-icon {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--teal);
+  flex-shrink: 0;
+}
+.vp-return-count {
+  font-size: 10px;
+  color: var(--grey);
+  margin-left: 2px;
+}
+
+/* ── Would you play here again — review card badge ── */
+.ri-return {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+}
+.ri-return--yes   { color: var(--teal); }
+.ri-return--maybe { color: var(--olive); }
+.ri-return--no    { color: var(--red); }
+
+/* ── Tip for bands — review card callout ── */
+.ri-tip {
+  background: rgba(15,15,12,0.03);
+  border-left: 2px solid var(--teal);
+  padding: 8px 12px;
+  margin: 10px 0 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.ri-tip-label {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+/* ── Tip for bands — form input ── */
+.vrf-tip-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid rgba(15,15,12,0.15);
+  background: var(--paper);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.vrf-tip-input:focus { border-color: var(--teal); }
+.vrf-tip-count {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: var(--grey);
+  text-align: right;
+  margin-top: 3px;
+  min-height: 14px;
+}
+
+/* ── Character count progress bar ── */
+.vrf-progress-wrap {
+  height: 2px;
+  background: rgba(15,15,12,0.08);
+  margin: 6px 0 4px;
+}
+.vrf-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--grey);
+  transition: width 0.15s ease, background 0.3s ease;
+}
+
 /* ── Anonymous review toggle ── */
 .vrf-anon-row {
   display: flex;

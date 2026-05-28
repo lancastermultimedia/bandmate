@@ -169,6 +169,8 @@
         </div>
       </div>
 
+      <div class="vp-return-stat" id="vpReturnStat" style="display:none"></div>
+
       <div class="venue-page-actions">
         <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
         <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
@@ -195,6 +197,15 @@
       </div>
 
       <div id="vrfFormFields">
+        <div style="margin-bottom:20px">
+          <div style="font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);margin-bottom:10px">Would you play here again?</div>
+          <div class="vrf-return-btns" id="vrfReturnBtns">
+            <button type="button" class="vrf-return-btn" data-val="yes"   onclick="setReturnAnswer('yes')">Yes</button>
+            <button type="button" class="vrf-return-btn" data-val="maybe" onclick="setReturnAnswer('maybe')">Maybe</button>
+            <button type="button" class="vrf-return-btn" data-val="no"    onclick="setReturnAnswer('no')">No</button>
+          </div>
+        </div>
+
         <div style="margin-bottom:16px">
           <div style="font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);margin-bottom:8px">Overall Rating</div>
           <div style="display:flex;gap:6px" id="vrfStars">
@@ -238,7 +249,20 @@
         <textarea class="vrf-textarea" id="vrfText" rows="5"
           placeholder="Tell other bands what it was actually like — load-in, sound check, crowd energy, payout, hospitality..."
           oninput="updateCharCount()"></textarea>
-        <div class="vrf-char-count too-short" id="vrfCharCount">Minimum 50 characters required</div>
+        <div class="vrf-progress-wrap">
+          <div class="vrf-progress-bar" id="vrfProgressBar"></div>
+        </div>
+        <div class="vrf-char-count too-short" id="vrfCharCount">50 characters to unlock</div>
+
+        <div style="margin-bottom:16px;margin-top:4px">
+          <div style="font-family:'Space Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);margin-bottom:6px">
+            One tip for bands <span style="font-weight:300;letter-spacing:0.06em;text-transform:none;font-family:'DM Sans',sans-serif;font-size:10px;color:var(--grey)">(optional)</span>
+          </div>
+          <input type="text" id="vrfTip" class="vrf-tip-input" maxlength="120"
+            placeholder="e.g. Bring your own DI — theirs is dodgy. Ask for Jesse on sound."
+            oninput="updateTipCount()">
+          <div class="vrf-tip-count" id="vrfTipCount"></div>
+        </div>
 
         <label class="vrf-anon-row">
           <span class="vrf-anon-toggle">

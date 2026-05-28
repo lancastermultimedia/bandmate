@@ -197,6 +197,21 @@ async function loadVenueReviews(placeId, venueName) {
   document.getElementById('vpParking').textContent = avg('parking_rating');
   document.getElementById('reviewsTitle').textContent = `Band Reviews (${reviews.length})`;
 
+  // "Would you play here again?" aggregate
+  const withReturn = reviews.filter(r => r.would_return);
+  const returnStat = document.getElementById('vpReturnStat');
+  if (returnStat && withReturn.length > 0) {
+    const yesCount = withReturn.filter(r => r.would_return === 'yes').length;
+    const pct      = Math.round(yesCount / withReturn.length * 100);
+    returnStat.innerHTML = `
+      <span class="vp-return-icon">${pct >= 70 ? '✓' : pct >= 40 ? '~' : '✕'}</span>
+      <span><strong>${pct}%</strong> of bands would play here again</span>
+      <span class="vp-return-count">(${withReturn.length} answered)</span>`;
+    returnStat.style.display = 'flex';
+  } else if (returnStat) {
+    returnStat.style.display = 'none';
+  }
+
   document.getElementById('reviewsList').innerHTML = reviews.map(r => {
     const band     = r.bands || {};
     const stars    = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
@@ -231,6 +246,15 @@ async function loadVenueReviews(placeId, venueName) {
       metaLine = `${escapeHtml(band.genre || '')} · ${escapeHtml(band.home_city || '')} · ${date}`;
     }
 
+    const returnLabel = { yes: '✓ Would play here again', maybe: '~ Would consider returning', no: '✕ Would not return' };
+    const returnClass = { yes: 'ri-return--yes', maybe: 'ri-return--maybe', no: 'ri-return--no' };
+    const returnBadge = r.would_return
+      ? `<div class="ri-return ${returnClass[r.would_return] || ''}">${returnLabel[r.would_return] || ''}</div>`
+      : '';
+    const tipBlock = r.band_tip
+      ? `<div class="ri-tip"><span class="ri-tip-label">Tip for bands</span>${escapeHtml(r.band_tip)}</div>`
+      : '';
+
     return `<div class="review-item">
       <div class="ri-header">
         ${avatarWrapped}
@@ -242,12 +266,14 @@ async function loadVenueReviews(placeId, venueName) {
       </div>
       ${r.genre_played ? `<div style="font-family:'Space Mono',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sage);margin-bottom:10px">Played as: ${escapeHtml(r.genre_played)}</div>` : ''}
       <p class="ri-text">${escapeHtml(r.review_text)}</p>
+      ${tipBlock}
       <div class="ri-scores">
         <div class="ri-score"><div class="ri-score-dot"></div>Sound <strong>${r.sound_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Communication <strong>${r.comms_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Merch <strong>${r.merch_rating}/5</strong></div>
         <div class="ri-score"><div class="ri-score-dot"></div>Parking <strong>${r.parking_rating}/5</strong></div>
       </div>
+      ${returnBadge}
       ${adminDelete}
     </div>`;
   }).join('');
@@ -268,17 +294,40 @@ function setVrfStar(val) {
   updateSubmitBtn();
 }
 
+let _vrfReturnAnswer = null;
+
+function setReturnAnswer(val) {
+  _vrfReturnAnswer = val;
+  document.querySelectorAll('.vrf-return-btn').forEach(b => {
+    b.classList.toggle('vrf-return-btn--active', b.dataset.val === val);
+  });
+}
+
 function updateCharCount() {
-  const text = document.getElementById('vrfText').value;
+  const len  = document.getElementById('vrfText').value.length;
+  const bar  = document.getElementById('vrfProgressBar');
   const el   = document.getElementById('vrfCharCount');
-  if (text.length < 50) {
-    el.textContent = `Minimum 50 characters required (${text.length}/50)`;
+  const pct  = Math.min(len / 50 * 100, 100);
+  if (bar) {
+    bar.style.width = pct + '%';
+    bar.style.background = len >= 50 ? 'var(--teal)' : 'var(--grey)';
+  }
+  if (len < 50) {
+    el.textContent = `${50 - len} characters to unlock`;
     el.className   = 'vrf-char-count too-short';
   } else {
-    el.textContent = `${text.length} characters ✓`;
+    el.textContent = `${len} characters ✓`;
     el.className   = 'vrf-char-count';
   }
   updateSubmitBtn();
+}
+
+function updateTipCount() {
+  const el  = document.getElementById('vrfTip');
+  const cnt = document.getElementById('vrfTipCount');
+  if (!el || !cnt) return;
+  const remaining = 120 - el.value.length;
+  cnt.textContent = remaining < 30 ? `${remaining} left` : '';
 }
 
 function updateSubmitBtn() {
@@ -296,8 +345,9 @@ async function submitReview() {
   }
 
   const text  = document.getElementById('vrfText').value.trim();
-  const genres = getSelectedGenres('vrfGenreChips');
-  const genre  = genres.length ? genres.join(', ') : null;
+  const genres  = getSelectedGenres('vrfGenreChips');
+  const genre   = genres.length ? genres.join(', ') : null;
+  const tip     = document.getElementById('vrfTip')?.value.trim() || null;
   if (!vrfStarRating)    { showToast('Please select a star rating', 'error'); return; }
   if (text.length < 50)  { showToast('Please write at least 50 characters', 'error'); return; }
 
@@ -315,7 +365,9 @@ async function submitReview() {
     parking_rating:  parseInt(ranges[3].value),
     genre_played:    genre || null,
     review_text:     text,
-    is_anonymous:    isAnon
+    is_anonymous:    isAnon,
+    would_return:    _vrfReturnAnswer || null,
+    band_tip:        tip || null
   };
 
   devLog('Submitting review:', reviewData);
@@ -350,6 +402,12 @@ async function submitReview() {
   document.getElementById('vrfText').value = '';
   const anonBox = document.getElementById('vrfAnon');
   if (anonBox) anonBox.checked = false;
+  const tipBox = document.getElementById('vrfTip');
+  if (tipBox) tipBox.value = '';
+  _vrfReturnAnswer = null;
+  document.querySelectorAll('.vrf-return-btn').forEach(b => b.classList.remove('vrf-return-btn--active'));
+  const bar = document.getElementById('vrfProgressBar');
+  if (bar) { bar.style.width = '0%'; }
   vrfStarRating = 0;
   document.querySelectorAll('#vrfStars .star-btn').forEach(s => s.classList.remove('active'));
   await loadVenueReviews(currentVenuePlaceId, currentVenueName);
