@@ -9247,6 +9247,170 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .star-btn.active { color: var(--teal) !important; transform: scale(1.08) !important; }
 .vrf-val { color: var(--teal) !important; }
 
+/* ── Draft resume banner ── */
+.vp-draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  background: rgba(122,138,58,0.08);
+  border: 1px solid rgba(122,138,58,0.25);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+.vp-draft-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.vp-draft-actions button {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.vp-draft-actions .vp-draft-discard {
+  background: transparent;
+  color: var(--grey);
+  border: 1px solid rgba(15,15,12,0.15);
+}
+
+/* ── Sort toggle ── */
+.review-sort-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(15,15,12,0.08);
+  padding-bottom: 12px;
+}
+.rst-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid rgba(15,15,12,0.15);
+  border-right: none;
+  color: var(--grey);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.rst-btn:last-child { border-right: 1px solid rgba(15,15,12,0.15); }
+.rst-btn--active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* ── Review card footer (helpful + own controls) ── */
+.ri-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15,15,12,0.06);
+}
+.ri-helpful {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  color: var(--grey);
+  background: transparent;
+  border: 1px solid rgba(15,15,12,0.12);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ri-helpful:hover { border-color: var(--teal); color: var(--teal); }
+.ri-helpful--voted { background: rgba(58,122,138,0.1); color: var(--teal); border-color: var(--teal); font-weight: 400; }
+.ri-helpful-count { opacity: 0.7; }
+.ri-own-controls { display: flex; gap: 6px; }
+.ri-own-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid rgba(15,15,12,0.15);
+  color: var(--grey);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ri-own-btn:hover { color: var(--ink); border-color: var(--ink); }
+.ri-own-btn--delete:hover { color: var(--red); border-color: var(--red); }
+
+/* ── Edited badge ── */
+.ri-edited {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--grey);
+  font-style: italic;
+  margin-left: 6px;
+}
+
+/* ── Profile Drafts tab ── */
+.draft-card {
+  border: 1px solid rgba(15,15,12,0.1);
+  padding: 16px;
+  margin-bottom: 10px;
+  background: var(--paper);
+}
+.draft-card-venue {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.draft-card-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--grey);
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.draft-card-preview {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink);
+  opacity: 0.7;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.draft-card-actions { display: flex; gap: 8px; align-items: center; }
+.draft-card-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: inline-block;
+}
+.draft-card-btn--discard {
+  background: transparent;
+  color: var(--grey);
+  border: 1px solid rgba(15,15,12,0.15);
+}
+
 /* ── Would you play here again — form buttons ── */
 .vrf-return-btns {
   display: flex;

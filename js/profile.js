@@ -955,6 +955,7 @@ function switchProfileTab(tab) {
     _tourTabLoaded = true;
     loadTourManager(bp.id);
   }
+  if (tab === 'drafts') loadDraftsTab();
 }
 
 // Update the red badge on the Community tab button
@@ -2098,4 +2099,46 @@ function openSharedItinerary(msgId) {
   if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again.', 'error'); return; }
   win.document.write(_itinPrintDoc(meta.tour_name || 'Tour Itinerary', dateStr, '', meta.itinerary_html));
   win.document.close();
+}
+
+function loadDraftsTab() {
+  const el = document.getElementById('draftsTabContent');
+  if (!el) return;
+  const drafts = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('bm_draft_')) continue;
+    try { drafts.push(JSON.parse(localStorage.getItem(key))); } catch (_) {}
+  }
+  drafts.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  if (!drafts.length) {
+    el.innerHTML = '<div class="profile-empty-state">No saved drafts.</div>';
+    return;
+  }
+
+  el.innerHTML = drafts.map(d => {
+    const saved = new Date(d.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const stars = d.starRating ? '★'.repeat(d.starRating) + '☆'.repeat(5 - d.starRating) : '—';
+    const preview = (d.text || '').slice(0, 120) + (d.text?.length > 120 ? '…' : '');
+    return `<div class="draft-card">
+      <div class="draft-card-venue">${escapeHtml(d.venueName || 'Unknown Venue')}</div>
+      <div class="draft-card-meta">${stars} · Saved ${saved}</div>
+      ${preview ? `<div class="draft-card-preview">${escapeHtml(preview)}</div>` : ''}
+      <div class="draft-card-actions">
+        <a href="map.html?place=${encodeURIComponent(d.placeId)}" class="draft-card-btn">Continue writing →</a>
+        <button class="draft-card-btn draft-card-btn--discard" onclick="discardProfileDraft('${d.placeId}', this)">Discard</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function discardProfileDraft(placeId, btn) {
+  if (!confirm('Discard this draft?')) return;
+  localStorage.removeItem('bm_draft_' + placeId);
+  btn.closest('.draft-card').remove();
+  const el = document.getElementById('draftsTabContent');
+  if (el && !el.querySelector('.draft-card')) {
+    el.innerHTML = '<div class="profile-empty-state">No saved drafts.</div>';
+  }
 }

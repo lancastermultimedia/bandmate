@@ -3,6 +3,95 @@ let currentVenuePlaceId    = null;
 let currentVenueName       = null;
 let vrfStarRating          = 0;
 let _currentSubmittedVenue = null;
+let _editingReviewId       = null;
+let _draftSaveTimer        = null;
+let _reviewSortMode        = 'newest';
+let _cachedReviews         = null;
+let _myVotedIds            = new Set();
+let _voteCountById         = {};
+let _reviewDataById        = {};
+
+// ── Draft helpers (localStorage) ──────────────────────────────────────────────
+function _draftKey(placeId) { return 'bm_draft_' + placeId; }
+
+function saveDraftNow() {
+  if (!currentVenuePlaceId) return;
+  const ranges = document.querySelectorAll('#venueReviewForm input[type=range]');
+  const text   = document.getElementById('vrfText')?.value || '';
+  if (text.length < 10 && !vrfStarRating) return; // nothing worth saving
+  const draft = {
+    placeId:     currentVenuePlaceId,
+    venueName:   currentVenueName,
+    text,
+    starRating:  vrfStarRating,
+    sound:       parseInt(ranges[0]?.value || 3),
+    comms:       parseInt(ranges[1]?.value || 3),
+    merch:       parseInt(ranges[2]?.value || 3),
+    parking:     parseInt(ranges[3]?.value || 3),
+    tip:         document.getElementById('vrfTip')?.value || '',
+    isAnon:      document.getElementById('vrfAnon')?.checked || false,
+    wouldReturn: _vrfReturnAnswer,
+    savedAt:     new Date().toISOString()
+  };
+  localStorage.setItem(_draftKey(currentVenuePlaceId), JSON.stringify(draft));
+}
+
+function scheduleDraftSave() {
+  clearTimeout(_draftSaveTimer);
+  _draftSaveTimer = setTimeout(saveDraftNow, 2000);
+}
+
+function _loadDraft(placeId) {
+  try { return JSON.parse(localStorage.getItem(_draftKey(placeId))); } catch (_) { return null; }
+}
+
+function clearDraft(placeId) {
+  localStorage.removeItem(_draftKey(placeId || currentVenuePlaceId));
+  const banner = document.getElementById('vpDraftBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function discardDraft() {
+  clearDraft();
+  showToast('Draft discarded.', 'info');
+}
+
+function resumeDraft() {
+  const draft = _loadDraft(currentVenuePlaceId);
+  if (!draft) return;
+  document.getElementById('vrfText').value = draft.text || '';
+  updateCharCount();
+  if (draft.starRating) setVrfStar(draft.starRating);
+  if (draft.wouldReturn) setReturnAnswer(draft.wouldReturn);
+  const tip = document.getElementById('vrfTip');
+  if (tip && draft.tip) { tip.value = draft.tip; updateTipCount(); }
+  const anonBox = document.getElementById('vrfAnon');
+  if (anonBox) anonBox.checked = !!draft.isAnon;
+  const ranges = document.querySelectorAll('#venueReviewForm input[type=range]');
+  const labels = ['vrfSoundVal','vrfCommVal','vrfMerchVal','vrfParkVal'];
+  [draft.sound, draft.comms, draft.merch, draft.parking].forEach((v, i) => {
+    if (ranges[i] && v) {
+      ranges[i].value = v;
+      const lbl = document.getElementById(labels[i]);
+      if (lbl) lbl.textContent = v;
+    }
+  });
+  const form = document.getElementById('venueReviewForm');
+  form.classList.add('visible');
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const banner = document.getElementById('vpDraftBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function getAllDrafts() {
+  const drafts = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith('bm_draft_')) continue;
+    try { drafts.push(JSON.parse(localStorage.getItem(key))); } catch (_) {}
+  }
+  return drafts.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+}
 
 async function openVenuePage(placeId, name, address) {
   currentVenuePlaceId    = placeId;
@@ -75,8 +164,16 @@ async function openVenuePage(placeId, name, address) {
   }
 
   document.getElementById('venueReviewForm').classList.remove('visible');
+  _editingReviewId = null;
+  const submitBtn = document.getElementById('vrfSubmitBtn');
+  if (submitBtn) submitBtn.textContent = 'Post Review';
   document.getElementById('venuePage').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Show draft resume banner if a draft exists for this venue
+  const draft  = _loadDraft(placeId);
+  const banner = document.getElementById('vpDraftBanner');
+  if (banner) banner.style.display = (draft && draft.text && draft.text.length >= 10) ? 'flex' : 'none';
 
   await loadVenueReviews(placeId, name);
 }
@@ -180,14 +277,31 @@ async function loadVenueReviews(placeId, venueName) {
     .order('created_at', { ascending: false });
 
   if (error || !reviews || reviews.length === 0) {
+    _cachedReviews = [];
     document.getElementById('reviewsList').innerHTML = `
       <div class="no-reviews">
         <div class="no-reviews-icon">— —</div>
         <div class="no-reviews-title">No reviews yet</div>
         <p>Be the first band to review ${venueName}!</p>
       </div>`;
+    const sortRow = document.getElementById('reviewSortRow');
+    if (sortRow) sortRow.style.display = 'none';
     return;
   }
+
+  // Load vote counts + my own votes in one query
+  _myVotedIds   = new Set();
+  _voteCountById = {};
+  try {
+    const reviewIds = reviews.map(r => r.id);
+    const { data: votes } = await sb.from('review_votes')
+      .select('review_id, band_id')
+      .in('review_id', reviewIds);
+    (votes || []).forEach(v => {
+      _voteCountById[v.review_id] = (_voteCountById[v.review_id] || 0) + 1;
+      if (currentBandProfile?.id && v.band_id === currentBandProfile.id) _myVotedIds.add(v.review_id);
+    });
+  } catch (_) {}
 
   const avg = key => (reviews.reduce((s, r) => s + (r[key] || 0), 0) / reviews.length).toFixed(1);
   document.getElementById('vpOverall').textContent = avg('overall_rating');
@@ -212,13 +326,43 @@ async function loadVenueReviews(placeId, venueName) {
     returnStat.style.display = 'none';
   }
 
-  document.getElementById('reviewsList').innerHTML = reviews.map(r => {
-    const band     = r.bands || {};
-    const stars    = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
-    const date     = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const isAdmin  = !!(window.currentBandProfile?.is_admin);
-    const adminDelete = isAdmin
-      ? `<button onclick="deleteReview(${r.id}, '${escapeHtml(currentPlaceId || '')}', '${escapeHtml(currentVenueName || '')}')" style="margin-top:8px;font-family:'DM Sans',sans-serif;font-size:0.6rem;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:none;border:1px solid var(--red);color:var(--red);padding:3px 8px;cursor:pointer;">Delete</button>`
+  // Show sort row when there are reviews
+  const sortRow = document.getElementById('reviewSortRow');
+  if (sortRow) sortRow.style.display = reviews.length > 1 ? 'flex' : 'none';
+
+  _cachedReviews = reviews;
+  _renderReviews(reviews);
+}
+
+function setReviewSort(mode) {
+  _reviewSortMode = mode;
+  document.querySelectorAll('.rst-btn').forEach(b =>
+    b.classList.toggle('rst-btn--active', b.dataset.sort === mode)
+  );
+  if (_cachedReviews) _renderReviews(_cachedReviews);
+}
+
+function _renderReviews(reviews) {
+  const sorted = [...reviews].sort((a, b) => {
+    if (_reviewSortMode === 'helpful') {
+      return (_voteCountById[b.id] || 0) - (_voteCountById[a.id] || 0);
+    }
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  // Store review data for edit pre-fill
+  _reviewDataById = {};
+  sorted.forEach(r => { _reviewDataById[r.id] = r; });
+
+  const myId    = window.currentBandProfile?.id;
+  const isAdmin = !!(window.currentBandProfile?.is_admin);
+
+  document.getElementById('reviewsList').innerHTML = sorted.map(r => {
+    const band  = r.bands || {};
+    const stars = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
+    const date  = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const editedBadge = r.is_edited
+      ? `<span class="ri-edited">Edited ${new Date(r.edited_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>`
       : '';
 
     let avatarWrapped, nameEl, metaLine;
@@ -228,7 +372,7 @@ async function loadVenueReviews(placeId, venueName) {
           <circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.76 2.24-5 5-5s5 2.24 5 5"/>
         </svg>
       </div>`;
-      nameEl  = `<div class="ri-band ri-band-anon">Verified Band — Identity Protected</div>`;
+      nameEl   = `<div class="ri-band ri-band-anon">Verified Band — Identity Protected</div>`;
       metaLine = date;
     } else {
       const initials = (band.band_name || 'B').substring(0, 2).toUpperCase();
@@ -255,12 +399,28 @@ async function loadVenueReviews(placeId, venueName) {
       ? `<div class="ri-tip"><span class="ri-tip-label">Tip for bands</span>${escapeHtml(r.band_tip)}</div>`
       : '';
 
-    return `<div class="review-item">
+    // Helpful vote button
+    const voteCount  = _voteCountById[r.id] || 0;
+    const iVoted     = _myVotedIds.has(r.id);
+    const helpfulBtn = `<button class="ri-helpful${iVoted ? ' ri-helpful--voted' : ''}" onclick="toggleHelpful(${r.id})">
+      ${iVoted ? '✓ Useful' : 'Did you find this useful?'}${voteCount > 0 ? ` <span class="ri-helpful-count">(${voteCount})</span>` : ''}
+    </button>`;
+
+    // Own review controls (edit + delete)
+    const isOwn = myId && r.band_id === myId;
+    const ownControls = (isOwn || isAdmin)
+      ? `<div class="ri-own-controls">
+          ${isOwn ? `<button class="ri-own-btn" onclick="editReview(${r.id})">Edit</button>` : ''}
+          <button class="ri-own-btn ri-own-btn--delete" onclick="deleteReview(${r.id})">Delete</button>
+        </div>`
+      : '';
+
+    return `<div class="review-item" id="ri-${r.id}">
       <div class="ri-header">
         ${avatarWrapped}
-        <div>
+        <div style="flex:1;min-width:0">
           ${nameEl}
-          <div class="ri-meta">${metaLine}</div>
+          <div class="ri-meta">${metaLine}${editedBadge}</div>
         </div>
         <div class="ri-stars">${stars}</div>
       </div>
@@ -274,16 +434,64 @@ async function loadVenueReviews(placeId, venueName) {
         <div class="ri-score"><div class="ri-score-dot"></div>Parking <strong>${r.parking_rating}/5</strong></div>
       </div>
       ${returnBadge}
-      ${adminDelete}
+      <div class="ri-footer">
+        ${helpfulBtn}
+        ${ownControls}
+      </div>
     </div>`;
   }).join('');
 }
 
-async function deleteReview(reviewId, placeId, venueName) {
+async function toggleHelpful(reviewId) {
+  if (!currentBandProfile?.id) { showToast('Sign in to mark reviews as useful', 'info'); return; }
+  if (_myVotedIds.has(reviewId)) {
+    // Remove vote
+    await sb.from('review_votes').delete()
+      .eq('review_id', reviewId).eq('band_id', currentBandProfile.id);
+    _myVotedIds.delete(reviewId);
+    _voteCountById[reviewId] = Math.max(0, (_voteCountById[reviewId] || 1) - 1);
+  } else {
+    await sb.from('review_votes').insert({ review_id: reviewId, band_id: currentBandProfile.id });
+    _myVotedIds.add(reviewId);
+    _voteCountById[reviewId] = (_voteCountById[reviewId] || 0) + 1;
+  }
+  if (_cachedReviews) _renderReviews(_cachedReviews);
+}
+
+function editReview(reviewId) {
+  const r = _reviewDataById[reviewId];
+  if (!r) return;
+  _editingReviewId = reviewId;
+
+  document.getElementById('vrfText').value = r.review_text || '';
+  updateCharCount();
+  if (r.overall_rating) setVrfStar(r.overall_rating);
+  if (r.would_return)   setReturnAnswer(r.would_return);
+  const tip = document.getElementById('vrfTip');
+  if (tip) { tip.value = r.band_tip || ''; updateTipCount(); }
+  const anonBox = document.getElementById('vrfAnon');
+  if (anonBox) anonBox.checked = !!r.is_anonymous;
+
+  const ranges = document.querySelectorAll('#venueReviewForm input[type=range]');
+  const labels = ['vrfSoundVal','vrfCommVal','vrfMerchVal','vrfParkVal'];
+  [r.sound_rating, r.comms_rating, r.merch_rating, r.parking_rating].forEach((v, i) => {
+    if (ranges[i] && v) { ranges[i].value = v; const lbl = document.getElementById(labels[i]); if (lbl) lbl.textContent = v; }
+  });
+
+  const btn = document.getElementById('vrfSubmitBtn');
+  btn.textContent = 'Update Review';
+  btn.disabled    = false;
+  const form = document.getElementById('venueReviewForm');
+  form.classList.add('visible');
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function deleteReview(reviewId) {
   if (!confirm('Delete this review? This cannot be undone.')) return;
   const { error } = await sb.from('reviews').delete().eq('id', reviewId);
-  if (error) { alert('Delete failed: ' + error.message); return; }
-  await loadVenueReviews(placeId || currentPlaceId, venueName || currentVenueName);
+  if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+  showToast('Review deleted.', 'success');
+  await loadVenueReviews(currentPlaceId, currentVenueName);
 }
 
 function setVrfStar(val) {
@@ -292,6 +500,7 @@ function setVrfStar(val) {
     s.classList.toggle('active', i < val)
   );
   updateSubmitBtn();
+  scheduleDraftSave();
 }
 
 let _vrfReturnAnswer = null;
@@ -301,6 +510,7 @@ function setReturnAnswer(val) {
   document.querySelectorAll('.vrf-return-btn').forEach(b => {
     b.classList.toggle('vrf-return-btn--active', b.dataset.val === val);
   });
+  scheduleDraftSave();
 }
 
 function updateCharCount() {
@@ -320,6 +530,7 @@ function updateCharCount() {
     el.className   = 'vrf-char-count';
   }
   updateSubmitBtn();
+  scheduleDraftSave();
 }
 
 function updateTipCount() {
@@ -328,6 +539,7 @@ function updateTipCount() {
   if (!el || !cnt) return;
   const remaining = 240 - el.value.length;
   cnt.textContent = remaining < 40 ? `${remaining} left` : '';
+  scheduleDraftSave();
 }
 
 function updateSubmitBtn() {
@@ -376,29 +588,44 @@ async function submitReview() {
   btn.textContent = 'Posting...';
   btn.disabled    = true;
 
-  const { error } = await sb.from('reviews').insert(reviewData);
-  if (error) {
-    console.error('Review insert failed:', error);
-    showToast(`Submit failed: ${error.message}`, 'error');
-    btn.textContent = 'Post Review';
+  let opError;
+  if (_editingReviewId) {
+    // Editing an existing review
+    const { error } = await sb.from('reviews')
+      .update({ ...reviewData, is_edited: true, edited_at: new Date().toISOString() })
+      .eq('id', _editingReviewId)
+      .eq('band_id', currentBandProfile.id);
+    opError = error;
+    _editingReviewId = null;
+  } else {
+    // New review
+    const { error } = await sb.from('reviews').insert(reviewData);
+    opError = error;
+    if (!error) {
+      // Increment review_count on the band — used for community premium threshold
+      const prevCount = currentBandProfile.review_count || 0;
+      const newCount  = prevCount + 1;
+      await sb.from('bands').update({ review_count: newCount }).eq('email', currentUser.email);
+      currentBandProfile.review_count = newCount;
+      updateNavAuth();
+      if (prevCount < 3 && newCount >= 3) {
+        setTimeout(() => showUnlockCelebration(currentBandProfile.band_name), 800);
+      }
+    }
+  }
+
+  if (opError) {
+    console.error('Review save failed:', opError);
+    showToast(`Save failed: ${opError.message}`, 'error');
+    btn.textContent = _editingReviewId ? 'Update Review' : 'Post Review';
     btn.disabled    = false;
     return;
   }
 
-  // Increment review_count on the band — used for community premium threshold
-  const prevCount = currentBandProfile.review_count || 0;
-  const newCount  = prevCount + 1;
-  await sb.from('bands').update({ review_count: newCount }).eq('email', currentUser.email);
-  currentBandProfile.review_count = newCount;
-  updateNavAuth();
-
-  // Show unlock celebration when band hits the premium threshold
-  if (prevCount < 3 && newCount >= 3) {
-    setTimeout(() => showUnlockCelebration(currentBandProfile.band_name), 800);
-  }
-
-  showToast('Review posted — thanks for helping the community.', 'success');
+  clearDraft(currentVenuePlaceId);
+  showToast(_editingReviewId === null ? 'Review posted — thanks for helping the community.' : 'Review updated.', 'success');
   document.getElementById('venueReviewForm').classList.remove('visible');
+  btn.textContent = 'Post Review';
   document.getElementById('vrfText').value = '';
   const anonBox = document.getElementById('vrfAnon');
   if (anonBox) anonBox.checked = false;

@@ -171,6 +171,15 @@
 
       <div class="vp-return-stat" id="vpReturnStat" style="display:none"></div>
 
+      <!-- Draft resume banner — shown when a saved draft exists for this venue -->
+      <div class="vp-draft-banner" id="vpDraftBanner" style="display:none">
+        <span>You have a saved draft for this venue.</span>
+        <div class="vp-draft-actions">
+          <button onclick="resumeDraft()">Resume draft</button>
+          <button onclick="discardDraft()" class="vp-draft-discard">Discard</button>
+        </div>
+      </div>
+
       <div class="venue-page-actions">
         <button class="vp-btn vp-btn-primary" id="vpWriteReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
         <button class="vp-btn vp-btn-secondary" id="vpContactBtn">Contact Venue</button>
@@ -280,6 +289,10 @@
 
     <!-- REVIEWS -->
     <div class="reviews-section-title" id="reviewsTitle">Band Reviews</div>
+    <div class="review-sort-row" id="reviewSortRow" style="display:none">
+      <button class="rst-btn rst-btn--active" data-sort="newest" onclick="setReviewSort('newest')">Newest</button>
+      <button class="rst-btn" data-sort="helpful" onclick="setReviewSort('helpful')">Most Useful</button>
+    </div>
     <div class="reviews-list" id="reviewsList">
       <div class="no-reviews">
         <div class="no-reviews-icon">— —</div>
