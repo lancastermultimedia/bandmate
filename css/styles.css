@@ -9247,6 +9247,75 @@ input[type="range"] { accent-color: var(--teal) !important; }
 .star-btn.active { color: var(--teal) !important; transform: scale(1.08) !important; }
 .vrf-val { color: var(--teal) !important; }
 
+/* ── Anonymous review toggle ── */
+.vrf-anon-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+.vrf-anon-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 18px;
+  margin-top: 1px;
+}
+.vrf-anon-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.vrf-anon-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(15,15,12,0.15);
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+.vrf-anon-slider::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  left: 3px;
+  top: 3px;
+  background: var(--paper);
+  transition: transform 0.2s ease;
+}
+.vrf-anon-toggle input:checked + .vrf-anon-slider { background: var(--teal); }
+.vrf-anon-toggle input:checked + .vrf-anon-slider::before { transform: translateX(14px); }
+.vrf-anon-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--grey);
+  line-height: 1.45;
+}
+
+/* ── Anonymous review display ── */
+.ri-avatar-anon {
+  width: 36px;
+  height: 36px;
+  background: rgba(15,15,12,0.06);
+  border: 1px solid rgba(15,15,12,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey);
+  flex-shrink: 0;
+}
+.ri-band-anon {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--grey);
+  letter-spacing: 0.02em;
+}
+
 /* ── Venue review form ── */
 .vrf-submit {
   background: var(--ink) !important;

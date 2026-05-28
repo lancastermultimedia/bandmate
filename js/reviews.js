@@ -199,30 +199,44 @@ async function loadVenueReviews(placeId, venueName) {
 
   document.getElementById('reviewsList').innerHTML = reviews.map(r => {
     const band     = r.bands || {};
-    const initials = (band.band_name || 'B').substring(0, 2).toUpperCase();
     const stars    = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
     const date     = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const slug     = (band.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const epkHref  = band.epk_theme && slug ? `epk.html?band=${slug}` : null;
-    const avatarEl = band.profile_photo_url
-      ? `<img src="${band.profile_photo_url}" class="ri-avatar ri-avatar-img" alt="${escapeHtml(band.band_name || '')}">`
-      : `<div class="ri-avatar">${initials}</div>`;
-    const avatarWrapped = epkHref
-      ? `<a href="${epkHref}" class="ri-avatar-link" title="View ${escapeHtml(band.band_name)}'s EPK">${avatarEl}</a>`
-      : avatarEl;
-    const nameEl = epkHref
-      ? `<a href="${epkHref}" class="ri-band ri-band-link">${escapeHtml(band.band_name || 'Anonymous Band')}</a>`
-      : `<div class="ri-band">${escapeHtml(band.band_name || 'Anonymous Band')}</div>`;
-    const isAdmin = !!(window.currentBandProfile?.is_admin);
+    const isAdmin  = !!(window.currentBandProfile?.is_admin);
     const adminDelete = isAdmin
       ? `<button onclick="deleteReview(${r.id}, '${escapeHtml(currentPlaceId || '')}', '${escapeHtml(currentVenueName || '')}')" style="margin-top:8px;font-family:'DM Sans',sans-serif;font-size:0.6rem;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:none;border:1px solid var(--red);color:var(--red);padding:3px 8px;cursor:pointer;">Delete</button>`
       : '';
+
+    let avatarWrapped, nameEl, metaLine;
+    if (r.is_anonymous) {
+      avatarWrapped = `<div class="ri-avatar ri-avatar-anon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
+          <circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.76 2.24-5 5-5s5 2.24 5 5"/>
+        </svg>
+      </div>`;
+      nameEl  = `<div class="ri-band ri-band-anon">Verified Band — Identity Protected</div>`;
+      metaLine = date;
+    } else {
+      const initials = (band.band_name || 'B').substring(0, 2).toUpperCase();
+      const slug     = (band.band_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const epkHref  = band.epk_theme && slug ? `epk.html?band=${slug}` : null;
+      const avatarEl = band.profile_photo_url
+        ? `<img src="${band.profile_photo_url}" class="ri-avatar ri-avatar-img" alt="${escapeHtml(band.band_name || '')}">`
+        : `<div class="ri-avatar">${initials}</div>`;
+      avatarWrapped = epkHref
+        ? `<a href="${epkHref}" class="ri-avatar-link" title="View ${escapeHtml(band.band_name)}'s EPK">${avatarEl}</a>`
+        : avatarEl;
+      nameEl   = epkHref
+        ? `<a href="${epkHref}" class="ri-band ri-band-link">${escapeHtml(band.band_name || 'Anonymous Band')}</a>`
+        : `<div class="ri-band">${escapeHtml(band.band_name || 'Anonymous Band')}</div>`;
+      metaLine = `${escapeHtml(band.genre || '')} · ${escapeHtml(band.home_city || '')} · ${date}`;
+    }
+
     return `<div class="review-item">
       <div class="ri-header">
         ${avatarWrapped}
         <div>
           ${nameEl}
-          <div class="ri-meta">${escapeHtml(band.genre || '')} · ${escapeHtml(band.home_city || '')} · ${date}</div>
+          <div class="ri-meta">${metaLine}</div>
         </div>
         <div class="ri-stars">${stars}</div>
       </div>
@@ -287,6 +301,7 @@ async function submitReview() {
   if (text.length < 50)  { showToast('Please write at least 50 characters', 'error'); return; }
 
   const ranges = document.querySelectorAll('#venueReviewForm input[type=range]');
+  const isAnon  = document.getElementById('vrfAnon')?.checked || false;
   const reviewData = {
     google_place_id: currentVenuePlaceId,
     venue_name:      currentVenueName,
@@ -298,7 +313,8 @@ async function submitReview() {
     merch_rating:    parseInt(ranges[2].value),
     parking_rating:  parseInt(ranges[3].value),
     genre_played:    genre || null,
-    review_text:     text
+    review_text:     text,
+    is_anonymous:    isAnon
   };
 
   devLog('Submitting review:', reviewData);
@@ -331,6 +347,8 @@ async function submitReview() {
   showToast('Review posted — thanks for helping the community.', 'success');
   document.getElementById('venueReviewForm').classList.remove('visible');
   document.getElementById('vrfText').value = '';
+  const anonBox = document.getElementById('vrfAnon');
+  if (anonBox) anonBox.checked = false;
   vrfStarRating = 0;
   document.querySelectorAll('#vrfStars .star-btn').forEach(s => s.classList.remove('active'));
   await loadVenueReviews(currentVenuePlaceId, currentVenueName);
