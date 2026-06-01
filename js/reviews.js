@@ -11,6 +11,24 @@ let _myVotedIds            = new Set();
 let _voteCountById         = {};
 let _reviewDataById        = {};
 
+// ── Swipe-right to close venue page (mobile) ──────────────────────────────────
+(function() {
+  let _sx = 0, _sy = 0;
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('venuePage');
+    if (!el) return;
+    el.addEventListener('touchstart', e => {
+      _sx = e.touches[0].clientX;
+      _sy = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - _sx;
+      const dy = Math.abs(e.changedTouches[0].clientY - _sy);
+      if (dx > 72 && dy < dx * 0.75) closevenuePage();
+    }, { passive: true });
+  });
+})();
+
 function copyVenueLink() {
   if (!currentVenuePlaceId) return;
   const url = `${location.origin}${location.pathname.replace(/\/[^/]*$/, '/')  }map.html?place=${encodeURIComponent(currentVenuePlaceId)}`;

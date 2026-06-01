@@ -135,6 +135,7 @@ async function renderProfile() {
   // ── Sections visibility ──
   document.getElementById('editSection').style.display        = isPremium ? 'block' : 'none';
   document.getElementById('epkSettingsSection').style.display = isPremium ? 'block' : 'none';
+  if (isPremium) loadEpkViewStat(bp.id);
 
   // ── Form fields — populate ONCE per session ──
   if (isPremium && !formPopulated) {
@@ -2200,4 +2201,31 @@ async function deleteMyReview(reviewId, btn) {
   if (el && !el.querySelector('.myr-card')) {
     el.innerHTML = '<div class="profile-empty-state">You haven\'t left any reviews yet. <a href="map.html">Find a venue →</a></div>';
   }
+}
+
+async function loadEpkViewStat(bandId) {
+  const el   = document.getElementById('epkViewStat');
+  const text = document.getElementById('epkViewStatText');
+  if (!el || !text || !bandId) return;
+
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const [{ count: weekCount }, { count: monthCount }] = await Promise.all([
+      sb.from('epk_view_logs').select('*', { count: 'exact', head: true })
+        .eq('band_id', bandId).gte('viewed_at', weekAgo),
+      sb.from('epk_view_logs').select('*', { count: 'exact', head: true })
+        .eq('band_id', bandId).gte('viewed_at', monthAgo),
+    ]);
+
+    const wc = weekCount || 0;
+    const mc = monthCount || 0;
+    if (mc === 0) {
+      text.textContent = 'No EPK views yet — share your link to get started.';
+    } else {
+      text.innerHTML = `<strong>${wc}</strong> view${wc !== 1 ? 's' : ''} this week &nbsp;·&nbsp; <strong>${mc}</strong> this month`;
+    }
+    el.style.display = 'flex';
+  } catch (_) {}
 }

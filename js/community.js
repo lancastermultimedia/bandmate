@@ -6,7 +6,8 @@ let _allPostings       = [];   // all active postings from Supabase
 let _myInterests       = {};   // { "postingId_dateId": 'pending'|'accepted'|'declined' }
 let _acceptedByPosting = {};   // { postingId: [band, ...] } — publicly visible confirmed bands
 let _venueRatings      = {};   // { place_id: { avg, count } }
-let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent' };
+let _filters           = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent', tourCities: false };
+let _tourCities        = new Set(); // populated when band has tour stops
 let _postType          = null;
 let _slotsNeeded       = 1;
 let _editingPostingId  = null; // null = new post, number = editing existing
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[community] fetchPostings threw:', e);
     document.getElementById('commFeed').innerHTML = `<div class="comm-empty"><p class="comm-empty-title">Something went wrong</p><p class="comm-empty-sub">${e.message}</p></div>`;
   }
+  loadTourCitiesForFilter();
 
   // Map page nearby-bands DM deeplink: community.html?dm=bandId
   const dmBandId = new URLSearchParams(window.location.search).get('dm');
@@ -461,6 +463,11 @@ function applyFilters() {
     const lq = location.toLowerCase();
     results = results.filter(p => (p.posting_dates || []).some(d => (d.city || '').toLowerCase().includes(lq)));
   }
+  if (_filters.tourCities && _tourCities.size > 0) {
+    results = results.filter(p =>
+      (p.posting_dates || []).some(d => _tourCities.has((d.city || '').toLowerCase().trim()))
+    );
+  }
   if (length === 'single')  results = results.filter(p => (p.posting_dates || []).length === 1);
   if (length === 'weekend') results = results.filter(p => (p.posting_dates || []).length >= 2 && (p.posting_dates || []).length <= 3);
   if (length === 'full')    results = results.filter(p => (p.posting_dates || []).length >= 4);
@@ -510,14 +517,38 @@ function setSortFilter(btn) {
   applyFilters();
 }
 
+async function loadTourCitiesForFilter() {
+  if (!currentBandProfile?.id) return;
+  try {
+    const { data: tours } = await sb.from('tours')
+      .select('tour_stops(city)')
+      .eq('band_id', currentBandProfile.id);
+    _tourCities = new Set();
+    (tours || []).forEach(t => (t.tour_stops || []).forEach(s => {
+      if (s.city) _tourCities.add(s.city.toLowerCase().trim());
+    }));
+    const btn = document.getElementById('commTourCitiesBtn');
+    if (btn && _tourCities.size > 0) btn.style.display = 'flex';
+  } catch (_) {}
+}
+
+function toggleTourCitiesFilter() {
+  _filters.tourCities = !_filters.tourCities;
+  const btn = document.getElementById('commTourCitiesBtn');
+  if (btn) btn.classList.toggle('comm-tour-cities-btn--active', _filters.tourCities);
+  applyFilters();
+}
+
 function clearFilters() {
-  _filters = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent' };
+  _filters = { search: '', type: 'all', genre: '', location: '', length: 'all', sort: 'recent', tourCities: false };
   document.getElementById('commSearch').value   = '';
   document.getElementById('commLocation').value = '';
   document.querySelectorAll('#typeChips   .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   document.querySelectorAll('#genreChips  .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   document.querySelectorAll('#lengthChips .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
   document.querySelectorAll('#sortChips   .comm-chip').forEach((b,i) => b.classList.toggle('comm-chip--active', i===0));
+  const tcBtn = document.getElementById('commTourCitiesBtn');
+  if (tcBtn) tcBtn.classList.remove('comm-tour-cities-btn--active');
   applyFilters();
 }
 

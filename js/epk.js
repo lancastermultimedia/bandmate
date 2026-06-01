@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.classList.add('epk-owner-view');
       const findVenuesEl = document.getElementById('epkFindVenuesLink');
       if (findVenuesEl) findVenuesEl.style.display = 'none';
+    } else if (band?.id) {
+      // Log view (fire-and-forget, non-blocking)
+      sb.from('epk_view_logs').insert({ band_id: band.id }).catch(() => {});
     }
   } else {
     // Hide all chrome in preview mode
