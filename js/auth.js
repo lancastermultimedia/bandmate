@@ -41,6 +41,57 @@ let currentUser = null;
 let currentBandProfile = null;
 let _authSettled = false; // true once initAuth has resolved at least once
 
+// ── Global keyboard shortcuts ─────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+  // Escape — close the topmost open thing
+  if (e.key === 'Escape') {
+    if (document.getElementById('onboardingOverlay')?.style.display !== 'none' &&
+        document.getElementById('onboardingOverlay')) {
+      dismissOnboarding?.(); return;
+    }
+    if (document.getElementById('venuePage')?.classList.contains('open')) {
+      window.closevenuePage?.(); return;
+    }
+    if (document.querySelector('.auth-modal-overlay.open, .auth-modal-overlay[style*="flex"]')) {
+      closeAuth?.(); return;
+    }
+    if (document.getElementById('createTourModal')?.style.display === 'flex') {
+      closeCreateTourModal?.(); return;
+    }
+    if (document.querySelector('.ct-modal-overlay')?.style.display === 'flex') {
+      closeContactModal?.(); return;
+    }
+    if (typeof closePostModal === 'function') closePostModal();
+  }
+
+  // Enter — submit the active auth form
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const loginForm  = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    if (loginForm?.style.display !== 'none' &&
+        document.activeElement?.closest('#loginForm')) {
+      e.preventDefault(); handleLogin?.();
+    } else if (signupForm?.style.display !== 'none' &&
+               document.activeElement?.closest('#signupForm')) {
+      e.preventDefault(); handleSignup?.();
+    }
+  }
+
+  // / — focus search (when not already in an input)
+  if (e.key === '/' && !inInput) {
+    e.preventDefault();
+    const search = document.getElementById('locationInput') ||
+                   document.getElementById('globeSearchInput');
+    if (search) {
+      search.focus();
+      if (typeof openGlobeSearch === 'function') openGlobeSearch();
+    }
+  }
+});
+
 async function initAuth() {
   // Read session immediately from localStorage — fast and synchronous with storage.
   const { data: { session } } = await sb.auth.getSession();
@@ -478,6 +529,94 @@ function updateNavAuth() {
     }
   }
   _updatePremiumGate();
+
+  // Show onboarding checklist once to new users
+  if (currentUser && currentBandProfile && !localStorage.getItem('bm_started_v1')) {
+    setTimeout(() => showOnboardingChecklist(), 600);
+  }
+}
+
+function showOnboardingChecklist() {
+  if (document.getElementById('onboardingOverlay')) return;
+  const bp = currentBandProfile || {};
+  const reviews = bp.review_count || 0;
+  const hasEpk  = !!bp.epk_theme;
+
+  function step(color, label, sublabel, status, svgAnim) {
+    const isDone   = status === 'done';
+    const isLocked = status === 'locked';
+    return `<div class="ob-step ob-step--${color}${isDone ? ' ob-step--done' : ''}${isLocked ? ' ob-step--locked' : ''}">
+      <div class="ob-anim">${svgAnim}</div>
+      <div class="ob-label">${label}</div>
+      <div class="ob-sub">${sublabel}</div>
+      <div class="ob-status">${isDone ? '✓ Done' : isLocked ? '🔒 Locked' : '→ Go'}</div>
+    </div>`;
+  }
+
+  const pinSvg = `<svg viewBox="0 0 50 72" width="40" height="58" fill="none">
+    <g style="animation:fcPinBounce 2.6s cubic-bezier(.4,0,.6,1) infinite;transform-origin:25px 68px">
+      <circle cx="25" cy="22" r="14" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
+      <circle cx="25" cy="22" r="5" fill="rgba(248,245,238,0.7)"/>
+      <line x1="25" y1="36" x2="25" y2="60" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
+    </g><ellipse cx="25" cy="63" rx="7" ry="2" fill="rgba(248,245,238,0.18)"/>
+  </svg>`;
+
+  const tourSvg = `<svg viewBox="0 0 60 44" width="52" height="38" fill="none">
+    <g style="animation:fcDraw1 2.2s ease-in-out infinite">
+      <polyline points="4,36 18,14 32,24 46,8 56,16" stroke="rgba(248,245,238,0.7)" stroke-width="1.5" fill="none"/>
+    </g>
+    <circle cx="46" cy="8" r="3" fill="rgba(248,245,238,0.7)"/>
+  </svg>`;
+
+  const epkSvg = `<svg viewBox="0 0 44 52" width="36" height="44" fill="none">
+    <rect x="6" y="4" width="32" height="44" rx="0" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
+    <line x1="13" y1="16" x2="31" y2="16" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
+    <line x1="13" y1="24" x2="31" y2="24" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
+    <line x1="13" y1="32" x2="24" y2="32" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
+  </svg>`;
+
+  const commSvg = `<svg viewBox="0 0 60 44" width="52" height="38" fill="none">
+    <g style="animation:fcConnectL 2.5s ease-in-out infinite">
+      <circle cx="12" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
+    </g>
+    <g style="animation:fcConnectR 2.5s ease-in-out infinite">
+      <circle cx="48" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
+    </g>
+    <line x1="20" y1="22" x2="40" y2="22" stroke="rgba(248,245,238,0.55)" stroke-width="1" stroke-dasharray="3 3"/>
+  </svg>`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'onboardingOverlay';
+  overlay.className = 'onboarding-overlay';
+  overlay.innerHTML = `
+    <div class="onboarding-modal">
+      <button class="ob-close" onclick="dismissOnboarding()">✕</button>
+      <div class="ob-header">
+        <div class="ob-title">Welcome, ${escapeHtml(bp.band_name || 'Band')}.</div>
+        <div class="ob-subtitle">Here's how to get the most out of Bandmate</div>
+      </div>
+      <div class="ob-grid">
+        ${step('red',   'Find &amp; Review', 'Search venues. Leave honest reviews.', reviews >= 1 ? 'done' : 'open',  pinSvg)}
+        ${step('olive', 'Plan Your Tour',    'Unlock after 3 reviews.',               reviews >= 3 ? 'done' : reviews > 0 ? 'open' : 'locked', tourSvg)}
+        ${step('teal',  'Build Your EPK',   'One link sends venues everything.',      hasEpk ? 'done' : 'open',        epkSvg)}
+        ${step('gold',  'Find Tour Partners','Connect with bands on the road.',        'open',                          commSvg)}
+      </div>
+      <div class="ob-progress">
+        <div class="ob-progress-bar" style="width:${Math.round(([reviews>=1, reviews>=3, hasEpk, false].filter(Boolean).length / 4) * 100)}%"></div>
+      </div>
+      <div class="ob-progress-label">${[reviews>=1, reviews>=3, hasEpk].filter(Boolean).length} of 4 steps complete</div>
+      <button class="ob-cta" onclick="dismissOnboarding()">Start exploring →</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('ob-visible'));
+}
+
+function dismissOnboarding() {
+  localStorage.setItem('bm_started_v1', '1');
+  const el = document.getElementById('onboardingOverlay');
+  if (!el) return;
+  el.classList.remove('ob-visible');
+  setTimeout(() => el.remove(), 300);
 }
 
 function escapeHtml(s) {

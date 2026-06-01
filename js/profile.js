@@ -956,6 +956,7 @@ function switchProfileTab(tab) {
     loadTourManager(bp.id);
   }
   if (tab === 'drafts') loadDraftsTab();
+  if (tab === 'myreviews') loadMyReviewsTab();
 }
 
 // Update the red badge on the Community tab button
@@ -2140,5 +2141,63 @@ function discardProfileDraft(placeId, btn) {
   const el = document.getElementById('draftsTabContent');
   if (el && !el.querySelector('.draft-card')) {
     el.innerHTML = '<div class="profile-empty-state">No saved drafts.</div>';
+  }
+}
+
+async function loadMyReviewsTab() {
+  const el = document.getElementById('myReviewsContent');
+  if (!el || !currentBandProfile?.id) return;
+  el.innerHTML = '<div class="profile-empty-state">Loading…</div>';
+
+  const { data: reviews, error } = await sb.from('reviews')
+    .select('*')
+    .eq('band_id', currentBandProfile.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !reviews?.length) {
+    el.innerHTML = '<div class="profile-empty-state">You haven\'t left any reviews yet. <a href="map.html">Find a venue →</a></div>';
+    return;
+  }
+
+  el.innerHTML = reviews.map(r => {
+    const stars   = '★'.repeat(r.overall_rating) + '☆'.repeat(5 - r.overall_rating);
+    const date    = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const edited  = r.is_edited ? ` <span class="ri-edited">Edited</span>` : '';
+    const anon    = r.is_anonymous ? ' <span class="myr-anon-badge">Anonymous</span>' : '';
+    const preview = (r.review_text || '').slice(0, 160) + (r.review_text?.length > 160 ? '…' : '');
+    const tip     = r.band_tip ? `<div class="myr-tip"><span class="myr-tip-lbl">Tip</span>${escapeHtml(r.band_tip)}</div>` : '';
+    const returnBadge = r.would_return
+      ? `<span class="myr-return myr-return--${r.would_return}">${{yes:'✓ Would return',maybe:'~ Would consider',no:'✕ Would not return'}[r.would_return]}</span>`
+      : '';
+    return `<div class="myr-card" id="myr-${r.id}">
+      <div class="myr-header">
+        <div>
+          <div class="myr-venue">${escapeHtml(r.venue_name || 'Venue')}</div>
+          <div class="myr-meta">${stars} · ${date}${edited}${anon}</div>
+        </div>
+        <div class="myr-actions">
+          <a href="map.html?place=${encodeURIComponent(r.google_place_id)}" class="myr-btn">Edit review →</a>
+          <button class="myr-btn myr-btn--delete" onclick="deleteMyReview(${r.id}, this)">Delete</button>
+        </div>
+      </div>
+      <p class="myr-text">${escapeHtml(preview)}</p>
+      ${tip}
+      <div class="myr-footer">${returnBadge}</div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteMyReview(reviewId, btn) {
+  if (!confirm('Delete this review? This cannot be undone.')) return;
+  const { error } = await sb.from('reviews').delete().eq('id', reviewId).eq('band_id', currentBandProfile.id);
+  if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+  btn.closest('.myr-card').remove();
+  showToast('Review deleted.', 'success');
+  // Update local review count
+  currentBandProfile.review_count = Math.max(0, (currentBandProfile.review_count || 1) - 1);
+  updateNavAuth();
+  const el = document.getElementById('myReviewsContent');
+  if (el && !el.querySelector('.myr-card')) {
+    el.innerHTML = '<div class="profile-empty-state">You haven\'t left any reviews yet. <a href="map.html">Find a venue →</a></div>';
   }
 }

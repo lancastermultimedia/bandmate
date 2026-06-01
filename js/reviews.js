@@ -11,6 +11,16 @@ let _myVotedIds            = new Set();
 let _voteCountById         = {};
 let _reviewDataById        = {};
 
+function copyVenueLink() {
+  if (!currentVenuePlaceId) return;
+  const url = `${location.origin}${location.pathname.replace(/\/[^/]*$/, '/')  }map.html?place=${encodeURIComponent(currentVenuePlaceId)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('vpShareBtn');
+    if (btn) { const orig = btn.innerHTML; btn.textContent = 'Copied!'; setTimeout(() => btn.innerHTML = orig, 2000); }
+    showToast('Venue link copied to clipboard', 'success');
+  }).catch(() => showToast('Could not copy — try manually', 'error'));
+}
+
 // ── Draft helpers (localStorage) ──────────────────────────────────────────────
 function _draftKey(placeId) { return 'bm_draft_' + placeId; }
 

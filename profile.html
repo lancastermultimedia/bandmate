@@ -308,6 +308,7 @@ if ('serviceWorker' in navigator) {
       <span class="ptab-badge" id="commTabBadge" style="display:none">0</span>
     </button>
     <button class="ptab" data-tab="tour" onclick="switchProfileTab('tour')">Tour Manager</button>
+    <button class="ptab" data-tab="myreviews" onclick="switchProfileTab('myreviews')">My Reviews</button>
     <button class="ptab" data-tab="drafts" onclick="switchProfileTab('drafts')">Drafts</button>
   </div>
 
@@ -487,6 +488,18 @@ if ('serviceWorker' in navigator) {
     <div class="modal-disclaimer">
       Bandmate finds publicly available contact information.<br>
       Always introduce yourself professionally.
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: MY REVIEWS ──────────────────────────────────────── -->
+<div id="tab-myreviews" class="profile-tab-panel" style="display:none">
+  <div class="profile-wrap profile-body">
+    <div class="profile-section">
+      <div class="profile-section-title">Your Reviews</div>
+      <div id="myReviewsContent">
+        <div class="profile-empty-state">Loading your reviews…</div>
+      </div>
     </div>
   </div>
 </div>
