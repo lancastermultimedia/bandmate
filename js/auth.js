@@ -191,6 +191,9 @@ async function handleSignup() {
   if (!authData?.user) { showAuthMsg('Account could not be created — please try again.', 'error'); return; }
   const { error: bandError } = await sb.from('bands').insert({ email, band_name: bandName, genre, home_city: city, is_premium: false });
   if (bandError) { showAuthMsg('Profile could not be saved — ' + bandError.message, 'error'); return; }
+  // Band row now exists — reload profile so updateNavAuth sees it and triggers onboarding
+  await loadBandProfile();
+  updateNavAuth();
   showAuthMsg('Welcome to Bandmate! You can log in right away.', 'success');
   setTimeout(() => closeAuth(), 2500);
 }
