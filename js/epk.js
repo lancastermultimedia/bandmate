@@ -8,7 +8,7 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 let currentEpkBand = null;
 let currentEpkData = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => { try {
   const params      = new URLSearchParams(window.location.search);
   const slug        = params.get('band');
   const isPreview   = params.get('preview') === '1';
@@ -137,7 +137,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderEPK(band, currentEpkData);
   if (activeConfig?.config) applyConfigOverrides(activeConfig.config);
   document.body.style.visibility = 'visible';
-});
+} catch (err) {
+  console.error('[epk] load error:', err);
+  renderNotFound('Something went wrong loading this EPK. Please try again.');
+  document.body.style.visibility = 'visible';
+}});
 
 // ── Theme overlay ─────────────────────────────────────────────────────────────
 
