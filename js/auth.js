@@ -48,9 +48,8 @@ document.addEventListener('keydown', e => {
 
   // Escape — close the topmost open thing
   if (e.key === 'Escape') {
-    if (document.getElementById('onboardingOverlay')?.style.display !== 'none' &&
-        document.getElementById('onboardingOverlay')) {
-      dismissOnboarding?.(); return;
+    if (document.getElementById('onboardingOverlay')) {
+      dismissOnboarding?.(false); return;
     }
     if (document.getElementById('venuePage')?.classList.contains('open')) {
       window.closevenuePage?.(); return;
@@ -533,89 +532,88 @@ function updateNavAuth() {
   }
   _updatePremiumGate();
 
-  // Show onboarding checklist once to new users
-  if (currentUser && currentBandProfile && !localStorage.getItem('bm_started_v1')) {
+  // Show onboarding checklist — re-shows each login until permanently dismissed or all done
+  if (currentUser && currentBandProfile &&
+      !localStorage.getItem('bm_onboarding_done') &&
+      !sessionStorage.getItem('bm_onboarding_later')) {
     setTimeout(() => showOnboardingChecklist(), 600);
   }
+}
+
+function _goToStep(url) {
+  // Dismiss for this session and navigate — modal comes back next login with updated progress
+  sessionStorage.setItem('bm_onboarding_later', '1');
+  const el = document.getElementById('onboardingOverlay');
+  if (el) { el.classList.remove('ob-visible'); setTimeout(() => el.remove(), 200); }
+  setTimeout(() => { window.location.href = url; }, 150);
 }
 
 function showOnboardingChecklist() {
   if (document.getElementById('onboardingOverlay')) return;
   const bp = currentBandProfile || {};
-  const reviews = bp.review_count || 0;
-  const hasEpk  = !!bp.epk_theme;
+  const reviews  = bp.review_count || 0;
+  const hasEpk   = !!bp.epk_theme;
+  const doneCount = [reviews >= 1, reviews >= 3, hasEpk, false].filter(Boolean).length;
+  const allDone   = reviews >= 3 && hasEpk;
 
-  function step(color, label, sublabel, status, svgAnim) {
+  // Auto-dismiss permanently when everything is complete
+  if (allDone) { localStorage.setItem('bm_onboarding_done', '1'); return; }
+
+  function step(color, label, sublabel, url, status) {
     const isDone   = status === 'done';
     const isLocked = status === 'locked';
-    return `<div class="ob-step ob-step--${color}${isDone ? ' ob-step--done' : ''}${isLocked ? ' ob-step--locked' : ''}">
-      <div class="ob-anim">${svgAnim}</div>
+    const need     = status === 'locked' ? `${3 - reviews} review${3 - reviews !== 1 ? 's' : ''} to unlock` : '';
+    const statusTxt = isDone ? '✓ Complete' : isLocked ? `🔒 ${need}` : 'Tap to start →';
+    const svgMap = {
+      red:   `<svg viewBox="0 0 50 72" width="36" height="52" fill="none"><g style="animation:fcPinBounce 2.6s cubic-bezier(.4,0,.6,1) infinite;transform-origin:25px 68px"><circle cx="25" cy="22" r="14" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/><circle cx="25" cy="22" r="5" fill="rgba(248,245,238,0.7)"/><line x1="25" y1="36" x2="25" y2="60" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/></g><ellipse cx="25" cy="63" rx="7" ry="2" fill="rgba(248,245,238,0.18)"/></svg>`,
+      olive: `<svg viewBox="0 0 60 44" width="48" height="36" fill="none"><g style="animation:fcDraw1 2.2s ease-in-out infinite"><polyline points="4,36 18,14 32,24 46,8 56,16" stroke="rgba(248,245,238,0.7)" stroke-width="1.5" fill="none"/></g><circle cx="46" cy="8" r="3" fill="rgba(248,245,238,0.7)"/></svg>`,
+      teal:  `<svg viewBox="0 0 44 52" width="32" height="40" fill="none"><rect x="6" y="4" width="32" height="44" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/><line x1="13" y1="16" x2="31" y2="16" stroke="rgba(248,245,238,0.7)" stroke-width="1"/><line x1="13" y1="24" x2="31" y2="24" stroke="rgba(248,245,238,0.7)" stroke-width="1"/><line x1="13" y1="32" x2="24" y2="32" stroke="rgba(248,245,238,0.7)" stroke-width="1"/></svg>`,
+      gold:  `<svg viewBox="0 0 60 44" width="48" height="36" fill="none"><g style="animation:fcConnectL 2.5s ease-in-out infinite"><circle cx="12" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/></g><g style="animation:fcConnectR 2.5s ease-in-out infinite"><circle cx="48" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/></g><line x1="20" y1="22" x2="40" y2="22" stroke="rgba(248,245,238,0.55)" stroke-width="1" stroke-dasharray="3 3"/></svg>`,
+    };
+    // Locked steps still navigate — to map.html so they can leave more reviews
+    const dest = isLocked ? 'map.html' : url;
+    return `<div class="ob-step ob-step--${color}${isDone?' ob-step--done':''}${isLocked?' ob-step--locked':''}"
+                 onclick="_goToStep('${dest}')" role="link" tabindex="0"
+                 onkeydown="if(event.key==='Enter')_goToStep('${dest}')">
+      <div class="ob-anim">${svgMap[color]}</div>
       <div class="ob-label">${label}</div>
       <div class="ob-sub">${sublabel}</div>
-      <div class="ob-status">${isDone ? '✓ Done' : isLocked ? '🔒 Locked' : '→ Go'}</div>
+      <div class="ob-status">${statusTxt}</div>
     </div>`;
   }
-
-  const pinSvg = `<svg viewBox="0 0 50 72" width="40" height="58" fill="none">
-    <g style="animation:fcPinBounce 2.6s cubic-bezier(.4,0,.6,1) infinite;transform-origin:25px 68px">
-      <circle cx="25" cy="22" r="14" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
-      <circle cx="25" cy="22" r="5" fill="rgba(248,245,238,0.7)"/>
-      <line x1="25" y1="36" x2="25" y2="60" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
-    </g><ellipse cx="25" cy="63" rx="7" ry="2" fill="rgba(248,245,238,0.18)"/>
-  </svg>`;
-
-  const tourSvg = `<svg viewBox="0 0 60 44" width="52" height="38" fill="none">
-    <g style="animation:fcDraw1 2.2s ease-in-out infinite">
-      <polyline points="4,36 18,14 32,24 46,8 56,16" stroke="rgba(248,245,238,0.7)" stroke-width="1.5" fill="none"/>
-    </g>
-    <circle cx="46" cy="8" r="3" fill="rgba(248,245,238,0.7)"/>
-  </svg>`;
-
-  const epkSvg = `<svg viewBox="0 0 44 52" width="36" height="44" fill="none">
-    <rect x="6" y="4" width="32" height="44" rx="0" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
-    <line x1="13" y1="16" x2="31" y2="16" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
-    <line x1="13" y1="24" x2="31" y2="24" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
-    <line x1="13" y1="32" x2="24" y2="32" stroke="rgba(248,245,238,0.7)" stroke-width="1"/>
-  </svg>`;
-
-  const commSvg = `<svg viewBox="0 0 60 44" width="52" height="38" fill="none">
-    <g style="animation:fcConnectL 2.5s ease-in-out infinite">
-      <circle cx="12" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
-    </g>
-    <g style="animation:fcConnectR 2.5s ease-in-out infinite">
-      <circle cx="48" cy="22" r="8" stroke="rgba(248,245,238,0.7)" stroke-width="1.5"/>
-    </g>
-    <line x1="20" y1="22" x2="40" y2="22" stroke="rgba(248,245,238,0.55)" stroke-width="1" stroke-dasharray="3 3"/>
-  </svg>`;
 
   const overlay = document.createElement('div');
   overlay.id = 'onboardingOverlay';
   overlay.className = 'onboarding-overlay';
   overlay.innerHTML = `
     <div class="onboarding-modal">
-      <button class="ob-close" onclick="dismissOnboarding()">✕</button>
+      <button class="ob-close" onclick="dismissOnboarding(false)" title="Remind me later">✕</button>
       <div class="ob-header">
         <div class="ob-title">Welcome, ${escapeHtml(bp.band_name || 'Band')}.</div>
-        <div class="ob-subtitle">Here's how to get the most out of Bandmate</div>
+        <div class="ob-subtitle">Tap a step to get started — this checklist updates as you go</div>
       </div>
       <div class="ob-grid">
-        ${step('red',   'Find &amp; Review', 'Search venues. Leave honest reviews.', reviews >= 1 ? 'done' : 'open',  pinSvg)}
-        ${step('olive', 'Plan Your Tour',    'Unlock after 3 reviews.',               reviews >= 3 ? 'done' : reviews > 0 ? 'open' : 'locked', tourSvg)}
-        ${step('teal',  'Build Your EPK',   'One link sends venues everything.',      hasEpk ? 'done' : 'open',        epkSvg)}
-        ${step('gold',  'Find Tour Partners','Connect with bands on the road.',        'open',                          commSvg)}
+        ${step('red',   'Find &amp; Review', 'Search venues near you and leave honest reviews.', 'map.html',       reviews >= 1 ? 'done' : 'open')}
+        ${step('olive', 'Plan Your Tour',    'Build a full tour itinerary with venue contacts.',  'tour.html',      reviews >= 3 ? 'done' : 'locked')}
+        ${step('teal',  'Build Your EPK',    'One link sends venues everything they need.',       'profile.html',   hasEpk       ? 'done' : 'open')}
+        ${step('gold',  'Find Tour Partners','Connect with bands for openers and co-headliners.', 'community.html', 'open')}
       </div>
       <div class="ob-progress">
-        <div class="ob-progress-bar" style="width:${Math.round(([reviews>=1, reviews>=3, hasEpk, false].filter(Boolean).length / 4) * 100)}%"></div>
+        <div class="ob-progress-bar" style="width:${Math.round(doneCount / 4 * 100)}%"></div>
       </div>
-      <div class="ob-progress-label">${[reviews>=1, reviews>=3, hasEpk].filter(Boolean).length} of 4 steps complete</div>
-      <button class="ob-cta" onclick="dismissOnboarding()">Start exploring →</button>
+      <div class="ob-progress-label">${doneCount} of 4 steps complete · comes back each login until you're done</div>
+      <div class="ob-footer-btns">
+        <button class="ob-cta ob-cta--later" onclick="dismissOnboarding(false)">Remind me later</button>
+        <button class="ob-cta" onclick="dismissOnboarding(true)">Got it, don't show again</button>
+      </div>
     </div>`;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add('ob-visible'));
 }
 
-function dismissOnboarding() {
-  localStorage.setItem('bm_started_v1', '1');
+function dismissOnboarding(permanent = false) {
+  if (permanent) localStorage.setItem('bm_onboarding_done', '1');
+  else           sessionStorage.setItem('bm_onboarding_later', '1');
   const el = document.getElementById('onboardingOverlay');
   if (!el) return;
   el.classList.remove('ob-visible');

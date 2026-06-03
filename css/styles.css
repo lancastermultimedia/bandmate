@@ -9364,21 +9364,31 @@ nav {
   background: var(--teal);
   transition: width 0.6s ease;
 }
+.ob-step { cursor: pointer; transition: filter 0.15s; }
+.ob-step:hover:not(.ob-step--done) { filter: brightness(1.08); }
+.ob-footer-btns { display: flex; gap: 8px; }
 .ob-cta {
-  width: 100%;
+  flex: 1;
   background: var(--ink);
   color: var(--paper);
   border: none;
-  padding: 12px 24px;
+  padding: 12px 16px;
   font-family: 'DM Sans', sans-serif;
   font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.2s;
 }
 .ob-cta:hover { background: var(--teal); }
+.ob-cta--later {
+  background: transparent;
+  color: var(--grey);
+  border: 1px solid rgba(15,15,12,0.15);
+  flex: 0 0 auto;
+}
+.ob-cta--later:hover { background: transparent; color: var(--ink); border-color: var(--ink); }
 @media (max-width: 480px) {
   .ob-grid { grid-template-columns: 1fr; }
   .onboarding-modal { padding: 24px 18px 20px; }
