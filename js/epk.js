@@ -9,6 +9,7 @@ let currentEpkBand = null;
 let currentEpkData = null;
 
 document.addEventListener('DOMContentLoaded', async () => { try {
+  console.log('[epk] DOMContentLoaded — starting load');
   const params      = new URLSearchParams(window.location.search);
   const slug        = params.get('band');
   const isPreview   = params.get('preview') === '1';
@@ -512,7 +513,9 @@ function buildFooter(theme) {
 // ── Not found ─────────────────────────────────────────────────────────────────
 
 function renderNotFound(msg) {
-  document.getElementById('epkMount').innerHTML = `
+  const mount = document.getElementById('epkMount');
+  if (!mount) { console.error('[epk] epkMount missing —', msg); return; }
+  mount.innerHTML = `
     <div class="epkt-wrap epkt-not-found-wrap">
       <div class="epk-not-found">
         <div class="epk-not-found-title">EPK not available</div>
