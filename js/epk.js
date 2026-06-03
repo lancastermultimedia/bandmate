@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => { try {
       if (findVenuesEl) findVenuesEl.style.display = 'none';
     } else if (band?.id) {
       // Log view (fire-and-forget, non-blocking)
-      sb.from('epk_view_logs').insert({ band_id: band.id }).catch(() => {});
+      (async () => { try { await sb.from('epk_view_logs').insert({ band_id: band.id }); } catch (_) {} })();
     }
   } else {
     // Hide all chrome in preview mode
