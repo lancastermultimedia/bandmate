@@ -172,7 +172,68 @@ function switchAuthTab(tab) {
   const loginForm  = document.getElementById('loginForm');
   if (signupForm) signupForm.style.display = tab === 'signup' ? 'block' : 'none';
   if (loginForm)  loginForm.style.display  = tab === 'login'  ? 'block' : 'none';
-  if (tab === 'signup') loadGenreChips('signupGenreChips');
+  if (tab === 'signup') {
+    loadGenreChips('signupGenreChips');
+    _ensureSignupCityAutocomplete();
+  }
+}
+
+// ── Signup city autocomplete ──────────────────────────────────────────────────
+function _setupSignupCityAutocomplete() {
+  const input = document.getElementById('signupCity');
+  if (!input || input._acSet) return;
+  input._acSet = true;
+  input.placeholder = 'Start typing your city…';
+  input.autocomplete = 'off';
+
+  const ac = new google.maps.places.Autocomplete(input, {
+    types: ['(cities)'],
+    fields: ['address_components', 'name']
+  });
+
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (!place.address_components) return;
+    const city    = place.address_components.find(c => c.types.includes('locality') || c.types.includes('administrative_area_level_3'));
+    const state   = place.address_components.find(c => c.types.includes('administrative_area_level_1'));
+    const country = place.address_components.find(c => c.types.includes('country'));
+    const name    = city?.long_name || place.name;
+    if (state) {
+      input.value = country?.short_name === 'US'
+        ? `${name}, ${state.short_name}`
+        : `${name}, ${state.long_name}`;
+    }
+  });
+}
+
+function _ensureSignupCityAutocomplete() {
+  // Already initialised on this page load
+  const input = document.getElementById('signupCity');
+  if (!input || input._acSet) return;
+
+  // Maps API already available (e.g. map.html has it loaded)
+  if (typeof google !== 'undefined' && google.maps?.places) {
+    _setupSignupCityAutocomplete();
+    return;
+  }
+
+  // Maps API is loading on this page (script tag exists) — wait for it
+  if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+    const poll = setInterval(() => {
+      if (typeof google !== 'undefined' && google.maps?.places) {
+        clearInterval(poll);
+        _setupSignupCityAutocomplete();
+      }
+    }, 250);
+    return;
+  }
+
+  // No Maps API on this page — load just the Places library
+  window._signupPlacesReady = () => _setupSignupCityAutocomplete();
+  const s = document.createElement('script');
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${BANDMATE_MAPS_KEY}&libraries=places&callback=_signupPlacesReady`;
+  s.async = true;
+  document.head.appendChild(s);
 }
 
 async function handleSignup() {
