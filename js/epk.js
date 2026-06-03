@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', async () => { try {
     isPreview ? Promise.resolve() : initAuth(),
   ]);
 
+  if (bandsRes.error) {
+    console.error('[epk] bands query error:', bandsRes.error);
+    renderNotFound('This EPK could not be loaded — the band profile is not publicly accessible yet.');
+    document.body.style.visibility = 'visible';
+    return;
+  }
+
   const band = bandsRes.data?.[0];
   if (!band) {
     renderNotFound(`No band found for "${nameSearch}".`);
