@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Bandmate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/design-system.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+:root {
+  --paper: #f2efe6; --ink: #0f0f0c; --teal: #3a7a8a; --teal-dark: #1e4a55;
+  --teal-pale: #c8dce4; --red: #d94535; --olive: #7a8a3a; --gold: #c8a53a;
+  --grey: #8a8a7c; --border: rgba(15,15,12,0.1);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); min-height: 100vh; }
+
+/* ── Nav ── */
+.admin-nav {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--ink); color: var(--paper);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 52px;
+  border-bottom: 1px solid rgba(248,245,238,0.08);
+}
+.admin-nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.admin-nav-logo svg { opacity: 0.9; }
+.admin-wordmark { font-family: 'DM Sans',sans-serif; font-weight: 200; font-size: 11px; letter-spacing: 0.48em; text-transform: uppercase; color: var(--paper); }
+.admin-nav-title { font-family: 'Space Mono',monospace; font-size: 8px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(248,245,238,0.5); }
+.admin-nav-right { display: flex; align-items: center; gap: 14px; }
+.admin-refresh-time { font-family: 'Space Mono',monospace; font-size: 8px; letter-spacing: 0.1em; color: rgba(248,245,238,0.4); }
+.admin-refresh-btn { font-family: 'DM Sans',sans-serif; font-weight: 400; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; background: rgba(248,245,238,0.1); color: var(--paper); border: 1px solid rgba(248,245,238,0.2); padding: 5px 12px; cursor: pointer; transition: background 0.15s; }
+.admin-refresh-btn:hover { background: rgba(248,245,238,0.18); }
+.admin-back { font-family: 'DM Sans',sans-serif; font-weight: 300; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(248,245,238,0.5); text-decoration: none; }
+.admin-back:hover { color: var(--paper); }
+
+/* ── Ticker ── */
+.admin-ticker {
+  background: var(--teal-dark); overflow: hidden; white-space: nowrap;
+  border-bottom: 1px solid rgba(248,245,238,0.06);
+  padding: 7px 0;
+}
+.admin-ticker-track {
+  display: inline-flex; gap: 0;
+  animation: tickerScroll 60s linear infinite;
+}
+.admin-ticker-item {
+  font-family: 'Space Mono',monospace; font-size: 8px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(248,245,238,0.65); padding: 0 32px;
+}
+.admin-ticker-dot { color: rgba(248,245,238,0.25); padding: 0 4px; }
+@keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ── Layout ── */
+.admin-content { max-width: 1440px; margin: 0 auto; padding: 28px 28px 60px; }
+
+/* ── Hero stats ── */
+.admin-hero {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  border: 1.5px solid var(--ink); margin-bottom: 22px;
+}
+.admin-stat {
+  padding: 22px 20px 18px; border-right: 1px solid rgba(15,15,12,0.12);
+  position: relative; overflow: hidden;
+}
+.admin-stat:last-child { border-right: none; }
+.admin-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.admin-stat--bands::before   { background: var(--teal); }
+.admin-stat--new::before     { background: var(--gold); }
+.admin-stat--reviews::before { background: var(--red); }
+.admin-stat--rating::before  { background: var(--olive); }
+.admin-stat--epk::before     { background: var(--teal-pale); }
+.admin-stat-eyebrow {
+  font-family: 'Space Mono',monospace; font-size: 7px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--grey); margin-bottom: 8px;
+}
+.admin-stat-num {
+  font-family: 'Bebas Neue',sans-serif; font-size: 3rem; line-height: 1;
+  color: var(--ink); margin-bottom: 4px;
+}
+.admin-stat-sub { font-size: 10px; font-weight: 300; color: var(--grey); }
+
+/* ── Panels ── */
+.admin-row { display: grid; gap: 16px; margin-bottom: 16px; }
+.admin-row--2    { grid-template-columns: 1fr 1fr; }
+.admin-row--6040 { grid-template-columns: 3fr 2fr; }
+.admin-row--4060 { grid-template-columns: 2fr 3fr; }
+.admin-row--3    { grid-template-columns: repeat(3, 1fr); }
+.admin-panel { border: 1.5px solid var(--ink); background: var(--paper); padding: 20px 22px; }
+.admin-panel-hd {
+  font-family: 'Space Mono',monospace; font-size: 7px; letter-spacing: 0.26em;
+  text-transform: uppercase; color: var(--grey);
+  border-bottom: 1px solid rgba(15,15,12,0.08); padding-bottom: 10px; margin-bottom: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.admin-panel-count { font-size: 9px; color: var(--teal); }
+
+/* ── Growth chart ── */
+.growth-wrap { display: flex; align-items: flex-end; gap: 6px; height: 130px; }
+.growth-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.growth-bar { width: 100%; background: var(--teal); opacity: 0.82; min-height: 3px; transition: height 0.5s ease; }
+.growth-count { font-family: 'Space Mono',monospace; font-size: 7px; color: var(--ink); margin-bottom: 3px; }
+.growth-lbl { font-family: 'Space Mono',monospace; font-size: 6px; color: var(--grey); margin-top: 5px; text-align: center; white-space: nowrap; }
+
+/* ── Horizontal bars ── */
+.hbar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.hbar-row:last-child { margin-bottom: 0; }
+.hbar-label { font-size: 11px; font-weight: 300; color: var(--ink); width: 120px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { flex: 1; height: 7px; background: rgba(15,15,12,0.07); position: relative; }
+.hbar-fill { height: 100%; }
+.hbar-fill--genre { background: var(--teal); }
+.hbar-fill--city  { background: var(--olive); }
+.hbar-n { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); width: 24px; text-align: right; flex-shrink: 0; }
+
+/* ── Venue leaderboard ── */
+.venue-row {
+  display: grid; grid-template-columns: 24px 1fr auto auto;
+  align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid rgba(15,15,12,0.06);
+}
+.venue-row:last-child { border-bottom: none; }
+.venue-rank { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); }
+.venue-name { font-size: 12px; font-weight: 400; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.venue-revs { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); white-space: nowrap; }
+.venue-avg  { font-family: 'Bebas Neue',sans-serif; font-size: 1.15rem; color: var(--teal); }
+
+/* ── Recent activity ── */
+.activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(15,15,12,0.06); }
+.activity-item:last-child { border-bottom: none; }
+.activity-pip { width: 7px; height: 7px; flex-shrink: 0; margin-top: 4px; }
+.activity-pip--review { background: var(--red); }
+.activity-pip--signup { background: var(--teal); }
+.activity-body { flex: 1; min-width: 0; }
+.activity-title { font-size: 12px; font-weight: 400; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-sub { font-size: 10px; font-weight: 300; color: var(--grey); margin-top: 1px; }
+.activity-time { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); flex-shrink: 0; margin-top: 2px; }
+
+/* ── Quality panel ── */
+.quality-big { font-family: 'Bebas Neue',sans-serif; font-size: 2.8rem; line-height: 1; color: var(--ink); }
+.quality-lbl { font-family: 'Space Mono',monospace; font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grey); margin-top: 3px; }
+.return-track { height: 18px; display: flex; overflow: hidden; margin-top: 14px; border: 1px solid rgba(15,15,12,0.1); }
+.return-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono',monospace; font-size: 7px; font-weight: 700; color: var(--paper); letter-spacing: 0.06em; transition: width 0.6s ease; overflow: hidden; }
+.return-seg--yes   { background: var(--teal); }
+.return-seg--maybe { background: var(--olive); }
+.return-seg--no    { background: var(--red); }
+.return-legend { display: flex; gap: 14px; margin-top: 8px; }
+.return-legend-item { display: flex; align-items: center; gap: 5px; font-family: 'Space Mono',monospace; font-size: 7px; color: var(--grey); }
+.return-legend-dot { width: 7px; height: 7px; flex-shrink: 0; }
+
+/* ── Rating distribution ── */
+.rating-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.rating-star { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); width: 14px; text-align: right; flex-shrink: 0; }
+.rating-track { flex: 1; height: 7px; background: rgba(15,15,12,0.07); }
+.rating-fill { height: 100%; background: var(--gold); }
+.rating-n { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); width: 24px; text-align: right; flex-shrink: 0; }
+
+/* ── Signup list ── */
+.signup-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(15,15,12,0.06); }
+.signup-row:last-child { border-bottom: none; }
+.signup-name { font-size: 12px; font-weight: 400; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.signup-city { font-size: 10px; font-weight: 300; color: var(--grey); white-space: nowrap; }
+.signup-time { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--grey); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Premium funnel ── */
+.funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.funnel-label { font-size: 11px; font-weight: 300; color: var(--ink); width: 130px; flex-shrink: 0; }
+.funnel-track { flex: 1; height: 22px; background: rgba(15,15,12,0.06); position: relative; }
+.funnel-fill { height: 100%; display: flex; align-items: center; padding: 0 8px; }
+.funnel-fill span { font-family: 'Space Mono',monospace; font-size: 8px; color: var(--paper); font-weight: 700; }
+.funnel-fill--all    { background: rgba(15,15,12,0.25); }
+.funnel-fill--rev    { background: var(--teal); }
+.funnel-fill--prem   { background: var(--olive); }
+.funnel-fill--epk    { background: var(--gold); }
+.funnel-n { font-family: 'Space Mono',monospace; font-size: 9px; color: var(--grey); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* ── Loading / gate ── */
+.admin-gate { display: flex; align-items: center; justify-content: center; height: calc(100vh - 52px); }
+.admin-gate-inner { text-align: center; }
+.admin-gate-title { font-family: 'Bebas Neue',sans-serif; font-size: 2rem; letter-spacing: 0.06em; color: var(--ink); margin-bottom: 8px; }
+.admin-gate-sub { font-family: 'Space Mono',monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grey); }
+.admin-loading-bar { width: 180px; height: 2px; background: rgba(15,15,12,0.1); margin: 20px auto 0; overflow: hidden; }
+.admin-loading-fill { height: 100%; background: var(--teal); animation: loadBar 1.6s ease-in-out infinite; }
+@keyframes loadBar { 0%{width:0;margin-left:0} 50%{width:60%;margin-left:0} 100%{width:0;margin-left:100%} }
+
+@media (max-width: 1024px) {
+  .admin-hero { grid-template-columns: repeat(3, 1fr); }
+  .admin-row--6040, .admin-row--4060, .admin-row--2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .admin-hero { grid-template-columns: 1fr 1fr; }
+  .admin-row--3 { grid-template-columns: 1fr; }
+  .admin-content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="admin-nav">
+  <a href="index.html" class="admin-nav-logo">
+    <svg viewBox="0 0 26 26" width="20" height="20" fill="none">
+      <circle cx="13" cy="13" r="11" stroke="rgba(248,245,238,0.8)" stroke-width="1"/>
+      <ellipse cx="13" cy="13" rx="11" ry="4" stroke="rgba(248,245,238,0.8)" stroke-width="0.8" opacity="0.5"/>
+      <ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="rgba(248,245,238,0.8)" stroke-width="0.8" opacity="0.5"/>
+    </svg>
+    <span class="admin-wordmark">Bandmate</span>
+  </a>
+  <div class="admin-nav-title">Admin Dashboard</div>
+  <div class="admin-nav-right">
+    <span class="admin-refresh-time" id="refreshTime"></span>
+    <button class="admin-refresh-btn" onclick="loadDashboard()">↺ Refresh</button>
+    <a href="index.html" class="admin-back">← Site</a>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="admin-ticker" id="adminTicker">
+  <div class="admin-ticker-track" id="adminTickerTrack">
+    <span class="admin-ticker-item">Loading activity…</span>
+  </div>
+</div>
+
+<!-- GATE / LOADING STATE -->
+<div class="admin-gate" id="adminGate">
+  <div class="admin-gate-inner">
+    <div class="admin-gate-title">Loading</div>
+    <div class="admin-gate-sub">Fetching dashboard data</div>
+    <div class="admin-loading-bar"><div class="admin-loading-fill"></div></div>
+  </div>
+</div>
+
+<!-- DASHBOARD (hidden until loaded) -->
+<div class="admin-content" id="adminContent" style="display:none">
+
+  <!-- HERO STATS -->
+  <div class="admin-hero" id="adminHero"></div>
+
+  <!-- ROW 1: Growth + Genres -->
+  <div class="admin-row admin-row--6040">
+    <div class="admin-panel" id="panelGrowth"></div>
+    <div class="admin-panel" id="panelGenres"></div>
+  </div>
+
+  <!-- ROW 2: Cities + Venue Leaderboard -->
+  <div class="admin-row admin-row--4060">
+    <div class="admin-panel" id="panelCities"></div>
+    <div class="admin-panel" id="panelVenues"></div>
+  </div>
+
+  <!-- ROW 3: Recent Signups + Recent Reviews -->
+  <div class="admin-row admin-row--2">
+    <div class="admin-panel" id="panelSignups"></div>
+    <div class="admin-panel" id="panelReviews"></div>
+  </div>
+
+  <!-- ROW 4: Quality stats -->
+  <div class="admin-row admin-row--3">
+    <div class="admin-panel" id="panelRatings"></div>
+    <div class="admin-panel" id="panelReturn"></div>
+    <div class="admin-panel" id="panelFunnel"></div>
+  </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
