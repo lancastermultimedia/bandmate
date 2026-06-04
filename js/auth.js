@@ -559,8 +559,12 @@ function updateNavAuth() {
     const avatarHtml  = currentBandProfile.photo_url
       ? `<img src="${currentBandProfile.photo_url}" class="nav-avatar" alt="">`
       : `<div class="nav-avatar nav-avatar-init">${(currentBandProfile.band_name || 'B')[0].toUpperCase()}</div>`;
+    const adminLink = currentBandProfile.is_admin
+      ? `<a href="admin.html" style="font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:var(--teal);text-decoration:none;border:1px solid var(--teal);padding:4px 8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(58,122,138,0.1)'" onmouseout="this.style.background='transparent'">Admin</a>`
+      : '';
     area.innerHTML = `<div class="nav-user">
       <a href="profile.html" class="nav-user-link">${avatarHtml}<span class="nav-user-name">${currentBandProfile.band_name}</span></a>
+      ${adminLink}
       ${statusHtml}
       <button class="nav-bell" id="navBell" onclick="if(typeof toggleNotifTray==='function')toggleNotifTray()" aria-label="Notifications">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
