@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Burl — Band Reviews — Lexington, KY — Bandmate</title>
+<meta name="description" content="Touring band reviews for The Burl in Lexington, KY. See what independent bands say about playing this venue — sound, hospitality, pay, and tips for booking.">
+<meta name="keywords" content="The Burl Lexington KY, The Burl band reviews, touring bands Lexington Kentucky, The Burl venue review, music venues Lexington KY">
+<link rel="canonical" href="https://mybandmate.us/venues/the-burl-lexington-ky.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mybandmate.us/venues/the-burl-lexington-ky.html">
+<meta property="og:title" content="The Burl — Band Reviews — Lexington, KY">
+<meta property="og:description" content="Honest reviews from touring bands who have played The Burl in Lexington, KY. Sound, pay, hospitality, and booking tips.">
+<meta property="og:site_name" content="Bandmate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The Burl — Band Reviews — Lexington, KY — Bandmate">
+<meta name="twitter:description" content="Honest reviews from touring bands who have played The Burl in Lexington, KY.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"MusicVenue","name":"The Burl","address":{"@type":"PostalAddress","addressLocality":"Lexington","addressRegion":"KY","addressCountry":"US"},"url":"https://mybandmate.us/venues/the-burl-lexington-ky.html"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/design-system.css?v=5">
+<link rel="stylesheet" href="../css/styles.css?v=7">
+<link rel="stylesheet" href="../css/venue-page.css">
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));</script>
+<script src="../config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="../index.html" class="nav-logo"><svg viewBox="0 0 26 26" width="22" height="22" fill="none"><circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/><ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></svg>
+    <span class="wordmark">Bandmate</span>
+    <span class="beta-badge">Beta</span></a>
+  <ul class="nav-links">
+    <li><a href="../map.html">Find Venues</a></li>
+    <li><a href="../tour.html">Tour Planner</a></li>
+    <li><a href="../community.html">Community</a></li>
+    <li><a href="../epk-builder.html">EPK Builder</a></li>
+    <li id="navAuthArea" style="display:contents">
+      <a href="#" style="font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);text-decoration:none;" onclick="openAuth('login')">Log In</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup')">Join Free</a>
+    </li>
+  </ul>
+  <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="2" rx="1" fill="var(--rust)"/><rect x="2" y="10" width="18" height="2" rx="1" fill="var(--rust)"/><rect x="2" y="15" width="18" height="2" rx="1" fill="var(--rust)"/></svg></button>
+</nav>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav-overlay" id="mobileNavOverlay">
+  <div class="mobile-nav-header">
+    <a href="../index.html" class="mobile-nav-logo"><svg viewBox="0 0 26 26" width="18" height="18" fill="none" style="opacity:0.7"><circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/><ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></svg> Bandmate</a>
+    <button class="mobile-nav-close" onclick="closeMobileMenu()">✕</button>
+  </div>
+  <nav class="mobile-nav-links">
+    <a href="../map.html" class="mobile-nav-link" onclick="closeMobileMenu()">Find Venues</a>
+    <a href="../community.html" class="mobile-nav-link" onclick="closeMobileMenu()">Community</a>
+    <a href="../tour.html" class="mobile-nav-link" onclick="closeMobileMenu()">Tour Planner</a>
+    <a href="../epk-builder.html" class="mobile-nav-link" onclick="closeMobileMenu()">EPK Builder</a>
+  </nav>
+  <div class="mobile-nav-footer" id="mobileNavFooter">
+    <a href="#" class="mobile-nav-login" onclick="closeMobileMenu();openAuth('login');return false">Log In</a>
+    <a href="#" class="mobile-nav-signup" onclick="closeMobileMenu();openAuth('signup');return false">Join Free</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- VENUE HERO -->
+<section class="vp-hero">
+  <div class="vp-hero-inner">
+    <div class="vp-breadcrumb"><a href="../map.html">← All Venues</a> / Lexington, KY</div>
+    <h1 class="vp-venue-name">The Burl</h1>
+    <div class="vp-venue-meta">
+      <span class="vp-venue-city">Lexington, KY</span>
+      <span class="vp-venue-dot">·</span>
+      <span class="vp-venue-type">Music Venue</span>
+      <span class="vp-venue-dot">·</span>
+      <span class="vp-reviewed-by">Reviewed by touring bands</span>
+    </div>
+    <div class="vp-stats-row" id="vpStats">
+      <div class="vp-stat-loading">Loading reviews…</div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="vp-reviews-section">
+  <div class="vp-reviews-inner">
+    <div class="vp-reviews-header">
+      <h2 class="vp-reviews-title" id="vpReviewsTitle">Band Reviews</h2>
+      <a href="../map.html#leave-review" class="vp-leave-review-btn">Leave a Review</a>
+    </div>
+    <div class="vp-review-list" id="vpReviewList">
+      <div class="vp-loading">Loading reviews…</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="vp-cta-section">
+  <div class="vp-cta-inner">
+    <div class="vp-cta-text">
+      <div class="vp-cta-label">Find more venues</div>
+      <div class="vp-cta-sub">Search band-reviewed venues across the country</div>
+    </div>
+    <a href="../map.html" class="vp-cta-btn">Search All Venues →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="lp-footer">
+  <div class="fl"><svg viewBox="0 0 26 26" width="18" height="18" fill="none"><circle cx="13" cy="13" r="11" stroke="currentColor" stroke-width="1"/><ellipse cx="13" cy="13" rx="11" ry="4" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><ellipse cx="13" cy="13" rx="4.5" ry="11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></svg> Bandmate</div>
+  <div class="fc">Built for the road · Not for the boardroom</div>
+  <div class="fr">Beta 2026 · Every tool to play further</div>
+</footer>
+
+<script>
+window.VENUE = {
+  name: 'The Burl',
+  queryName: 'Burl',
+  city: 'Lexington, KY',
+  type: 'Music Venue',
+  placeId: null, // TODO: add Google Place ID when known
+};
+</script>
+<script src="../js/auth.js"></script>
+<script src="../js/venue-page.js"></script>
+</body>
+</html>
