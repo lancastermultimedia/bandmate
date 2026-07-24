@@ -395,6 +395,20 @@ input[type="range"] {
 
 .vrc-tag.open { border-color: var(--sage); color: var(--sage); }
 .vrc-tag--genre { border-color: var(--rust); color: var(--rust); }
+.vrc-tag--fav { border-color: var(--gold, #e8b84b); color: var(--gold, #e8b84b); font-weight: 700; }
+
+.vrc-fav-page-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  border-color: var(--gold, #e8b84b) !important;
+  color: var(--gold, #e8b84b) !important;
+}
+.vrc-fav-page-btn:hover {
+  background: var(--gold, #e8b84b) !important;
+  color: #0f0f0c !important;
+  border-color: var(--gold, #e8b84b) !important;
+}
 
 .vrc--genre-match { border-left: 3px solid var(--rust); }
 

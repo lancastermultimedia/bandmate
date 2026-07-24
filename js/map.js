@@ -2,6 +2,14 @@ const GOOGLE_API_KEY   = (typeof BANDMATE_MAPS_KEY !== 'undefined') ? BANDMATE_M
 const FALLBACK_LOCATION = { lat: 36.1627, lng: -86.7816, name: 'Nashville, TN' };
 const VENUE_KEYWORDS    = ['bar','tavern','pub','club','lounge','music','venue','hall','stage','brewery','taproom'];
 
+// Venues with dedicated band review pages — placeId → relative URL
+const BAND_FAVORITE_PAGES = {
+  'ChIJI4sMfoFEQogRu6mxNiuBIHU': 'venues/the-burl-lexington-ky.html',
+  'ChIJL89un_NEQogRaR9d0FgvN5I': 'venues/green-lantern-lexington-ky.html',
+  'ChIJEaADEBJFQogR1ePUsrbUG6E': 'venues/fishtank-lexington-ky.html',
+  'ChIJsbMgk_tEQogRocp77F-dFDo': 'venues/als-bar-lexington-ky.html',
+};
+
 let map, placesService, infoWindow, searchCircle;
 let markers          = [];
 let _svMarkers       = [];    // submitted venue markers (separate from Google)
@@ -505,6 +513,11 @@ function showInfoWindow(place, marker) {
       <button class="iw-btn" style="margin-top:6px;background:var(--ink)" onclick="openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
         Reviews + Full Page
       </button>
+      ${BAND_FAVORITE_PAGES[place.place_id] ? `
+      <a class="iw-btn" href="${BAND_FAVORITE_PAGES[place.place_id]}" target="_blank"
+         style="margin-top:6px;background:var(--rust);display:block;text-align:center;text-decoration:none">
+        ★ Band Favorite — Full Review Page
+      </a>` : ''}
     </div>`;
 
   infoWindow.setContent(buildContent(''));
@@ -579,6 +592,15 @@ function updateVenuesList(venues, genreByVenue = {}) {
         ? `<div class="vrc-section-label vrc-section-label--all">All venues by rating</div>`
         : '';
 
+    const staticPage  = BAND_FAVORITE_PAGES[place.place_id];
+    const favBadge    = staticPage ? `<span class="vrc-tag vrc-tag--fav">★ Band Favorite</span>` : '';
+    const favPageBtn  = staticPage
+      ? `<a class="vrc-contact-btn vrc-fav-page-btn" href="${staticPage}"
+           onclick="event.stopPropagation()" target="_blank">
+           ★ Full Band Review Page
+         </a>`
+      : '';
+
     return `${sectionHeader}
       <div class="venue-result-card${isMatch ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
         <div class="vrc-header">
@@ -589,6 +611,7 @@ function updateVenuesList(venues, genreByVenue = {}) {
         <div class="vrc-tags">
           ${types.slice(0, 2).map(t => `<span class="vrc-tag">${t.replace(/_/g, ' ')}</span>`).join('')}
           ${genreTagsHtml}
+          ${favBadge}
           ${isOpen ? '<span class="vrc-tag open">Open Now</span>' : ''}
         </div>
         <button class="vrc-contact-btn"
@@ -599,6 +622,7 @@ function updateVenuesList(venues, genreByVenue = {}) {
           onclick="event.stopPropagation(); openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
           Reviews + Full Page
         </button>
+        ${favPageBtn}
       </div>`;
   }).join('');
 }
