@@ -399,9 +399,9 @@ input[type="range"] {
 
 /* Band Favorite venue cards — solid color fills matching homepage palette */
 .vrc--fav {
-  background: var(--fav-bg, #3a7a8a);
-  border: none;
-  border-left: none;
+  background: var(--fav-bg, #3a7a8a) !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 .vrc--fav-0 { --fav-bg: #d94535; }
 .vrc--fav-1 { --fav-bg: #7a8a3a; }
@@ -434,6 +434,12 @@ input[type="range"] {
 }
 .vrc--fav .vrc-fav-page-btn:hover {
   background: #f8f5ee !important;
+}
+.vrc--fav:hover {
+  border: none !important;
+  box-shadow: none !important;
+  transform: translate(-1px, -1px);
+  filter: brightness(1.06);
 }
 
 .vrc-fav-eyebrow {
