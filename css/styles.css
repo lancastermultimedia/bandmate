@@ -402,10 +402,10 @@ input[type="range"] {
   border-left: 3px solid var(--fav-color, #3a7a8a);
   background: var(--fav-bg, rgba(58,122,138,0.10));
 }
-.vrc--fav-0 { --fav-color: #3a7a8a; --fav-bg: rgba(58,122,138,0.10); }
-.vrc--fav-1 { --fav-color: #b8860b; --fav-bg: rgba(184,134,11,0.10); }
-.vrc--fav-2 { --fav-color: #7a8a3a; --fav-bg: rgba(122,138,58,0.10); }
-.vrc--fav-3 { --fav-color: #c4612a; --fav-bg: rgba(196,97,42,0.10); }
+.vrc--fav-0 { --fav-color: #2d6373; --fav-bg: #bdd6dd; }
+.vrc--fav-1 { --fav-color: #8a6208; --fav-bg: #e8d49a; }
+.vrc--fav-2 { --fav-color: #5a6e28; --fav-bg: #ccdba8; }
+.vrc--fav-3 { --fav-color: #a04820; --fav-bg: #e8c4a4; }
 .vrc-fav-eyebrow {
   font-family: 'Space Mono', monospace;
   font-size: 0.55rem;

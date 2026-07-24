@@ -125,6 +125,7 @@ async function loadBandProfile() {
   const { data } = await sb.from('bands').select('*').ilike('email', currentUser.email).order('created_at', { ascending: false }).limit(1);
   currentBandProfile = (data && data[0]) || null;
   devLog('[auth] loadBandProfile result:', currentBandProfile, 'for email:', currentUser.email);
+  window._refreshVenueList?.();
   // Update last_seen_at — wrapped so errors never bubble up from loadBandProfile
   (async () => { try { await sb.rpc('update_band_last_seen', { band_email: currentUser.email }); } catch (_) {} })();
 }

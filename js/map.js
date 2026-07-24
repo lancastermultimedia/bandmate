@@ -18,6 +18,8 @@ let currentRadius    = 10;
 let _accumulatedVenues = [];  // accumulates across pagination pages
 let _currentCityLabel  = 'Nashville';   // bare city name for nearby bands query
 let _nearbyBandsOpen   = false;
+let _lastVenues        = null;
+let _lastGenreByVenue  = {};
 
 // Lazy-init autocomplete for the review venue search modal
 let reviewVenueAutocomplete = null;
@@ -544,6 +546,8 @@ function showInfoWindow(place, marker) {
 // ─── Venue list panel ─────────────────────────────────────────────────────────
 
 function updateVenuesList(venues, genreByVenue = {}) {
+  _lastVenues       = venues;
+  _lastGenreByVenue = genreByVenue;
   if (!venues.length) {
     document.getElementById('venuesList').innerHTML = `
       <div class="no-results">
@@ -935,6 +939,11 @@ window.toggleNearbyBands = function() {
   const chevron = document.getElementById('nearbyBandsChevron');
   if (panel)   panel.style.display  = _nearbyBandsOpen ? 'block' : 'none';
   if (chevron) chevron.textContent  = _nearbyBandsOpen ? '▴' : '▾';
+};
+
+// Called by auth.js after loadBandProfile completes so genre matching re-runs
+window._refreshVenueList = () => {
+  if (_lastVenues) updateVenuesList(_lastVenues, _lastGenreByVenue);
 };
 
 function getMapStyle() {
