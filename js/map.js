@@ -568,16 +568,29 @@ function updateVenuesList(venues, genreByVenue = {}) {
 
   const withScores = venues.map(v => ({ place: v, score: genreMatchScore(v) }));
 
-  // Split into 3 buckets: Band Favorites | Genre matched | Rest
-  const favorites    = withScores.filter(({place}) => BAND_FAVORITE_PAGES[place.place_id])
-                                 .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
-  const favIds       = new Set(favorites.map(({place}) => place.place_id));
-  const genreMatched = withScores.filter(({place, score}) => score > 0 && !favIds.has(place.place_id))
-                                 .sort((a,b) => b.score - a.score || (b.place.rating||0) - (a.place.rating||0));
-  const rest         = withScores.filter(({place, score}) => score === 0 && !favIds.has(place.place_id))
-                                 .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+  // Split into 3 buckets: Band Favorites | Genre matched (or reviewed) | Rest
+  const favorites = withScores.filter(({place}) => BAND_FAVORITE_PAGES[place.place_id])
+                              .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+  const favIds    = new Set(favorites.map(({place}) => place.place_id));
 
-  function renderCard({ place, score }, isFav = false) {
+  let genreMatched, rest, genreLabel;
+  if (bandGenres.length) {
+    // Logged-in user with genre: personalized matching
+    genreMatched = withScores.filter(({place, score}) => score > 0 && !favIds.has(place.place_id))
+                             .sort((a,b) => b.score - a.score || (b.place.rating||0) - (a.place.rating||0));
+    rest         = withScores.filter(({place, score}) => score === 0 && !favIds.has(place.place_id))
+                             .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+    genreLabel   = 'Matched to your genre';
+  } else {
+    // No genre / not logged in: middle bucket = any venue with band review data
+    genreMatched = withScores.filter(({place}) => (genreByVenue[place.place_id] || []).length > 0 && !favIds.has(place.place_id))
+                             .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+    rest         = withScores.filter(({place}) => !(genreByVenue[place.place_id] || []).length && !favIds.has(place.place_id))
+                             .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+    genreLabel   = 'Venues Bands Have Reviewed';
+  }
+
+  function renderCard({ place, score }, isFav = false, colorIdx = 0) {
     const rating       = place.rating;
     const stars        = rating ? '★'.repeat(Math.round(rating)) : '—';
     const isOpen       = place.opening_hours?.isOpen?.();
@@ -595,8 +608,8 @@ function updateVenuesList(venues, genreByVenue = {}) {
          </button>`;
 
     return `
-      <div class="venue-result-card${isFav ? ' vrc--fav' : score > 0 ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
-        ${isFav ? `<div class="vrc-fav-eyebrow">★ Band Reviewed Venue</div>` : ''}
+      <div class="venue-result-card${isFav ? ` vrc--fav vrc--fav-${colorIdx}` : score > 0 ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
+        ${isFav ? `<div class="vrc-fav-eyebrow">★ Recommended by Bands</div>` : ''}
         <div class="vrc-header">
           <div class="vrc-name${isFav ? ' vrc-name--fav' : ''}">${place.name}</div>
           ${rating ? `<div class="vrc-rating"><span style="color:var(--gold)">${stars}</span> ${rating.toFixed(1)}</div>` : ''}
@@ -619,12 +632,12 @@ function updateVenuesList(venues, genreByVenue = {}) {
   let html = '';
 
   if (favorites.length) {
-    html += `<div class="vrc-section-label vrc-section-label--fav">Band Reviewed Venues</div>`;
-    html += favorites.map(v => renderCard(v, true)).join('');
+    html += `<div class="vrc-section-label vrc-section-label--fav">Recommended by Bands</div>`;
+    html += favorites.map((v, i) => renderCard(v, true, i % 4)).join('');
   }
 
   if (genreMatched.length) {
-    html += `<div class="vrc-section-label">Matched to your genre</div>`;
+    html += `<div class="vrc-section-label">${genreLabel}</div>`;
     html += genreMatched.map(v => renderCard(v)).join('');
   }
 
