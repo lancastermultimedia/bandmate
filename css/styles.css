@@ -9179,6 +9179,15 @@ nav {
   border-color: var(--ink) !important;
   border-width: 1.5px !important;
 }
+/* Recommended-by-Bands solid fills — must come after the paper !important rule above */
+.venue-result-card.vrc--fav-0 { background: #d94535 !important; border: none !important; }
+.venue-result-card.vrc--fav-1 { background: #7a8a3a !important; border: none !important; }
+.venue-result-card.vrc--fav-2 { background: #3a7a8a !important; border: none !important; }
+.venue-result-card.vrc--fav-3 { background: #c8a53a !important; border: none !important; }
+.venue-result-card.vrc--fav-0:hover,
+.venue-result-card.vrc--fav-1:hover,
+.venue-result-card.vrc--fav-2:hover,
+.venue-result-card.vrc--fav-3:hover { border: none !important; filter: brightness(1.08); transform: translateY(-2px) !important; }
 .vrc-name {
   font-family: 'DM Sans', sans-serif !important;
   font-weight: 400 !important;
