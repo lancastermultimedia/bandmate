@@ -414,17 +414,6 @@
 }
 .vp-bio-fact-value a:hover { text-decoration: underline; }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .vp-bio-section { border-bottom-color: rgba(250,249,246,0.08); }
-  .vp-bio-text, .vp-bio-fact-value { color: var(--paper, #faf9f6); }
-}
-:root[data-theme="dark"] .vp-bio-text,
-:root[data-theme="dark"] .vp-bio-fact-value { color: var(--paper, #faf9f6); }
-:root[data-theme="dark"] .vp-bio-section { border-bottom-color: rgba(250,249,246,0.08); }
-:root[data-theme="light"] .vp-bio-text,
-:root[data-theme="light"] .vp-bio-fact-value { color: var(--ink, #0f0f0c); }
-
 /* CTA strip */
 .vp-cta-section {
   border-top: 1px solid rgba(15,15,12,0.08);
@@ -468,23 +457,3 @@
 }
 .vp-cta-btn:hover { opacity: 0.85; }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .vp-venue-name, .vp-reviews-title, .vp-cta-label, .vp-band-name, .vp-review-text { color: var(--paper, #faf9f6); }
-  .vp-hero   { border-bottom-color: rgba(250,249,246,0.08); }
-  .vp-stat-divider { background: rgba(250,249,246,0.1); }
-  .vp-review-card { background: rgba(250,249,246,0.03); border-color: rgba(250,249,246,0.08); }
-  .vp-cta-section { background: rgba(250,249,246,0.02); border-top-color: rgba(250,249,246,0.08); }
-  .vp-genre-chip { border-color: rgba(250,249,246,0.12); }
-}
-:root[data-theme="dark"] .vp-venue-name,
-:root[data-theme="dark"] .vp-reviews-title,
-:root[data-theme="dark"] .vp-cta-label,
-:root[data-theme="dark"] .vp-band-name,
-:root[data-theme="dark"] .vp-review-text { color: var(--paper, #faf9f6); }
-:root[data-theme="dark"] .vp-review-card { background: rgba(250,249,246,0.03); border-color: rgba(250,249,246,0.08); }
-:root[data-theme="light"] .vp-venue-name,
-:root[data-theme="light"] .vp-reviews-title,
-:root[data-theme="light"] .vp-cta-label,
-:root[data-theme="light"] .vp-band-name,
-:root[data-theme="light"] .vp-review-text { color: var(--ink, #0f0f0c); }

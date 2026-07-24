@@ -70,6 +70,8 @@ a, button { transition: color 0.2s ease, background 0.2s ease, border-color 0.2s
 .reviewer-avatar,
 .ri-avatar,
 .ri-avatar-img,
+.vp-avatar,
+.vp-avatar--img,
 .profile-photo,
 .profile-photo-init,
 .profile-photo-wrap,
