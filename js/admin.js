@@ -38,7 +38,7 @@ async function loadDashboard() {
   ] = await Promise.all([
     sb.from('bands').select('id, band_name, home_city, genre, created_at, review_count, is_premium, epk_theme, is_admin').order('created_at', { ascending: false }),
     sb.from('bands').select('band_name, home_city, genre, created_at, review_count').order('created_at', { ascending: false }).limit(12),
-    sb.from('reviews').select('id, overall_rating, venue_name, google_place_id, created_at, is_anonymous, would_return, band_tip, band_id, review_text'),
+    sb.from('reviews').select('id, overall_rating, sound_rating, comms_rating, merch_rating, parking_rating, venue_name, google_place_id, created_at, is_anonymous, would_return, band_tip, band_id, review_text'),
     sb.from('reviews').select('overall_rating, venue_name, created_at, is_anonymous, bands(band_name, home_city)').order('created_at', { ascending: false }).limit(12),
     sb.from('epk_view_logs').select('id', { count: 'exact', head: true }).gte('viewed_at', weekAgo),
     sb.from('epk_view_logs').select('id', { count: 'exact', head: true }).gte('viewed_at', monthAgo),
@@ -199,15 +199,22 @@ const CONVERTED_PLACE_IDS = new Set([
   'ChIJsbMgk_tEQogRocp77F-dFDo', // Al's Bar
 ]);
 
+function isPositiveReview(r) {
+  if (r.would_return === 'yes') return true;
+  if ((r.overall_rating || 0) >= 4) return true;
+  const subs = [r.sound_rating, r.comms_rating, r.merch_rating, r.parking_rating].filter(Boolean);
+  if (subs.length >= 3 && subs.filter(s => s === 5).length >= Math.ceil(subs.length / 2)) return true;
+  return false;
+}
+
 function renderConversions(reviews) {
-  // Group by venue, count positive (would_return=yes) reviews
   const venues = {};
   reviews.forEach(r => {
     const key  = r.google_place_id || r.venue_name || 'unknown';
     const name = r.venue_name || 'Unknown';
     if (!venues[key]) venues[key] = { name, placeId: r.google_place_id, pos: 0, total: 0 };
     venues[key].total++;
-    if (r.would_return === 'yes') venues[key].pos++;
+    if (isPositiveReview(r)) venues[key].pos++;
   });
 
   const candidates = Object.entries(venues)

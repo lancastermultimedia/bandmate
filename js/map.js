@@ -568,36 +568,24 @@ function updateVenuesList(venues, genreByVenue = {}) {
 
   const withScores = venues.map(v => ({ place: v, score: genreMatchScore(v) }));
 
-  // Sort: genre matches (desc by match count) first, then unmatched by Google rating
-  const matched   = withScores.filter(v => v.score > 0).sort((a, b) => b.score - a.score || (b.place.rating || 0) - (a.place.rating || 0));
-  const unmatched = withScores.filter(v => v.score === 0).sort((a, b) => (b.place.rating || 0) - (a.place.rating || 0));
-  const sorted    = [...matched, ...unmatched];
+  // Split into 3 buckets: Band Favorites | Genre matched | Rest
+  const favorites    = withScores.filter(({place}) => BAND_FAVORITE_PAGES[place.place_id])
+                                 .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
+  const favIds       = new Set(favorites.map(({place}) => place.place_id));
+  const genreMatched = withScores.filter(({place, score}) => score > 0 && !favIds.has(place.place_id))
+                                 .sort((a,b) => b.score - a.score || (b.place.rating||0) - (a.place.rating||0));
+  const rest         = withScores.filter(({place, score}) => score === 0 && !favIds.has(place.place_id))
+                                 .sort((a,b) => (b.place.rating||0) - (a.place.rating||0));
 
-  const hasSuggested = matched.length > 0;
-
-  document.getElementById('venuesList').innerHTML = sorted.map(({ place, score }, idx) => {
-    const rating    = place.rating;
-    const stars     = rating ? '★'.repeat(Math.round(rating)) : '—';
-    const isOpen    = place.opening_hours?.isOpen?.();
-    const types     = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
-    const isMatch   = score > 0;
-
-    // Show the genres that have played at this venue (top 3 unique)
-    const venueGenres   = [...new Set(genreByVenue[place.place_id] || [])].slice(0, 3);
-    const genreTagsHtml = venueGenres.map(g =>
-      `<span class="vrc-tag vrc-tag--genre">${g}</span>`
-    ).join('');
-
-    // "Suggested for you" header — show above first matched venue only
-    const sectionHeader = (hasSuggested && idx === 0)
-      ? `<div class="vrc-section-label">Matched to your genre</div>`
-      : (hasSuggested && idx === matched.length)
-        ? `<div class="vrc-section-label vrc-section-label--all">All venues by rating</div>`
-        : '';
-
-    const staticPage = BAND_FAVORITE_PAGES[place.place_id];
-    const favBadge   = staticPage ? `<span class="vrc-tag vrc-tag--fav">★ Band Favorite</span>` : '';
-    const reviewBtn  = staticPage
+  function renderCard({ place, score }, isFav = false) {
+    const rating       = place.rating;
+    const stars        = rating ? '★'.repeat(Math.round(rating)) : '—';
+    const isOpen       = place.opening_hours?.isOpen?.();
+    const types        = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
+    const venueGenres  = [...new Set(genreByVenue[place.place_id] || [])].slice(0, 3);
+    const genreTagsHtml = venueGenres.map(g => `<span class="vrc-tag vrc-tag--genre">${g}</span>`).join('');
+    const staticPage   = BAND_FAVORITE_PAGES[place.place_id];
+    const reviewBtn    = staticPage
       ? `<a class="vrc-contact-btn vrc-fav-page-btn" href="${staticPage}" onclick="event.stopPropagation()">
            ★ View Full Band Review Page
          </a>`
@@ -606,17 +594,17 @@ function updateVenuesList(venues, genreByVenue = {}) {
            Reviews + Full Page
          </button>`;
 
-    return `${sectionHeader}
-      <div class="venue-result-card${isMatch ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
+    return `
+      <div class="venue-result-card${isFav ? ' vrc--fav' : score > 0 ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
+        ${isFav ? `<div class="vrc-fav-eyebrow">★ Band Reviewed Venue</div>` : ''}
         <div class="vrc-header">
-          <div class="vrc-name">${place.name}</div>
+          <div class="vrc-name${isFav ? ' vrc-name--fav' : ''}">${place.name}</div>
           ${rating ? `<div class="vrc-rating"><span style="color:var(--gold)">${stars}</span> ${rating.toFixed(1)}</div>` : ''}
         </div>
         <div class="vrc-address">${place.vicinity || ''}</div>
         <div class="vrc-tags">
           ${types.slice(0, 2).map(t => `<span class="vrc-tag">${t.replace(/_/g, ' ')}</span>`).join('')}
           ${genreTagsHtml}
-          ${favBadge}
           ${isOpen ? '<span class="vrc-tag open">Open Now</span>' : ''}
         </div>
         <button class="vrc-contact-btn"
@@ -625,7 +613,27 @@ function updateVenuesList(venues, genreByVenue = {}) {
         </button>
         ${reviewBtn}
       </div>`;
-  }).join('');
+  }
+
+  // Assemble the three sections
+  let html = '';
+
+  if (favorites.length) {
+    html += `<div class="vrc-section-label vrc-section-label--fav">Band Reviewed Venues</div>`;
+    html += favorites.map(v => renderCard(v, true)).join('');
+  }
+
+  if (genreMatched.length) {
+    html += `<div class="vrc-section-label">Matched to your genre</div>`;
+    html += genreMatched.map(v => renderCard(v)).join('');
+  }
+
+  if (rest.length) {
+    html += `<div class="vrc-section-label vrc-section-label--all">All venues by rating</div>`;
+    html += rest.map(v => renderCard(v)).join('');
+  }
+
+  document.getElementById('venuesList').innerHTML = html;
 }
 
 function focusVenue(placeId) {

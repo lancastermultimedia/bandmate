@@ -397,6 +397,34 @@ input[type="range"] {
 .vrc-tag--genre { border-color: var(--rust); color: var(--rust); }
 .vrc-tag--fav { border-color: var(--gold, #e8b84b); color: var(--gold, #e8b84b); font-weight: 700; }
 
+/* Band Favorite venue cards — prominent top section */
+.vrc--fav {
+  background: rgba(58,122,138,0.06);
+  border-color: var(--teal);
+  border-left: 3px solid var(--teal);
+}
+.vrc-fav-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+.vrc-name--fav {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.vrc-section-label--fav {
+  background: rgba(58,122,138,0.1);
+  border-left-color: var(--teal);
+  color: var(--teal);
+  font-size: 0.65rem;
+  padding: 12px 10px;
+}
+.vrc-section-label--fav::before { content: '★'; }
+
 .vrc-fav-page-btn {
   display: block;
   text-align: center;

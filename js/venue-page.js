@@ -1,6 +1,41 @@
 // Shared logic for static venue review pages.
 // Each venue HTML page defines window.VENUE before loading this script.
 
+// Inject contact modal HTML so openContactModal() (from auth.js) works on these pages
+if (!document.getElementById('contactModal')) {
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="contactModal">
+      <div class="modal">
+        <button class="modal-close" onclick="closeContactModal()">✕</button>
+        <div class="modal-eyebrow">Contact Venue</div>
+        <div class="modal-title" id="modalVenueName"></div>
+        <div class="modal-venue" id="modalVenueAddress"></div>
+        <div id="cmodalLoading" class="cmodal-loading">Finding contact info…</div>
+        <div id="cmodalOptions" style="display:none">
+          <div class="cmodal-option" id="cmodalFbOption" style="display:none">
+            <a id="cmodalFbBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-fb">Message on Facebook →</a>
+            <div class="cmodal-option-note">Many venues respond fastest on Facebook Messenger</div>
+          </div>
+          <div class="cmodal-option" id="cmodalEmailOption" style="display:none">
+            <a id="cmodalEmailBtn" href="#" class="cmodal-btn cmodal-btn-email">Send Booking Email →</a>
+            <div class="cmodal-option-note">Pre-filled booking inquiry — edit before sending</div>
+          </div>
+          <div class="cmodal-option" id="cmodalWebOption" style="display:none">
+            <a id="cmodalWebBtn" href="#" target="_blank" rel="noopener" class="cmodal-btn cmodal-btn-web">Visit Their Website →</a>
+            <div class="cmodal-option-note">Check for a booking form or contact page</div>
+          </div>
+        </div>
+        <div class="modal-disclaimer">
+          Bandmate finds publicly available contact information.<br>
+          Always introduce yourself professionally.
+        </div>
+      </div>
+    </div>`);
+  document.getElementById('contactModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('contactModal')) closeContactModal();
+  });
+}
+
 (async () => {
   if (!window.VENUE) { console.error('[venue-page] VENUE config missing'); return; }
 
