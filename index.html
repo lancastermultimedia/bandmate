@@ -1699,13 +1699,21 @@ async function _gsRun(q) {
 
   if (venues.length) {
     var sl2 = document.createElement('div'); sl2.className = 'gs-section-label'; sl2.textContent = 'Venues'; box.appendChild(sl2);
+    var STATIC_VENUE_PAGES = {
+      'ChIJI4sMfoFEQogRu6mxNiuBIHU': 'venues/the-burl-lexington-ky.html',
+      'ChIJL89un_NEQogRaR9d0FgvN5I': 'venues/green-lantern-lexington-ky.html',
+      'ChIJEaADEBJFQogR1ePUsrbUG6E': 'venues/fishtank-lexington-ky.html',
+      'ChIJsbMgk_tEQogRocp77F-dFDo': 'venues/als-bar-lexington-ky.html',
+    };
     venues.forEach(function(v) {
+      var staticPage = STATIC_VENUE_PAGES[v.google_place_id];
       var el = document.createElement('div'); el.className = 'gs-result';
-      el.dataset.href = 'map.html?place=' + encodeURIComponent(v.google_place_id);
+      el.dataset.href = staticPage || ('map.html?place=' + encodeURIComponent(v.google_place_id));
       el.dataset.type = 'venue';
+      var subLabel = staticPage ? '★ Full band review page' : 'View reviews on the map';
       el.innerHTML =
         '<div class="gs-result-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="2" y="2" width="8" height="8"/><line x1="5" y1="2" x2="5" y2="10" stroke-width="0.7"/></svg></div>' +
-        '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub">View reviews on the map</div></div>' +
+        '<div class="gs-result-body"><div class="gs-result-name"></div><div class="gs-result-sub" style="' + (staticPage ? 'color:var(--teal)' : '') + '">' + subLabel + '</div></div>' +
         '<div class="gs-result-arrow">→</div>';
       el.querySelector('.gs-result-name').textContent = v.venue_name || '';
       box.appendChild(el);

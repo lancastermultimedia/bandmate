@@ -158,6 +158,55 @@
     }).join('');
   }
 
+  // Generate "What Bands Are Saying" paragraph from review data
+  function synthesizeBio(reviews) {
+    const el = document.getElementById('vpSynthBio');
+    if (!el) return;
+
+    const total    = reviews.length;
+    const avgOver  = (reviews.reduce((s,r) => s + (r.overall_rating||0), 0) / total).toFixed(1);
+    const withRet  = reviews.filter(r => r.would_return);
+    const yesPct   = withRet.length
+      ? Math.round(withRet.filter(r => r.would_return === 'yes').length / withRet.length * 100)
+      : null;
+
+    // Find standout sub-categories (avg >= 4.5)
+    const cats = [
+      { label: 'sound',         field: 'sound_rating' },
+      { label: 'communication', field: 'comms_rating' },
+      { label: 'merch space',   field: 'merch_rating' },
+      { label: 'parking',       field: 'parking_rating' },
+    ];
+    const standouts = cats
+      .map(c => ({ ...c, avg: reviews.reduce((s,r) => s + (r[c.field]||0), 0) / total }))
+      .filter(c => c.avg >= 4.5)
+      .map(c => c.label);
+
+    // Pull up to 2 non-empty review quotes
+    const quotes = reviews
+      .filter(r => r.review_text && r.review_text.trim().length > 40)
+      .slice(0, 2);
+
+    // Build paragraph
+    let para = `Bands rate ${VENUE.name} ${avgOver}/5 on average`;
+    if (yesPct !== null) para += `, and ${yesPct}% say they'd play here again`;
+    para += '.';
+
+    if (standouts.length) {
+      const joined = standouts.length === 1
+        ? standouts[0]
+        : standouts.slice(0, -1).join(', ') + ' and ' + standouts.slice(-1)[0];
+      para += ` Bands consistently highlight ${joined} as standouts.`;
+    }
+
+    if (quotes.length) {
+      const q = quotes[0].review_text.trim();
+      para += ` "${q.length > 180 ? q.slice(0, 177) + '…' : q}"`;
+    }
+
+    el.textContent = para;
+  }
+
   // Load Google Place photos into #vpPhotos if element exists
   function loadPlacePhotos(placeId) {
     const photoEl = document.getElementById('vpPhotos');
@@ -201,6 +250,7 @@
 
     renderStats(data);
     renderReviews(data);
+    synthesizeBio(data);
     loadPlacePhotos(VENUE.placeId);
 
   } catch (err) {

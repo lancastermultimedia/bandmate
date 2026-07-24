@@ -65,6 +65,7 @@ async function loadDashboard() {
   renderGrowth(growthBands);
   renderGenres(allBands);
   renderCities(allBands);
+  renderConversions(allReviews);
   renderVenues(allReviews);
   renderSignups(recentBandsRes.data || []);
   renderRecentReviews(recentRevs);
@@ -185,6 +186,57 @@ function renderCities(bands) {
   document.getElementById('panelCities').innerHTML = `
     <div class="admin-panel-hd">Top Cities <span class="admin-panel-count">${Object.keys(counts).length} cities</span></div>
     ${rows || '<div style="color:var(--grey);font-size:11px;font-weight:300">No data yet</div>'}`;
+}
+
+// ── Venue leaderboard ─────────────────────────────────────────────────────────
+
+// ── Venue conversion opportunities ───────────────────────────────────────────
+
+const CONVERTED_PLACE_IDS = new Set([
+  'ChIJI4sMfoFEQogRu6mxNiuBIHU', // The Burl
+  'ChIJL89un_NEQogRaR9d0FgvN5I', // The Green Lantern
+  'ChIJEaADEBJFQogR1ePUsrbUG6E', // The Fishtank
+  'ChIJsbMgk_tEQogRocp77F-dFDo', // Al's Bar
+]);
+
+function renderConversions(reviews) {
+  // Group by venue, count positive (would_return=yes) reviews
+  const venues = {};
+  reviews.forEach(r => {
+    const key  = r.google_place_id || r.venue_name || 'unknown';
+    const name = r.venue_name || 'Unknown';
+    if (!venues[key]) venues[key] = { name, placeId: r.google_place_id, pos: 0, total: 0 };
+    venues[key].total++;
+    if (r.would_return === 'yes') venues[key].pos++;
+  });
+
+  const candidates = Object.entries(venues)
+    .filter(([, v]) => v.pos >= 3)
+    .sort(([, a], [, b]) => b.pos - a.pos);
+
+  const rows = candidates.map(([key, v]) => {
+    const converted = CONVERTED_PLACE_IDS.has(key);
+    const badge = converted
+      ? `<span class="conv-badge conv-done">✓ Has page</span>`
+      : `<span class="conv-badge">Needs page</span>`;
+    const returnPct = Math.round((v.pos / v.total) * 100);
+    return `
+      <div class="conv-row">
+        <div class="conv-name">${escapeHtml(v.name)}</div>
+        <div class="conv-count">${v.pos} positive</div>
+        <div class="conv-pct">${returnPct}% would return</div>
+        ${badge}
+      </div>`;
+  }).join('');
+
+  const needCount = candidates.filter(([k]) => !CONVERTED_PLACE_IDS.has(k)).length;
+
+  document.getElementById('panelConversions').innerHTML = `
+    <div class="admin-panel-hd">
+      Venue Page Opportunities
+      <span class="admin-panel-count">${needCount} need a page</span>
+    </div>
+    ${rows || '<div style="color:var(--grey);font-size:11px;font-weight:300">No venues with 3+ positive reviews yet</div>'}`;
 }
 
 // ── Venue leaderboard ─────────────────────────────────────────────────────────

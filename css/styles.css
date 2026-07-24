@@ -414,18 +414,31 @@ input[type="range"] {
 
 .vrc-section-label {
   font-family: 'Space Mono', monospace;
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   color: var(--rust);
-  padding: 10px 4px 6px;
+  padding: 14px 10px 8px;
+  margin: 4px -4px 0;
+  background: rgba(58,122,138,0.06);
+  border-left: 3px solid var(--rust);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vrc-section-label::before {
+  content: '★';
+  font-size: 0.65rem;
 }
 .vrc-section-label--all {
   color: var(--muted);
-  padding-top: 18px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
-  margin-top: 4px;
+  margin-top: 8px;
+  background: none;
+  border-left: none;
 }
+.vrc-section-label--all::before { display: none; }
 
 .vrc-contact-btn {
   width: 100%;

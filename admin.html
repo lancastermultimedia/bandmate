@@ -89,6 +89,14 @@ body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(
 .admin-row--6040 { grid-template-columns: 3fr 2fr; }
 .admin-row--4060 { grid-template-columns: 2fr 3fr; }
 .admin-row--3    { grid-template-columns: repeat(3, 1fr); }
+.admin-row--1    { grid-template-columns: 1fr; }
+.conv-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(15,15,12,0.06); font-family:'DM Sans',sans-serif; font-size:12px; }
+.conv-row:last-child { border-bottom: none; }
+.conv-name { flex: 1; font-weight: 500; }
+.conv-count { font-family:'Space Mono',monospace; font-size:9px; color: var(--teal); }
+.conv-pct { font-family:'Space Mono',monospace; font-size:9px; color: var(--grey); }
+.conv-badge { font-family:'Space Mono',monospace; font-size:7px; letter-spacing:0.1em; text-transform:uppercase; background: rgba(192,57,43,0.1); color: var(--rust); padding: 2px 7px; white-space:nowrap; }
+.conv-done { background: rgba(94,184,181,0.1); color: var(--teal); }
 .admin-panel { border: 1.5px solid var(--ink); background: var(--paper); padding: 20px 22px; }
 .admin-panel-hd {
   font-family: 'Space Mono',monospace; font-size: 7px; letter-spacing: 0.26em;
@@ -237,6 +245,11 @@ body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(
 
   <!-- HERO STATS -->
   <div class="admin-hero" id="adminHero"></div>
+
+  <!-- ROW 0: Conversion opportunities -->
+  <div class="admin-row admin-row--1">
+    <div class="admin-panel" id="panelConversions"></div>
+  </div>
 
   <!-- ROW 1: Growth + Genres -->
   <div class="admin-row admin-row--6040">
