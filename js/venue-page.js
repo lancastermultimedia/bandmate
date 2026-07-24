@@ -158,12 +158,39 @@
     }).join('');
   }
 
+  // Load Google Place photos into #vpPhotos if element exists
+  function loadPlacePhotos(placeId) {
+    const photoEl = document.getElementById('vpPhotos');
+    if (!photoEl || !placeId || typeof BANDMATE_MAPS_KEY === 'undefined') return;
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${BANDMATE_MAPS_KEY}&libraries=places&callback=_vpMapsReady`;
+    window._vpMapsReady = () => {
+      const dummy = document.createElement('div');
+      const svc   = new google.maps.places.PlacesService(dummy);
+      svc.getDetails({ placeId, fields: ['photos', 'url', 'website'] }, (result, status) => {
+        if (status !== 'OK' || !result.photos?.length) return;
+        const photos = result.photos.slice(0, 6);
+        photoEl.innerHTML = photos.map(p => {
+          const url = p.getUrl({ maxWidth: 800, maxHeight: 500 });
+          return `<div class="vp-photo"><img src="${url}" alt="${escHtml(VENUE.name)}" loading="lazy"></div>`;
+        }).join('');
+        photoEl.classList.add('vp-photos--loaded');
+        if (result.website) {
+          const siteEl = document.getElementById('vpWebsite');
+          if (siteEl) { siteEl.href = result.website; siteEl.style.display = 'inline'; }
+        }
+      });
+    };
+    document.head.appendChild(script);
+  }
+
   try {
-    if (!window.supabase || !window.BANDMATE_SUPABASE_URL || !window.BANDMATE_SUPABASE_KEY) {
+    if (typeof supabase === 'undefined' || typeof BANDMATE_SUPABASE_URL === 'undefined' || typeof BANDMATE_SUPABASE_KEY === 'undefined') {
       renderEmpty(); return;
     }
 
-    const sb = window.supabase.createClient(window.BANDMATE_SUPABASE_URL, window.BANDMATE_SUPABASE_KEY);
+    const sb = supabase.createClient(BANDMATE_SUPABASE_URL, BANDMATE_SUPABASE_KEY);
 
     const { data } = await sb.from('reviews')
       .select('*, bands(band_name, genre, home_city, profile_photo_url, epk_theme)')
@@ -174,6 +201,7 @@
 
     renderStats(data);
     renderReviews(data);
+    loadPlacePhotos(VENUE.placeId);
 
   } catch (err) {
     console.warn('[venue-page] load error:', err);

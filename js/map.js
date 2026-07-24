@@ -494,6 +494,16 @@ function showInfoWindow(place, marker) {
   const types    = (place.types || []).filter(t => !['point_of_interest','establishment','food','premise'].includes(t));
   const typeTags = types.slice(0, 3).map(t => `<span class="iw-tag">${t.replace(/_/g, ' ')}</span>`).join('');
 
+  const staticPage = BAND_FAVORITE_PAGES[place.place_id];
+  const reviewAction = staticPage
+    ? `<a class="iw-btn" href="${staticPage}"
+         style="margin-top:6px;background:var(--rust);display:block;text-align:center;text-decoration:none;color:#fff">
+         ★ View Full Band Review Page
+       </a>`
+    : `<button class="iw-btn" style="margin-top:6px;background:var(--ink)" onclick="openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
+         Reviews + Full Page
+       </button>`;
+
   const buildContent = (photoHtml) => `
     <div class="info-window">
       ${photoHtml}
@@ -510,14 +520,7 @@ function showInfoWindow(place, marker) {
       <button class="iw-btn" onclick="openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
         Contact This Venue
       </button>
-      <button class="iw-btn" style="margin-top:6px;background:var(--ink)" onclick="openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
-        Reviews + Full Page
-      </button>
-      ${BAND_FAVORITE_PAGES[place.place_id] ? `
-      <a class="iw-btn" href="${BAND_FAVORITE_PAGES[place.place_id]}" target="_blank"
-         style="margin-top:6px;background:var(--rust);display:block;text-align:center;text-decoration:none">
-        ★ Band Favorite — Full Review Page
-      </a>` : ''}
+      ${reviewAction}
     </div>`;
 
   infoWindow.setContent(buildContent(''));
@@ -592,14 +595,16 @@ function updateVenuesList(venues, genreByVenue = {}) {
         ? `<div class="vrc-section-label vrc-section-label--all">All venues by rating</div>`
         : '';
 
-    const staticPage  = BAND_FAVORITE_PAGES[place.place_id];
-    const favBadge    = staticPage ? `<span class="vrc-tag vrc-tag--fav">★ Band Favorite</span>` : '';
-    const favPageBtn  = staticPage
-      ? `<a class="vrc-contact-btn vrc-fav-page-btn" href="${staticPage}"
-           onclick="event.stopPropagation()" target="_blank">
-           ★ Full Band Review Page
+    const staticPage = BAND_FAVORITE_PAGES[place.place_id];
+    const favBadge   = staticPage ? `<span class="vrc-tag vrc-tag--fav">★ Band Favorite</span>` : '';
+    const reviewBtn  = staticPage
+      ? `<a class="vrc-contact-btn vrc-fav-page-btn" href="${staticPage}" onclick="event.stopPropagation()">
+           ★ View Full Band Review Page
          </a>`
-      : '';
+      : `<button class="vrc-contact-btn" style="margin-top:4px;border-color:var(--rust);color:var(--rust)"
+           onclick="event.stopPropagation(); openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
+           Reviews + Full Page
+         </button>`;
 
     return `${sectionHeader}
       <div class="venue-result-card${isMatch ? ' vrc--genre-match' : ''}" id="card-${place.place_id}" onclick="focusVenue('${place.place_id}')">
@@ -618,11 +623,7 @@ function updateVenuesList(venues, genreByVenue = {}) {
           onclick="event.stopPropagation(); openContactModal('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
           Contact This Venue
         </button>
-        <button class="vrc-contact-btn" style="margin-top:4px;border-color:var(--rust);color:var(--rust)"
-          onclick="event.stopPropagation(); openVenuePage('${place.place_id}','${escapeStr(place.name)}','${escapeStr(place.vicinity || '')}')">
-          Reviews + Full Page
-        </button>
-        ${favPageBtn}
+        ${reviewBtn}
       </div>`;
   }).join('');
 }
