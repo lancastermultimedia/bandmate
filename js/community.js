@@ -1066,8 +1066,8 @@ async function submitPosting() {
   if (!_editingPostingId) {
     _fanoutCityNotifications(postingId, dates, genres).catch(() => {});
 
-    // Auto-create a Show record for local_opener posts (one show per date)
-    if (postPayload.type === 'local_opener' && dates.length > 0) {
+    // Auto-create a Show record for every post type (one show per date)
+    if (dates.length > 0) {
       (async () => {
         try {
           for (const d of dates) {
@@ -1418,7 +1418,7 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
     _showAcceptConfirmation(bandData, posting, city, slotsFilled, slotsNeeded - acceptedCount);
 
     // Link accepted band to the show document for this posting
-    if (posting?.type === 'local_opener') {
+    if (posting) {
       (async () => {
         try {
           const { data: show } = await sb.from('shows').select('id')
