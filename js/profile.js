@@ -956,6 +956,7 @@ function switchProfileTab(tab) {
     _tourTabLoaded = true;
     loadTourManager(bp.id);
   }
+  if (tab === 'shows') loadShowsTab();
   if (tab === 'drafts') loadDraftsTab();
   if (tab === 'myreviews') loadMyReviewsTab();
 }

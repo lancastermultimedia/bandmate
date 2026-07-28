@@ -1065,6 +1065,34 @@ async function submitPosting() {
   // City-based notification fanout (new postings only, not edits)
   if (!_editingPostingId) {
     _fanoutCityNotifications(postingId, dates, genres).catch(() => {});
+
+    // Auto-create a Show record for local_opener posts (one show per date)
+    if (postPayload.type === 'local_opener' && dates.length > 0) {
+      (async () => {
+        try {
+          for (const d of dates) {
+            const { data: show } = await sb.from('shows').insert({
+              headliner_id:   currentBandProfile.id,
+              posting_id:     postingId,
+              venue_name:     d.venue_name || null,
+              venue_address:  d.venue_address || null,
+              venue_place_id: d.venue_place_id || null,
+              city:           d.city || null,
+              show_date:      d.date || null,
+              status:         'draft',
+            }).select('id').single();
+            if (show) {
+              await sb.from('show_bands').insert({
+                show_id: show.id,
+                band_id: currentBandProfile.id,
+                role:    'headliner',
+                status:  'confirmed',
+              });
+            }
+          }
+        } catch(_) {}
+      })();
+    }
   }
 
   closePostModal();
@@ -1388,6 +1416,27 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
     // Reload manage modal with confirmation panel at top
     await _loadManageResponses(_managePostingId);
     _showAcceptConfirmation(bandData, posting, city, slotsFilled, slotsNeeded - acceptedCount);
+
+    // Link accepted band to the show document for this posting
+    if (posting?.type === 'local_opener') {
+      (async () => {
+        try {
+          const { data: show } = await sb.from('shows').select('id')
+            .eq('posting_id', _managePostingId)
+            .eq('headliner_id', currentBandProfile.id)
+            .maybeSingle();
+          if (show) {
+            await sb.from('show_bands').upsert({
+              show_id:     show.id,
+              band_id:     toBandId,
+              role:        'opener',
+              status:      'invited',
+              interest_id: interestId,
+            }, { onConflict: 'show_id,band_id' });
+          }
+        } catch(_) {}
+      })();
+    }
 
   } else {
     showToast('Declined — they have been notified.', 'success');

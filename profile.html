@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/design-system.css?v=4">
-<link rel="stylesheet" href="css/styles.css?v=9">
+<link rel="stylesheet" href="css/styles.css?v=10">
 <style>
 /* ── DM Panel overrides (inline to bypass CDN cache) ── */
 .chat-panel-backdrop{position:fixed;inset:0;background:rgba(15,15,12,0.38);z-index:299;opacity:0;pointer-events:none;transition:opacity .25s ease}
@@ -307,6 +307,7 @@ if ('serviceWorker' in navigator) {
       Community
       <span class="ptab-badge" id="commTabBadge" style="display:none">0</span>
     </button>
+    <button class="ptab" data-tab="shows" onclick="switchProfileTab('shows')">Shows</button>
     <button class="ptab" data-tab="tour" onclick="switchProfileTab('tour')">Tour Manager</button>
     <button class="ptab" data-tab="myreviews" onclick="switchProfileTab('myreviews')">My Reviews</button>
     <button class="ptab" data-tab="drafts" onclick="switchProfileTab('drafts')">Drafts</button>
@@ -448,6 +449,20 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <!-- ── TAB: TOUR MANAGER ──────────────────────────────────────── -->
+  <!-- ── TAB: SHOWS ───────────────────────────────────────────────── -->
+  <div id="tab-shows" class="profile-tab-panel" style="display:none">
+    <div class="profile-wrap profile-body">
+      <div class="profile-section">
+        <div class="profile-section-title-row">
+          <div class="profile-section-title" style="margin-bottom:0">Shows</div>
+          <button class="profile-action-btn profile-action-btn-primary" onclick="window.location.href='community.html'" style="font-size:0.72rem;padding:6px 14px">+ Post a Show</button>
+        </div>
+        <div class="shows-explainer">When you post a show on Community seeking an opener, it appears here. Fill in times, payment, and gear so every band on the bill has the same info — no surprises at load-in.</div>
+        <div id="showsTabContent"><div class="prof-loading">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-tour" class="profile-tab-panel" style="display:none">
     <div class="profile-wrap profile-body">
 
@@ -536,6 +551,7 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script src="js/auth.js"></script>
+<script src="js/shows.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/feedback.js"></script>
 
