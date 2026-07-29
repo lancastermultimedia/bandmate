@@ -1,8 +1,9 @@
 // shows.js — Show document management: per-show details, bill, payment, gear
 
-let _showsList       = [];
-let _currentShowId   = null;
-let _pendingByPosting = {};
+let _showsList          = [];
+let _currentShowId      = null;
+let _pendingByPosting   = {};
+let _currentShowIsHeadliner = false;
 
 const SHOW_COLORS      = ['#d94535', '#7a8a3a', '#3a7a8a', '#c8a53a'];
 const SHOW_COLORS_DARK = ['#a82c22', '#546030', '#2a5868', '#8a7020'];
@@ -164,6 +165,7 @@ function _renderShowCard(show, idx, isPast = false, pendingCount = 0) {
 
 async function openShowDocument(showId) {
   _currentShowId = showId;
+  _currentShowIsHeadliner = false;
   _injectShowModal();
 
   const overlay = document.getElementById('showDocOverlay');
@@ -187,6 +189,7 @@ async function openShowDocument(showId) {
   }
 
   const isHeadliner  = currentBandProfile && show.headliner_id === currentBandProfile.id;
+  _currentShowIsHeadliner = isHeadliner;
   const colorIdx     = show.id % 4;
   const headerColor  = SHOW_COLORS[colorIdx];
   const allBands     = (show.show_bands || []).sort((a, b) => a.role === 'headliner' ? -1 : 1);
@@ -249,6 +252,47 @@ async function openShowDocument(showId) {
     : `${hint ? `<div class="show-doc-hint">${hint}</div>` : ''}
        <div class="show-doc-field-ro">${show[field] ? _escH(show[field]) : '<span class="show-empty-val">Not filled in yet</span>'}</div>`;
 
+  // ── Contacts section ──
+  const myBandId = currentBandProfile?.id;
+
+  const contactBandRows = allBands.map(sb_row => {
+    const b       = sb_row.bands || {};
+    const canEdit = isHeadliner || sb_row.band_id === myBandId;
+    const nameVal = _escH(sb_row.contact_name || '');
+    const phoneVal = _escH(sb_row.contact_phone || '');
+    return `
+      <div class="show-contact-row">
+        <div class="show-contact-label">${_escH(b.band_name || 'Unknown Band')}</div>
+        ${canEdit ? `
+          <div class="show-contact-fields">
+            <input class="show-contact-input" type="text" placeholder="Contact name" value="${nameVal}"
+              data-contact-band="${sb_row.band_id}" data-field="contact_name">
+            <input class="show-contact-input" type="tel" placeholder="Phone number" value="${phoneVal}"
+              data-contact-band="${sb_row.band_id}" data-field="contact_phone">
+          </div>` : `
+          <div class="show-contact-ro">
+            <span>${nameVal || '<span class="show-empty-val">—</span>'}</span>
+            ${nameVal && phoneVal ? '<span class="show-contact-sep">·</span>' : ''}
+            <span>${phoneVal || ''}</span>
+          </div>`}
+      </div>`;
+  }).join('');
+
+  const venueContactRow = `
+    <div class="show-contact-row show-contact-row--venue">
+      <div class="show-contact-label">${_escH(show.venue_name || 'Venue')}</div>
+      ${isHeadliner ? `
+        <div class="show-contact-fields">
+          <input class="show-contact-input" type="text" placeholder="Contact name" value="${_escH(show.venue_contact_name || '')}" id="showField_venue_contact_name">
+          <input class="show-contact-input" type="tel" placeholder="Phone number" value="${_escH(show.venue_contact_phone || '')}" id="showField_venue_contact_phone">
+        </div>` : `
+        <div class="show-contact-ro">
+          <span>${_escH(show.venue_contact_name || '') || '<span class="show-empty-val">—</span>'}</span>
+          ${show.venue_contact_name && show.venue_contact_phone ? '<span class="show-contact-sep">·</span>' : ''}
+          <span>${_escH(show.venue_contact_phone || '')}</span>
+        </div>`}
+    </div>`;
+
   // ── Footer ──
   let footer;
   if (isHeadliner) {
@@ -266,7 +310,8 @@ async function openShowDocument(showId) {
   } else {
     footer = `
       <div class="show-doc-footer">
-        <div class="show-doc-viewer-note">You're on the bill — the headliner manages show details. Details appear here once they're filled in.</div>
+        <button class="show-doc-save-btn" onclick="saveShowDocument()">Save My Contact Info</button>
+        <div class="show-doc-viewer-note" style="margin-top:8px">The headliner manages all other show details.</div>
       </div>`;
   }
 
@@ -286,6 +331,15 @@ async function openShowDocument(showId) {
         <div class="show-doc-section-label">The Bill</div>
         <div class="show-band-list">${billRows}</div>
         ${isHeadliner && allBands.length > 0 ? `<div class="show-doc-hint" style="margin-top:8px">Enter each band's set time and length in minutes.</div>` : ''}
+      </div>
+
+      <div class="show-doc-section">
+        <div class="show-doc-section-label">Day-of Contacts</div>
+        ${!isHeadliner ? `<div class="show-doc-hint">Add your own contact info below. The headliner manages all other fields.</div>` : `<div class="show-doc-hint">Add a contact name and number for each band and the venue — the people to call on the day of the show.</div>`}
+        <div class="show-contact-list">
+          ${contactBandRows}
+          ${venueContactRow}
+        </div>
       </div>
 
       <div class="show-doc-section">
@@ -327,30 +381,52 @@ function closeShowDocument() {
 async function saveShowDocument() {
   if (!_currentShowId) return;
 
-  const payload = {};
-  ['load_in_time', 'soundcheck_time', 'doors_time', 'payment_notes', 'backline_notes', 'other_notes'].forEach(field => {
-    const el = document.getElementById('showField_' + field);
-    if (el) payload[field] = el.value.trim() || null;
+  // Save show-level fields (headliner only)
+  if (_currentShowIsHeadliner) {
+    const payload = {};
+    ['load_in_time', 'soundcheck_time', 'doors_time', 'payment_notes', 'backline_notes', 'other_notes',
+     'venue_contact_name', 'venue_contact_phone'].forEach(field => {
+      const el = document.getElementById('showField_' + field);
+      if (el) payload[field] = el.value.trim() || null;
+    });
+
+    const setMap = {};
+    document.querySelectorAll('.show-time-input[data-band]').forEach(input => {
+      const bandId = parseInt(input.dataset.band);
+      const field  = input.dataset.field;
+      if (!setMap[bandId]) setMap[bandId] = { band_id: bandId };
+      setMap[bandId][field] = field === 'set_length_min'
+        ? (parseInt(input.value) || null)
+        : (input.value.trim() || null);
+    });
+    const setOrder = Object.values(setMap).filter(e => e.set_time || e.set_length_min);
+    if (setOrder.length) payload.set_order = setOrder;
+
+    payload.updated_at = new Date().toISOString();
+    const { error } = await sb.from('shows').update(payload).eq('id', _currentShowId);
+    if (error) { showToast('Save failed — ' + error.message, 'error'); return; }
+  }
+
+  // Save band contacts — headliner saves all visible inputs; opener saves their own
+  const contactMap = {};
+  document.querySelectorAll('.show-contact-input[data-contact-band]').forEach(input => {
+    const bandId = input.dataset.contactBand;
+    if (!contactMap[bandId]) contactMap[bandId] = {};
+    contactMap[bandId][input.dataset.field] = input.value.trim() || null;
   });
 
-  // Collect per-band set times from inputs
-  const setMap = {};
-  document.querySelectorAll('.show-time-input[data-band]').forEach(input => {
-    const bandId = parseInt(input.dataset.band);
-    const field  = input.dataset.field;
-    if (!setMap[bandId]) setMap[bandId] = { band_id: bandId };
-    setMap[bandId][field] = field === 'set_length_min'
-      ? (parseInt(input.value) || null)
-      : (input.value.trim() || null);
-  });
-  const setOrder = Object.values(setMap).filter(e => e.set_time || e.set_length_min);
-  if (setOrder.length) payload.set_order = setOrder;
+  for (const [bandId, contact] of Object.entries(contactMap)) {
+    await (async () => {
+      try {
+        await sb.from('show_bands')
+          .update({ contact_name: contact.contact_name, contact_phone: contact.contact_phone })
+          .eq('show_id', _currentShowId)
+          .eq('band_id', parseInt(bandId));
+      } catch(_) {}
+    })();
+  }
 
-  payload.updated_at = new Date().toISOString();
-
-  const { error } = await sb.from('shows').update(payload).eq('id', _currentShowId);
-  if (error) { showToast('Save failed — ' + error.message, 'error'); return; }
-  showToast('Show document saved.', 'success');
+  showToast('Saved.', 'success');
 }
 
 async function saveAndShareShow() {
