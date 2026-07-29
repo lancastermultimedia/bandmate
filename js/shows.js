@@ -1,7 +1,8 @@
 // shows.js — Show document management: per-show details, bill, payment, gear
 
-let _showsList    = [];
-let _currentShowId = null;
+let _showsList       = [];
+let _currentShowId   = null;
+let _pendingByPosting = {};
 
 const SHOW_COLORS      = ['#d94535', '#7a8a3a', '#3a7a8a', '#c8a53a'];
 const SHOW_COLORS_DARK = ['#a82c22', '#546030', '#2a5868', '#8a7020'];
@@ -62,6 +63,25 @@ async function loadShowsTab() {
     return new Date(b.show_date) - new Date(a.show_date);
   });
 
+  // Fetch pending applicant counts for headliner shows that have a posting
+  const headlinerPostingIds = _showsList
+    .filter(s => s._isHeadliner && s.posting_id)
+    .map(s => s.posting_id);
+  _pendingByPosting = {};
+  if (headlinerPostingIds.length) {
+    const { data: pendingRows } = await (async () => {
+      try {
+        return await sb.from('posting_interests')
+          .select('posting_id')
+          .in('posting_id', headlinerPostingIds)
+          .eq('status', 'pending');
+      } catch(e) { return { data: [] }; }
+    })();
+    (pendingRows || []).forEach(r => {
+      _pendingByPosting[r.posting_id] = (_pendingByPosting[r.posting_id] || 0) + 1;
+    });
+  }
+
   if (!_showsList.length) {
     el.innerHTML = `
       <div class="shows-empty">
@@ -80,17 +100,17 @@ async function loadShowsTab() {
   let html = '';
   if (upcoming.length) {
     html += '<div class="shows-section-label">Upcoming</div>';
-    html += upcoming.map((s, i) => _renderShowCard(s, i)).join('');
+    html += upcoming.map((s, i) => _renderShowCard(s, i, false, _pendingByPosting[s.posting_id] || 0)).join('');
   }
   if (past.length) {
     html += '<div class="shows-section-label shows-section-label--past">Past Shows</div>';
-    html += past.map((s, i) => _renderShowCard(s, upcoming.length + i, true)).join('');
+    html += past.map((s, i) => _renderShowCard(s, upcoming.length + i, true, 0)).join('');
   }
 
   el.innerHTML = html;
 }
 
-function _renderShowCard(show, idx, isPast = false) {
+function _renderShowCard(show, idx, isPast = false, pendingCount = 0) {
   const color     = SHOW_COLORS[idx % 4];
   const darkColor = SHOW_COLORS_DARK[idx % 4];
   const dateShort = show.show_date ? _fmtDate(show.show_date, { weekday:'short', month:'short', day:'numeric' }) : 'Date TBD';
@@ -128,6 +148,10 @@ function _renderShowCard(show, idx, isPast = false) {
           </div>
         </div>
         <div class="show-card-bill">Supporting: ${openerText}</div>
+        ${!isPast && show._isHeadliner && pendingCount > 0 ? `
+          <div class="show-card-applicants" onclick="event.stopPropagation();openApplicantsModal(${show.id})">
+            ${pendingCount} band${pendingCount !== 1 ? 's' : ''} want${pendingCount === 1 ? 's' : ''} to play this show — Review →
+          </div>` : ''}
         ${needsFeedback ? `
           <div class="show-card-feedback" onclick="event.stopPropagation();openPostShowFeedback(${show.id})">
             How did the show go? Leave private feedback →
@@ -432,6 +456,164 @@ async function submitPostShowFeedback(showId) {
   loadShowsTab();
 }
 
+// ── Applicants Modal ───────────────────────────────────────────────
+
+async function openApplicantsModal(showId) {
+  const show = _showsList.find(s => s.id === showId);
+  if (!show || !show.posting_id) return;
+
+  _injectApplicantsModal();
+  const overlay     = document.getElementById('applicantsOverlay');
+  const modal       = document.getElementById('applicantsModal');
+  const colorIdx    = show.id % 4;
+  const headerColor = SHOW_COLORS[colorIdx];
+  const dateShort   = show.show_date ? _fmtDate(show.show_date, { weekday:'short', month:'short', day:'numeric' }) : 'Date TBD';
+
+  modal.innerHTML = `
+    <div class="show-doc-header" style="background:${headerColor}">
+      <button class="show-doc-close" onclick="closeApplicantsModal()">✕</button>
+      <div class="show-doc-venue-name">${_escH(show.venue_name || 'Show')}</div>
+      <div class="show-doc-header-meta">${_escH(dateShort)}${show.city ? ' · ' + _escH(show.city) : ''}</div>
+    </div>
+    <div class="show-doc-body" id="applicantsBody">
+      <div class="show-doc-loading">Loading applicants…</div>
+    </div>`;
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const { data: interests } = await (async () => {
+    try {
+      return await sb.from('posting_interests')
+        .select('id, status, message, band_id, bands(id, band_name, genre, home_city, profile_photo_url, epk_theme, email), posting_dates(city, date)')
+        .eq('posting_id', show.posting_id)
+        .order('status', { ascending: true })
+        .order('created_at', { ascending: false });
+    } catch(e) { return { data: [] }; }
+  })();
+
+  const body = document.getElementById('applicantsBody');
+  if (!body) return;
+
+  if (!interests?.length) {
+    body.innerHTML = `
+      <div class="show-doc-section" style="text-align:center;padding:32px 0">
+        <div class="show-doc-hint">No applicants yet. When bands express interest on Community they'll appear here.</div>
+      </div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="show-doc-section">
+      <div class="show-doc-section-label">Applicants</div>
+      <div class="show-band-list">
+        ${interests.map(i => {
+          const band = i.bands || {};
+          const init = (band.band_name || 'B').substring(0, 2).toUpperCase();
+          const av   = band.profile_photo_url
+            ? `<img src="${_escH(band.profile_photo_url)}" class="show-band-avatar show-band-avatar--img" alt="">`
+            : `<div class="show-band-avatar show-band-avatar--init">${init}</div>`;
+          const meta = [band.genre, band.home_city].filter(Boolean).map(_escH).join(' · ');
+          const statusBadge = i.status !== 'pending'
+            ? `<div class="show-card-status show-card-status--${i.status === 'accepted' ? 'shared' : 'draft'}" style="flex-shrink:0;margin-left:auto">${i.status}</div>`
+            : '';
+          const actions = i.status === 'pending' ? `
+            <div style="display:flex;gap:8px;margin-top:10px;padding-left:52px">
+              <button class="show-doc-share-btn" style="padding:6px 16px;font-size:0.65rem"
+                onclick="_handleApplicantResponse(${i.id},${band.id},${showId},'accepted')">Accept</button>
+              <button class="show-doc-save-btn" style="padding:6px 16px;font-size:0.65rem;background:rgba(15,15,12,0.07);color:var(--ink)"
+                onclick="_handleApplicantResponse(${i.id},${band.id},${showId},'declined')">Decline</button>
+            </div>` : '';
+          return `
+            <div class="show-band-row" style="flex-wrap:wrap;row-gap:0">
+              <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+                ${av}
+                <div class="show-band-info">
+                  <div class="show-band-name">${_escH(band.band_name || 'Unknown Band')}</div>
+                  ${meta ? `<div class="show-band-role-chip">${meta}</div>` : ''}
+                </div>
+              </div>
+              ${statusBadge}
+              ${i.message ? `<div style="width:100%;font-size:0.75rem;font-style:italic;padding-left:52px;margin-top:6px;opacity:0.7">"${_escH(i.message)}"</div>` : ''}
+              ${actions}
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function closeApplicantsModal() {
+  const overlay = document.getElementById('applicantsOverlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function _handleApplicantResponse(interestId, bandId, showId, status) {
+  const { error } = await sb.from('posting_interests').update({ status }).eq('id', interestId);
+  if (error) { showToast('Could not update — ' + error.message, 'error'); return; }
+
+  // Notify the applicant
+  (async () => {
+    try {
+      await sb.from('notifications').insert({
+        band_id: bandId,
+        type:    status === 'accepted' ? 'interest_accepted' : 'interest_declined',
+        payload: { from_band: currentBandProfile?.band_name },
+        read:    false,
+      });
+    } catch(_) {}
+  })();
+
+  if (status === 'accepted') {
+    // Add to show_bands
+    (async () => {
+      try {
+        await sb.from('show_bands').upsert({
+          show_id:     showId,
+          band_id:     bandId,
+          role:        'opener',
+          status:      'invited',
+          interest_id: interestId,
+        }, { onConflict: 'show_id,band_id' });
+      } catch(_) {}
+    })();
+
+    // Also propagate to tour stops if the posting is linked to a tour
+    (async () => {
+      try {
+        const show = _showsList.find(s => s.id === showId);
+        if (!show?.posting_id) return;
+        const { data: posting } = await sb
+          .from('tour_postings')
+          .select('linked_tour_id, linked_stop_ids, type')
+          .eq('id', show.posting_id)
+          .maybeSingle();
+        if (!posting?.linked_tour_id) return;
+        const roleMap = { tour_support: 'opener', local_opener: 'support', co_headlining: 'co-headliner' };
+        const role = roleMap[posting.type] || 'support';
+        const upd  = { supporting_band_id: bandId, supporting_role: role };
+        if (posting.linked_stop_ids?.length) {
+          await sb.from('tour_stops').update(upd).in('id', posting.linked_stop_ids);
+        } else {
+          await sb.from('tour_stops').update(upd).eq('tour_id', posting.linked_tour_id);
+        }
+      } catch(_) {}
+    })();
+  }
+
+  showToast(status === 'accepted' ? 'Accepted!' : 'Declined', status === 'accepted' ? 'success' : '');
+  closeApplicantsModal();
+  loadShowsTab();
+}
+
+function _injectApplicantsModal() {
+  if (document.getElementById('applicantsOverlay')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="show-doc-overlay" id="applicantsOverlay" onclick="if(event.target===this)closeApplicantsModal()">
+      <div class="show-doc-modal" id="applicantsModal"></div>
+    </div>`);
+}
+
 // ── DOM injection ──────────────────────────────────────────────────
 
 function _injectShowModal() {
@@ -444,10 +626,13 @@ function _injectShowModal() {
 
 // ── Hooks called by community.js ───────────────────────────────────
 
-window.loadShowsTab = loadShowsTab;
-window.openShowDocument = openShowDocument;
-window.closeShowDocument = closeShowDocument;
-window.saveShowDocument = saveShowDocument;
-window.saveAndShareShow = saveAndShareShow;
-window.openPostShowFeedback = openPostShowFeedback;
-window.submitPostShowFeedback = submitPostShowFeedback;
+window.loadShowsTab             = loadShowsTab;
+window.openShowDocument         = openShowDocument;
+window.closeShowDocument        = closeShowDocument;
+window.saveShowDocument         = saveShowDocument;
+window.saveAndShareShow         = saveAndShareShow;
+window.openPostShowFeedback     = openPostShowFeedback;
+window.submitPostShowFeedback   = submitPostShowFeedback;
+window.openApplicantsModal      = openApplicantsModal;
+window.closeApplicantsModal     = closeApplicantsModal;
+window._handleApplicantResponse = _handleApplicantResponse;

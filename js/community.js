@@ -1418,25 +1418,24 @@ async function updateInterestStatus(interestId, status, toBandId, city) {
     _showAcceptConfirmation(bandData, posting, city, slotsFilled, slotsNeeded - acceptedCount);
 
     // Link accepted band to the show document for this posting
-    if (posting) {
-      (async () => {
-        try {
-          const { data: show } = await sb.from('shows').select('id')
-            .eq('posting_id', _managePostingId)
-            .eq('headliner_id', currentBandProfile.id)
-            .maybeSingle();
-          if (show) {
-            await sb.from('show_bands').upsert({
-              show_id:     show.id,
-              band_id:     toBandId,
-              role:        'opener',
-              status:      'invited',
-              interest_id: interestId,
-            }, { onConflict: 'show_id,band_id' });
-          }
-        } catch(_) {}
-      })();
-    }
+    (async () => {
+      try {
+        const { data: show } = await sb.from('shows').select('id')
+          .eq('posting_id', _managePostingId)
+          .eq('headliner_id', currentBandProfile.id)
+          .maybeSingle();
+        if (show) {
+          await sb.from('show_bands').upsert({
+            show_id:     show.id,
+            band_id:     toBandId,
+            role:        'opener',
+            status:      'invited',
+            interest_id: interestId,
+          }, { onConflict: 'show_id,band_id' });
+        }
+      } catch(_) {}
+    })();
+
 
   } else {
     showToast('Declined — they have been notified.', 'success');

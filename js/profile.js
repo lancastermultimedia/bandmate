@@ -984,8 +984,6 @@ async function updateCommBadge(bandId) {
 async function loadCommunityTab(bandId) {
   await Promise.all([
     loadMessageThreads(bandId),
-    loadMyPostingsWithResponses(bandId),
-    loadCommunityActivity(bandId),
     loadNotifications(bandId),
   ]);
   updateCommBadge(bandId);

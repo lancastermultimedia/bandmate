@@ -11663,6 +11663,17 @@ input[type="range"] { accent-color: var(--teal) !important; }
   cursor: pointer;
 }
 .show-card-feedback:hover { color: var(--teal-dark); }
+.show-card-applicants {
+  display: inline-block;
+  margin-top: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.show-card-applicants:hover { opacity: 0.72; }
 
 /* ── Show document overlay ── */
 .show-doc-overlay {

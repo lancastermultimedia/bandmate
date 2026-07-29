@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300&family=Space+Mono:wght@400;700&family=Anton&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/design-system.css?v=4">
-<link rel="stylesheet" href="css/styles.css?v=10">
+<link rel="stylesheet" href="css/styles.css?v=11">
 <style>
 /* ── DM Panel overrides (inline to bypass CDN cache) ── */
 .chat-panel-backdrop{position:fixed;inset:0;background:rgba(15,15,12,0.38);z-index:299;opacity:0;pointer-events:none;transition:opacity .25s ease}
@@ -304,7 +304,7 @@ if ('serviceWorker' in navigator) {
   <div class="profile-tab-nav">
     <button class="ptab ptab--active" data-tab="epk" onclick="switchProfileTab('epk')">Profile</button>
     <button class="ptab" data-tab="community" onclick="switchProfileTab('community')">
-      Community
+      Messages
       <span class="ptab-badge" id="commTabBadge" style="display:none">0</span>
     </button>
     <button class="ptab" data-tab="shows" onclick="switchProfileTab('shows')">Shows</button>
@@ -397,19 +397,6 @@ if ('serviceWorker' in navigator) {
         </div>
         <div id="bandSearchResults" class="band-search-results" style="display:none"></div>
         <div id="messageThreadsList"><div class="prof-loading">Loading…</div></div>
-      </div>
-
-      <!-- My Postings (with expandable responses) -->
-      <div class="profile-section" id="myPostingsSection" style="display:none">
-        <div class="profile-section-title">My Opportunity Postings</div>
-        <div id="myPostingsList"></div>
-        <a href="community.html" class="prof-text-btn" style="display:block;margin-top:10px">Browse all opportunities →</a>
-      </div>
-
-      <!-- Interests I've expressed -->
-      <div class="profile-section" id="communityActivitySection" style="display:none">
-        <div class="profile-section-title">My Responses</div>
-        <div id="communityActivityList"></div>
       </div>
 
       <!-- Notifications -->
