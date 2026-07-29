@@ -192,9 +192,17 @@ async function openShowDocument(showId) {
   _currentShowIsHeadliner = isHeadliner;
   const colorIdx     = show.id % 4;
   const headerColor  = SHOW_COLORS[colorIdx];
-  const allBands     = (show.show_bands || []).sort((a, b) => a.role === 'headliner' ? -1 : 1);
-  const openers      = allBands.filter(b => b.role !== 'headliner');
   const setOrder     = Array.isArray(show.set_order) ? show.set_order : [];
+  const allBands     = (show.show_bands || []).slice().sort((a, b) => {
+    const ai = setOrder.findIndex(s => s.band_id === a.band_id);
+    const bi = setOrder.findIndex(s => s.band_id === b.band_id);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    // Default: openers before headliner (performance order)
+    if (a.role === 'headliner') return 1;
+    if (b.role === 'headliner') return -1;
+    return 0;
+  });
+  const openers      = allBands.filter(b => b.role !== 'headliner');
 
   const dateDisplay  = show.show_date ? _fmtDate(show.show_date) : '';
 
@@ -212,8 +220,16 @@ async function openShowDocument(showId) {
           : `<div class="show-band-avatar show-band-avatar--init">${initials}</div>`;
         const roleLabel = { headliner: 'Headliner', opener: 'Opener', co_headliner: 'Co-Headliner' }[sb_row.role] || 'Opener';
         const existing  = setOrder.find(s => s.band_id === sb_row.band_id) || {};
+        const dragHandle = isHeadliner
+          ? `<svg class="show-band-drag-handle" viewBox="0 0 8 14" width="9" height="14" fill="currentColor" title="Drag to reorder">
+               <circle cx="2" cy="2" r="1.4"/><circle cx="6" cy="2" r="1.4"/>
+               <circle cx="2" cy="7" r="1.4"/><circle cx="6" cy="7" r="1.4"/>
+               <circle cx="2" cy="12" r="1.4"/><circle cx="6" cy="12" r="1.4"/>
+             </svg>`
+          : '';
         return `
-          <div class="show-band-row">
+          <div class="show-band-row" data-band-id="${sb_row.band_id}"${isHeadliner ? ' draggable="true"' : ''}>
+            ${dragHandle}
             ${avatar}
             <div class="show-band-info">
               <div class="show-band-name">${_escH(b.band_name || 'Unknown Band')}</div>
@@ -330,7 +346,7 @@ async function openShowDocument(showId) {
       <div class="show-doc-section">
         <div class="show-doc-section-label">The Bill</div>
         <div class="show-band-list">${billRows}</div>
-        ${isHeadliner && allBands.length > 0 ? `<div class="show-doc-hint" style="margin-top:8px">Enter each band's set time and length in minutes.</div>` : ''}
+        ${isHeadliner && allBands.length > 0 ? `<div class="show-doc-hint" style="margin-top:8px">Drag rows to set performance order. Enter each band's set time and length in minutes.</div>` : ''}
       </div>
 
       <div class="show-doc-section">
@@ -370,6 +386,8 @@ async function openShowDocument(showId) {
 
     </div>
     ${footer}`;
+
+  if (isHeadliner) _initBillDrag();
 }
 
 function closeShowDocument() {
@@ -390,16 +408,18 @@ async function saveShowDocument() {
       if (el) payload[field] = el.value.trim() || null;
     });
 
-    const setMap = {};
-    document.querySelectorAll('.show-time-input[data-band]').forEach(input => {
-      const bandId = parseInt(input.dataset.band);
-      const field  = input.dataset.field;
-      if (!setMap[bandId]) setMap[bandId] = { band_id: bandId };
-      setMap[bandId][field] = field === 'set_length_min'
-        ? (parseInt(input.value) || null)
-        : (input.value.trim() || null);
+    // Build set_order from current DOM order — preserves drag result
+    const setOrder = [];
+    document.querySelectorAll('.show-band-row[data-band-id]').forEach(row => {
+      const bandId   = parseInt(row.dataset.bandId);
+      const timeEl   = row.querySelector('[data-field="set_time"]');
+      const lenEl    = row.querySelector('[data-field="set_length_min"]');
+      setOrder.push({
+        band_id:       bandId,
+        set_time:      timeEl?.value.trim() || null,
+        set_length_min: lenEl ? (parseInt(lenEl.value) || null) : null,
+      });
     });
-    const setOrder = Object.values(setMap).filter(e => e.set_time || e.set_length_min);
     if (setOrder.length) payload.set_order = setOrder;
 
     payload.updated_at = new Date().toISOString();
@@ -688,6 +708,48 @@ function _injectApplicantsModal() {
     <div class="show-doc-overlay" id="applicantsOverlay" onclick="if(event.target===this)closeApplicantsModal()">
       <div class="show-doc-modal" id="applicantsModal"></div>
     </div>`);
+}
+
+// ── Bill drag-to-reorder ───────────────────────────────────────────
+
+function _initBillDrag() {
+  const list = document.querySelector('.show-band-list');
+  if (!list) return;
+
+  let dragSrc = null;
+
+  const clearDropHints = () =>
+    list.querySelectorAll('.show-band-row').forEach(r =>
+      r.classList.remove('show-band-row--drop-above', 'show-band-row--drop-below'));
+
+  list.querySelectorAll('.show-band-row[draggable="true"]').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => row.classList.add('show-band-row--dragging'), 0);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('show-band-row--dragging');
+      clearDropHints();
+      dragSrc = null;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!dragSrc || row === dragSrc) return;
+      clearDropHints();
+      const mid = row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+      row.classList.add(e.clientY < mid ? 'show-band-row--drop-above' : 'show-band-row--drop-below');
+    });
+    row.addEventListener('dragleave', clearDropHints);
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc || dragSrc === row) return;
+      const mid = row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+      e.clientY < mid ? row.before(dragSrc) : row.after(dragSrc);
+      clearDropHints();
+    });
+  });
 }
 
 // ── DOM injection ──────────────────────────────────────────────────
